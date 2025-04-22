@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import LoginPage from '../components/LoginPage.vue';
 import Dashboard from '../components/Dashboard.vue';
 import AdminDashboard from '../components/AdminDashboard.vue';
@@ -33,13 +33,14 @@ const router = createRouter({
   routes
 });
 
-// Navigation guard for protected routes
+let currentUser = null;
+onAuthStateChanged(getAuth(), (user) => {
+  currentUser = user;
+});
+
 router.beforeEach((to, from, next) => {
-  const auth = getAuth();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
-  
-  const currentUser = auth.currentUser;
   
   if (requiresAuth && !currentUser) {
     next('/login');

@@ -1,234 +1,273 @@
 <template>
-    <div class="login-container">
-    
-      <admin-login
-        v-if="showAdminPanel"
-        @close="closeAdminPanel"
-        @login="handleAdminLogin"
-      />
-  
-      <div v-if="!showAdminPanel" class="login-card" :class="{ 'flip': isSignup }">
-        <div class="login-side">
-          <div class="white-side">
-            <div class="login-form">
-              <h1>Login</h1>
-              
-              <div class="form-group">
-                <label for="email-input">Email</label>
+  <div class="login-container">
+    <admin-login
+      v-if="showAdminPanel"
+      @close="closeAdminPanel"
+      @login="handleAdminLogin"
+    />
+
+    <div v-if="!showAdminPanel" class="login-card" :class="{ 'flip': isSignup }">
+      <div class="login-side">
+        <div class="white-side">
+          <div class="login-form">
+            <h1>Login</h1>
+
+            <div class="form-group">
+              <label for="email-input">Email</label>
+              <input 
+                type="email" 
+                id="email-input" 
+                v-model="username" 
+                placeholder="kreso123@exempl.com" 
+              />
+            </div>
+
+            <div class="form-group password-group">
+              <label for="password">Lozinka</label>
+              <div class="password-input-container">
                 <input 
-                  type="email" 
-                  id="email-input" 
-                  v-model="username" 
-                  placeholder="kreso123@exempl.com" 
+                  :type="showPassword ? 'text' : 'password'" 
+                  id="password" 
+                  v-model="password" 
                 />
-              </div>
-              
-              <div class="form-group">
-                <label for="password">Lozinka</label>
-                <input type="password" id="password" v-model="password" />
-              </div>
-              
-              <button class="login-button" @click="login">Login</button>
-              
-              <button class="google-login-button" @click="loginWithGoogle">
-                <img 
-                  src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" 
-                  class="google-icon"
-                  alt="Google logo">
-                Prijava s Google računom
-              </button>
-              
-              <div class="signup-option">
-                Stvori račun <a @click.prevent="toggleMode" class="signup-link">Registracija</a>
+                <span class="toggle-password" @click="toggleShowPassword">
+                  {{ showPassword ? '👁️' : '🙈' }}
+                </span>
               </div>
             </div>
-          </div>
-          
-          <div class="black-side">
-            <div class="welcome-content">
-              <h1>Neki naslov ce biti</h1>
-              <p class="welcome-text">
-                nesto ce pisati kratko 
-              </p>
-              
+            <p v-if="loginError" class="error-message">{{ loginError }}</p>
+
+            <button class="login-button" @click="login">Login</button>
+
+            <button class="google-login-button" @click="loginWithGoogle">
+              <img 
+                src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" 
+                class="google-icon"
+                alt="Google logo">
+              Prijava s Google računom
+            </button>
+
+            <div class="signup-option">
+              Stvori račun <a @click.prevent="toggleMode" class="signup-link">Registracija</a>
             </div>
           </div>
         </div>
-        
-        <div class="signup-side">
-          <div class="black-side">
-            <div class="welcome-content">
-              <h1>nesto kratko</h1>
-              <p class="welcome-text">
-                nesto nepisati ovdje zanimljivo
-              </p>
-              
-            </div>
+
+        <div class="black-side">
+          <div class="welcome-content">
+            <h1>Neki naslov ce biti</h1>
+            <p class="welcome-text">
+              nesto ce pisati kratko 
+            </p>
           </div>
-          
-          <div class="white-side">
-            <div class="login-form">
-              <h1>Registracija</h1>
-              
-              <div class="form-group">
-                <label for="new-username">Korisničko ime</label>
+        </div>
+      </div>
+      <div class="signup-side">
+        <div class="black-side">
+          <div class="welcome-content">
+            <h1>nesto kratko</h1>
+            <p class="welcome-text">
+              nesto nepisati ovdje zanimljivo
+            </p>
+          </div>
+        </div>
+
+        <div class="white-side">
+          <div class="login-form">
+            <h1>Registracija</h1>
+
+            <div class="form-group">
+              <label for="new-username">Korisničko ime</label>
+              <input 
+                type="text" 
+                id="new-username" 
+                v-model="newUsername" 
+                placeholder="Vaše korisničko ime"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input 
+                type="email" 
+                id="email" 
+                v-model="email" 
+                placeholder="kreso123@exempl.com" 
+              />
+            </div>
+
+            <div class="form-group password-group">
+              <label for="new-password">Lozinka</label>
+              <div class="password-input-container">
                 <input 
-                  type="text" 
-                  id="new-username" 
-                  v-model="newUsername" 
-                  placeholder="Vaše korisničko ime"
+                  :type="showNewPassword ? 'text' : 'password'" 
+                  id="new-password" 
+                  v-model="newPassword" 
                 />
+                <span class="toggle-password" @click="toggleShowNewPassword">
+                  {{ showNewPassword ? '🙈' : '👁️' }}
+                </span>
               </div>
-              
-              <div class="form-group">
-                <label for="email">Email</label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  v-model="email" 
-                  placeholder="primjer@domena.com" 
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="new-password">Lozinka</label>
-                <input type="password" id="new-password" v-model="newPassword" />
-              </div>
-              
-              <button class="login-button" @click="signup">Registracija</button>
-              
-              <div class="signup-option">
-                Već imate račun? <a @click.prevent="toggleMode" class="signup-link">Prijava</a>
-              </div>
+            </div>
+            <p v-if="signupError" class="error-message">{{ signupError }}</p>
+
+            <button class="login-button" @click="signup">Registracija</button>
+
+            <div class="signup-option">
+              Već imate račun? <a @click.prevent="toggleMode" class="signup-link">Prijava</a>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  import { ref, watch } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { useAuth } from '../store/auth';
-  import AdminLogin from './AdminLogin.vue';
-  
-  export default {
-    name: 'LoginPage',
-    components: {
-      AdminLogin
-    },
-    setup() {
-      const router = useRouter();
-      const { state, login, loginWithGoogle, signup, loginAsAdmin } = useAuth();
-      
-      const username = ref('');
-      const password = ref('');
-      const newUsername = ref('');
-      const email = ref('');
-      const newPassword = ref('');
-      const isSignup = ref(false);
-      const showAdminPanel = ref(false);
-      
-      watch(() => state.isLoggedIn, (isLoggedIn) => {
-        if (isLoggedIn) {
-          if (state.isAdmin) {
-            router.push('/admin');
-          } else {
-            router.push('/dashboard');
-          }
-        }
-      }, { immediate: true });
-      
-      const clearFormFields = () => {
-        username.value = '';
-        password.value = '';
-        newUsername.value = '';
-        email.value = '';
-        newPassword.value = '';
-      };
-  
-      const handleLogin = async () => {
-        try {
-          await login(username.value, password.value);
-          clearFormFields();
-        } catch (error) {
-          alert('Prijava nije uspjela: ' + error.message);
-        }
-      };
-  
-      const handleLoginWithGoogle = async () => {
-        try {
-          await loginWithGoogle();
-        } catch (error) {
-          alert('Google prijava nije uspjela: ' + error.message);
-        }
-      };
-  
-      const handleSignup = async () => {
-        try {
-          await signup(newUsername.value, email.value, newPassword.value);
-          isSignup.value = false;
-          clearFormFields();
-        } catch (error) {
-          alert('Registracija nije uspjela: ' + error.message);
-        }
-      };
-  
-      const handleAdminLogin = async (adminEmail, adminPassword) => {
-        try {
-          await loginAsAdmin(adminEmail, adminPassword);
-          showAdminPanel.value = false;
-          alert('Uspješno ste prijavljeni kao administrator!');
-        } catch (error) {
-          alert('Admin prijava nije uspjela: ' + error.message);
-        }
-      };
-  
-      const showAdminLogin = () => {
-        if (state.isAdmin) {
-          alert('Već ste prijavljeni kao administrator!');
-          return;
-        }
-        showAdminPanel.value = true;
-      };
-  
-      const closeAdminPanel = () => {
+  </div>
+</template>
+
+<script>
+import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuth } from '../store/auth';
+import AdminLogin from './AdminDashboard.vue';
+
+export default {
+  name: 'LoginPage',
+  components: {
+    AdminLogin
+  },
+  setup() {
+    const router = useRouter();
+    const { state, login, loginWithGoogle, signup, loginAsAdmin } = useAuth();
+
+    const username = ref('');
+    const password = ref('');
+    const newUsername = ref('');
+    const email = ref('');
+    const newPassword = ref('');
+
+    const isSignup = ref(false);
+    const showAdminPanel = ref(false);
+    const showPassword = ref(false);
+    const showNewPassword = ref(false);
+
+    const loginError = ref('');
+    const signupError = ref('');
+
+    watch(() => state.isLoggedIn, (isLoggedIn) => {
+      if (isLoggedIn) {
+        router.push(state.isAdmin ? '/admin' : '/dashboard');
+      }
+    }, { immediate: true });
+
+    const clearFormFields = () => {
+      username.value = '';
+      password.value = '';
+      newUsername.value = '';
+      email.value = '';
+      newPassword.value = '';
+      loginError.value = '';
+      signupError.value = '';
+    };
+
+    const toggleShowPassword = () => {
+      showPassword.value = !showPassword.value;
+    };
+
+    const toggleShowNewPassword = () => {
+      showNewPassword.value = !showNewPassword.value;
+    };
+
+    const handleLogin = async () => {
+      loginError.value = '';
+      if (!username.value || !password.value) {
+        loginError.value = 'Email i lozinka su obavezni.';
+        return;
+      }
+
+      try {
+        await login(username.value, password.value);
+        clearFormFields();
+      } catch (error) {
+        loginError.value = 'Pogrešan email ili lozinka.';
+      }
+    };
+
+    const handleLoginWithGoogle = async () => {
+      try {
+        await loginWithGoogle();
+      } catch (error) {
+        loginError.value = 'Google prijava nije uspjela.';
+      }
+    };
+
+    const handleSignup = async () => {
+      signupError.value = '';
+      if (!newUsername.value || !email.value || !newPassword.value) {
+        signupError.value = 'Sva polja su obavezna.';
+        return;
+      }
+
+      try {
+        await signup(newUsername.value, email.value, newPassword.value);
+        isSignup.value = false;
+        clearFormFields();
+      } catch (error) {
+        signupError.value = 'Registracija nije uspjela.';
+      }
+    };
+
+    const handleAdminLogin = async (adminEmail, adminPassword) => {
+      try {
+        await loginAsAdmin(adminEmail, adminPassword);
         showAdminPanel.value = false;
-      };
-  
-      const toggleMode = () => {
-        isSignup.value = !isSignup.value;
-      };
-  
-      return {
-        username,
-        password,
-        newUsername,
-        email,
-        newPassword,
-        isSignup,
-        showAdminPanel,
-        login: handleLogin,
-        loginWithGoogle: handleLoginWithGoogle,
-        signup: handleSignup,
-        toggleMode,
-        showAdminLogin,
-        closeAdminPanel,
-        handleAdminLogin
-      };
-    }
-  };
-  </script>
-  
-  <style scoped>
-  .login-container {
+      } catch (error) {
+        alert('Admin prijava nije uspjela: ' + error.message);
+      }
+    };
+
+    const showAdminLogin = () => {
+      if (state.isAdmin) {
+        alert('Već ste prijavljeni kao administrator!');
+        return;
+      }
+      showAdminPanel.value = true;
+    };
+
+    const closeAdminPanel = () => {
+      showAdminPanel.value = false;
+    };
+
+    const toggleMode = () => {
+      isSignup.value = !isSignup.value;
+      loginError.value = '';
+      signupError.value = '';
+    };
+
+    return {
+      username, password, newUsername, email, newPassword,
+      isSignup, showAdminPanel, showPassword, showNewPassword,
+      loginError, signupError,
+      login: handleLogin,
+      loginWithGoogle: handleLoginWithGoogle,
+      signup: handleSignup,
+      toggleMode,
+      showAdminLogin,
+      closeAdminPanel,
+      handleAdminLogin,
+      toggleShowPassword,
+      toggleShowNewPassword
+    };
+  }
+};
+</script>
+
+<style scoped>
+.login-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     width: 100%;
-    background-color: #f0f0f0;
+    background-color: #F1EFEC;
     font-family: Arial, sans-serif;
     perspective: 1500px;
     position: relative;
@@ -236,7 +275,7 @@
   
   .google-login-button {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     background-color: white;
     color: #444;
     border: 1px solid #ddd;
@@ -310,7 +349,7 @@
   }
   
   .black-side {
-    background-color: black;
+    background-color: #030303;
     color: white;
   }
   
@@ -322,7 +361,7 @@
   
   h1 {
     font-size: 32px;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
     font-weight: normal;
   }
   
@@ -346,15 +385,15 @@
   }
   
   input:focus {
-    border-color: #0066ff;
-    box-shadow: 0 0 5px rgba(0, 102, 255, 0.3);
+    border-color: #030303;
+    box-shadow: #030303;
     outline: none;
   }
   
   .login-button {
     width: 100%;
     padding: 12px;
-    background-color: black;
+    background-color: #123458;
     color: white;
     border: none;
     border-radius: 4px;
@@ -365,13 +404,13 @@
   }
   
   .login-button:hover {
-    background-color: #333;
+    background-color: #2261a5;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
   
   .login-button:active {
-    background-color: #000;
+    background-color: #2261a5;
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   }
@@ -422,4 +461,38 @@
       max-width: 100%;
     }
   }
-  </style>
+
+  .password-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.password-input-container {
+  position: relative;
+}
+
+input {
+  width: 75%;
+  padding: 10px;
+  padding-right: 65px; 
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  user-select: none;
+  font-size: 18px;
+} 
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+</style>
