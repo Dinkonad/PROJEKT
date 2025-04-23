@@ -3,6 +3,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import LoginPage from '../components/LoginPage.vue';
 import Dashboard from '../components/Dashboard.vue';
 import AdminDashboard from '../components/AdminDashboard.vue';
+import PrihodiView from '../components/PrihodiView.vue';
 
 const routes = [
   {
@@ -24,7 +25,15 @@ const routes = [
     path: '/admin',
     name: 'AdminDashboard',
     component: AdminDashboard,
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: 'prihodi',
+        name: 'Prihodi',
+        component: PrihodiView,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      }
+    ]
   }
 ];
 

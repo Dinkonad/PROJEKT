@@ -472,7 +472,7 @@ export default {
 }
 
 input {
-  width: 75%;
+  width: 100%;
   padding: 10px;
   padding-right: 65px; 
   border: 1px solid #ddd;
