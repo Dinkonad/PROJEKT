@@ -1,92 +1,92 @@
 <template>
-  <div class="login-container">
-    <admin-login
-      v-if="showAdminPanel"
-      @close="closeAdminPanel"
-      @login="handleAdminLogin"
+  <div class="prijava-kontejner">
+    <admin-prijava
+      v-if="prikaziAdminPanel"
+      @zatvori="zatvoriAdminPanel"
+      @prijava="handleAdminPrijava"
     />
 
-    <div v-if="!showAdminPanel" class="login-card" :class="{ 'flip': isSignup }">
-      <div class="login-side">
-        <div class="white-side">
-          <div class="login-form">
-            <h1>Login</h1>
+    <div v-if="!prikaziAdminPanel" class="prijava-kartica" :class="{ 'okretanje': jeRegistracija }">
+      <div class="prijava-strana">
+        <div class="bijela-strana">
+          <div class="obrazac">
+            <h1>Prijava</h1>
 
-            <div class="form-group">
-              <label for="email-input">Email</label>
+            <div class="grupa">
+              <label for="email-unos">Email</label>
               <input 
                 type="email" 
-                id="email-input" 
-                v-model="username" 
+                id="email-unos" 
+                v-model="korisnickoIme" 
                 placeholder="kreso123@exempl.com" 
               />
             </div>
 
-            <div class="form-group password-group">
-              <label for="password">Lozinka</label>
-              <div class="password-input-container">
+            <div class="grupa lozinka-grupa">
+              <label for="lozinka">Lozinka</label>
+              <div class="lozinka-unos">
                 <input 
-                  :type="showPassword ? 'text' : 'password'" 
-                  id="password" 
-                  v-model="password" 
+                  :type="prikaziLozinku ? 'text' : 'password'" 
+                  id="lozinka" 
+                  v-model="lozinka" 
                 />
-                <span class="toggle-password" @click="toggleShowPassword">
-                  {{ showPassword ? '👁️' : '🙈' }}
+                <span class="prekidac-lozinka" @click="togglePrikaziLozinku">
+                  {{ prikaziLozinku ? '👁️' : '🙈' }}
                 </span>
               </div>
             </div>
-            <p v-if="loginError" class="error-message">{{ loginError }}</p>
+            <p v-if="greškaPrijave" class="poruka-greška">{{ greškaPrijave }}</p>
 
-            <button class="login-button" @click="login">Login</button>
+            <button class="gumb-prijava" @click="prijava">Prijava</button>
 
-            <button class="google-login-button" @click="loginWithGoogle">
+            <button class="google-prijava" @click="prijavaGoogleom">
               <img 
                 src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" 
-                class="google-icon"
+                class="google-ikona"
                 alt="Google logo">
               Prijava s Google računom
             </button>
 
-            <div class="signup-option">
-              Stvori račun <a @click.prevent="toggleMode" class="signup-link">Registracija</a>
+            <div class="opcija-registracija">
+              Stvori račun <a @click.prevent="promijeniNačin" class="poveznica-registracija">Registracija</a>
             </div>
           </div>
         </div>
 
-        <div class="black-side">
-          <div class="welcome-content">
-            <h1>Neki naslov ce biti</h1>
-            <p class="welcome-text">
-              nesto ce pisati kratko 
+        <div class="crna-strana">
+          <div class="dobrodošlica">
+            <h1>Neki naslov će biti</h1>
+            <p class="tekst-dobrodošlica">
+              nešto će pisati kratko 
             </p>
           </div>
         </div>
       </div>
-      <div class="signup-side">
-        <div class="black-side">
-          <div class="welcome-content">
-            <h1>nesto kratko</h1>
-            <p class="welcome-text">
-              nesto nepisati ovdje zanimljivo
+      <div class="registracija-strana">
+        <div class="crna-strana">
+          <div class="dobrodošlica">
+            <h1>nešto kratko</h1>
+            <p class="tekst-dobrodošlica">
+              nešto nepisati ovdje zanimljivo
             </p>
           </div>
         </div>
 
-        <div class="white-side">
-          <div class="login-form">
+        <div class="bijela-strana">
+          <div class="obrazac">
             <h1>Registracija</h1>
 
-            <div class="form-group">
-              <label for="new-username">Korisničko ime</label>
+            <div class="grupa">
+              <label for="novo-korisnicko-ime">Korisničko ime</label>
               <input 
                 type="text" 
-                id="new-username" 
-                v-model="newUsername" 
+                id="novo-korisnicko-ime" 
+                v-model="novoKorisnickoIme" 
                 placeholder="Vaše korisničko ime"
               />
             </div>
 
-            <div class="form-group">
+            <div class="grupa">
               <label for="email">Email</label>
               <input 
                 type="email" 
@@ -96,25 +96,25 @@
               />
             </div>
 
-            <div class="form-group password-group">
-              <label for="new-password">Lozinka</label>
-              <div class="password-input-container">
+            <div class="grupa lozinka-grupa">
+              <label for="nova-lozinka">Lozinka</label>
+              <div class="lozinka-unos">
                 <input 
-                  :type="showNewPassword ? 'text' : 'password'" 
-                  id="new-password" 
-                  v-model="newPassword" 
+                  :type="prikaziNovuLozinku ? 'text' : 'password'" 
+                  id="nova-lozinka" 
+                  v-model="novaLozinka" 
                 />
-                <span class="toggle-password" @click="toggleShowNewPassword">
-                  {{ showNewPassword ? '🙈' : '👁️' }}
+                <span class="prekidac-lozinka" @click="togglePrikaziNovuLozinku">
+                  {{ prikaziNovuLozinku ? '🙈' : '👁️' }}
                 </span>
               </div>
             </div>
-            <p v-if="signupError" class="error-message">{{ signupError }}</p>
+            <p v-if="greškaRegistracije" class="poruka-greška">{{ greškaRegistracije }}</p>
 
-            <button class="login-button" @click="signup">Registracija</button>
+            <button class="gumb-prijava" @click="registracija">Registracija</button>
 
-            <div class="signup-option">
-              Već imate račun? <a @click.prevent="toggleMode" class="signup-link">Prijava</a>
+            <div class="opcija-registracija">
+              Već imate račun? <a @click.prevent="promijeniNačin" class="poveznica-registracija">Prijava</a>
             </div>
           </div>
         </div>
@@ -123,145 +123,122 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
-import AdminLogin from './AdminDashboard.vue';
+import AdminPrijava from './ADashboard.vue';
 
-export default {
-  name: 'LoginPage',
-  components: {
-    AdminLogin
-  },
-  setup() {
-    const router = useRouter();
-    const { state, login, loginWithGoogle, signup, loginAsAdmin } = useAuth();
+const router = useRouter();
+const { state, login, loginWithGoogle, signup, loginAsAdmin } = useAuth();
 
-    const username = ref('');
-    const password = ref('');
-    const newUsername = ref('');
-    const email = ref('');
-    const newPassword = ref('');
+const korisnickoIme = ref('');
+const lozinka = ref('');
+const novoKorisnickoIme = ref('');
+const email = ref('');
+const novaLozinka = ref('');
 
-    const isSignup = ref(false);
-    const showAdminPanel = ref(false);
-    const showPassword = ref(false);
-    const showNewPassword = ref(false);
+const jeRegistracija = ref(false);
+const prikaziAdminPanel = ref(false);
+const prikaziLozinku = ref(false);
+const prikaziNovuLozinku = ref(false);
 
-    const loginError = ref('');
-    const signupError = ref('');
+const greškaPrijave = ref('');
+const greškaRegistracije = ref('');
 
-    watch(() => state.isLoggedIn, (isLoggedIn) => {
-      if (isLoggedIn) {
-        router.push(state.isAdmin ? '/admin' : '/dashboard');
-      }
-    }, { immediate: true });
-
-    const clearFormFields = () => {
-      username.value = '';
-      password.value = '';
-      newUsername.value = '';
-      email.value = '';
-      newPassword.value = '';
-      loginError.value = '';
-      signupError.value = '';
-    };
-
-    const toggleShowPassword = () => {
-      showPassword.value = !showPassword.value;
-    };
-
-    const toggleShowNewPassword = () => {
-      showNewPassword.value = !showNewPassword.value;
-    };
-
-    const handleLogin = async () => {
-      loginError.value = '';
-      if (!username.value || !password.value) {
-        loginError.value = 'Email i lozinka su obavezni.';
-        return;
-      }
-
-      try {
-        await login(username.value, password.value);
-        clearFormFields();
-      } catch (error) {
-        loginError.value = 'Pogrešan email ili lozinka.';
-      }
-    };
-
-    const handleLoginWithGoogle = async () => {
-      try {
-        await loginWithGoogle();
-      } catch (error) {
-        loginError.value = 'Google prijava nije uspjela.';
-      }
-    };
-
-    const handleSignup = async () => {
-      signupError.value = '';
-      if (!newUsername.value || !email.value || !newPassword.value) {
-        signupError.value = 'Sva polja su obavezna.';
-        return;
-      }
-
-      try {
-        await signup(newUsername.value, email.value, newPassword.value);
-        isSignup.value = false;
-        clearFormFields();
-      } catch (error) {
-        signupError.value = 'Registracija nije uspjela.';
-      }
-    };
-
-    const handleAdminLogin = async (adminEmail, adminPassword) => {
-      try {
-        await loginAsAdmin(adminEmail, adminPassword);
-        showAdminPanel.value = false;
-      } catch (error) {
-        alert('Admin prijava nije uspjela: ' + error.message);
-      }
-    };
-
-    const showAdminLogin = () => {
-      if (state.isAdmin) {
-        alert('Već ste prijavljeni kao administrator!');
-        return;
-      }
-      showAdminPanel.value = true;
-    };
-
-    const closeAdminPanel = () => {
-      showAdminPanel.value = false;
-    };
-
-    const toggleMode = () => {
-      isSignup.value = !isSignup.value;
-      loginError.value = '';
-      signupError.value = '';
-    };
-
-    return {
-      username, password, newUsername, email, newPassword,
-      isSignup, showAdminPanel, showPassword, showNewPassword,
-      loginError, signupError,
-      login: handleLogin,
-      loginWithGoogle: handleLoginWithGoogle,
-      signup: handleSignup,
-      toggleMode,
-      showAdminLogin,
-      closeAdminPanel,
-      handleAdminLogin,
-      toggleShowPassword,
-      toggleShowNewPassword
-    };
+watch(() => state.isLoggedIn, (isLoggedIn) => {
+  if (isLoggedIn) {
+    router.push(state.isAdmin ? '/admin' : '/dashboard');
   }
+}, { immediate: true });
+
+const očistiPolja = () => {
+  korisnickoIme.value = '';
+  lozinka.value = '';
+  novoKorisnickoIme.value = '';
+  email.value = '';
+  novaLozinka.value = '';
+  greškaPrijave.value = '';
+  greškaRegistracije.value = '';
+};
+
+const togglePrikaziLozinku = () => {
+  prikaziLozinku.value = !prikaziLozinku.value;
+};
+
+const togglePrikaziNovuLozinku = () => {
+  prikaziNovuLozinku.value = !prikaziNovuLozinku.value;
+};
+
+const prijava = async () => {
+  greškaPrijave.value = '';
+  if (!korisnickoIme.value || !lozinka.value) {
+    greškaPrijave.value = 'Email i lozinka su obavezni.';
+    return;
+  }
+
+  try {
+    await login(korisnickoIme.value, lozinka.value);
+    očistiPolja();
+  } catch (error) {
+    greškaPrijave.value = 'Pogrešan email ili lozinka.';
+  }
+};
+
+const prijavaGoogleom = async () => {
+  try {
+    await loginWithGoogle();
+  } catch (error) {
+    greškaPrijave.value = 'Google prijava nije uspjela.';
+  }
+};
+
+const registracija = async () => {
+  greškaRegistracije.value = '';
+  if (!novoKorisnickoIme.value || !email.value || !novaLozinka.value) {
+    greškaRegistracije.value = 'Sva polja su obavezna.';
+    return;
+  }
+
+  try {
+    await signup(novoKorisnickoIme.value, email.value, novaLozinka.value);
+    jeRegistracija.value = false;
+    očistiPolja();
+  } catch (error) {
+    greškaRegistracije.value = 'Registracija nije uspjela.';
+  }
+};
+
+const handleAdminPrijava = async (adminEmail, adminPassword) => {
+  try {
+    await loginAsAdmin(adminEmail, adminPassword);
+    prikaziAdminPanel.value = false;
+  } catch (error) {
+    alert('Admin prijava nije uspjela: ' + error.message);
+  }
+};
+
+const prikaziAdminPrijavu = () => {
+  if (state.isAdmin) {
+    alert('Već ste prijavljeni kao administrator!');
+    return;
+  }
+  prikaziAdminPanel.value = true;
+};
+
+const zatvoriAdminPanel = () => {
+  prikaziAdminPanel.value = false;
+};
+
+const promijeniNačin = () => {
+  jeRegistracija.value = !jeRegistracija.value;
+  greškaPrijave.value = '';
+  greškaRegistracije.value = '';
 };
 </script>
 
 <style scoped>
-.login-container {
+.prijava-kontejner {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -273,7 +250,7 @@ export default {
     position: relative;
   }
   
-  .google-login-button {
+  .google-prijava {
     width: 100%;
     padding: 10px;
     background-color: white;
@@ -290,26 +267,26 @@ export default {
     transition: all 0.3s ease;
   }
   
-  .google-login-button:hover {
+  .google-prijava:hover {
     background-color: #f8f8f8;
     border-color: #aaa;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
   
-  .google-login-button:active {
+  .google-prijava:active {
     background-color: #f0f0f0;
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
   
-  .google-icon {
+  .google-ikona {
     width: 30px;  
     height: 30px; 
     margin-right: 10px;
   }
   
-  .login-card {
+  .prijava-kartica {
     width: 800px;
     height: 450px;
     position: relative;
@@ -317,11 +294,11 @@ export default {
     transition: transform 0.8s;
   }
   
-  .login-card.flip {
+  .prijava-kartica.okretanje {
     transform: rotateY(180deg);
   }
   
-  .login-side, .signup-side {
+  .prijava-strana, .registracija-strana {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -332,11 +309,11 @@ export default {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
   
-  .signup-side {
+  .registracija-strana {
     transform: rotateY(180deg);
   }
   
-  .white-side, .black-side {
+  .bijela-strana, .crna-strana {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -344,16 +321,16 @@ export default {
     padding: 40px;
   }
   
-  .white-side {
+  .bijela-strana {
     background-color: white;
   }
   
-  .black-side {
+  .crna-strana {
     background-color: #030303;
     color: white;
   }
   
-  .login-form {
+  .obrazac {
     width: 100%;
     max-width: 320px;
     margin: 0 auto;
@@ -365,7 +342,7 @@ export default {
     font-weight: normal;
   }
   
-  .form-group {
+  .grupa {
     margin-bottom: 20px;
   }
   
@@ -390,7 +367,7 @@ export default {
     outline: none;
   }
   
-  .login-button {
+  .gumb-prijava {
     width: 100%;
     padding: 12px;
     background-color: #123458;
@@ -403,96 +380,97 @@ export default {
     transition: all 0.3s ease;
   }
   
-  .login-button:hover {
+  .gumb-prijava:hover {
     background-color: #2261a5;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
   
-  .login-button:active {
+  .gumb-prijava:active {
     background-color: #2261a5;
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   }
   
-  .signup-option {
+  .opcija-registracija {
     margin-top: 20px;
     text-align: center;
     font-size: 14px;
     color: #555;
   }
   
-  .signup-link {
+  .poveznica-registracija {
     color: #0066ff;
     cursor: pointer;
     text-decoration: underline;
     transition: all 0.3s ease;
   }
   
-  .signup-link:hover {
+  .poveznica-registracija:hover {
     color: #004bb9;
   }
   
-  .welcome-content {
+  .dobrodošlica {
     display: flex;
     flex-direction: column;
     height: 100%;
   }
   
   @media (max-width: 820px) {
-    .login-card {
+    .prijava-kartica {
       width: 95%;
       height: auto;
     }
     
-    .login-side, .signup-side {
+    .prijava-strana, .registracija-strana {
       flex-direction: column;
       height: auto;
       min-height: 500px;
     }
     
-    .white-side, .black-side {
+    .bijela-strana, .crna-strana {
       padding: 30px;
     }
   }
   
   @media (max-width: 480px) {
-    .login-form {
+    .obrazac {
       max-width: 100%;
     }
   }
 
-  .password-group {
-  position: relative;
-  margin-bottom: 20px;
-}
+  .lozinka-grupa {
+    position: relative;
+    margin-bottom: 20px;
+  }
 
-.password-input-container {
-  position: relative;
-}
+  .lozinka-unos {
+    position: relative;
+  }
 
-input {
-  width: 100%;
-  padding: 10px;
-  padding-right: 65px; 
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-}
+  input {
+    width: 100%;
+    padding: 10px;
+    padding-right: 65px; 
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
 
-.toggle-password {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  user-select: none;
-  font-size: 18px;
-} 
-.error-message {
-  color: red;
-  font-size: 14px;
-  margin-top: -10px;
-  margin-bottom: 15px;
-}
+  .prekidac-lozinka {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none;
+    font-size: 18px;
+  } 
+  
+  .poruka-greška {
+    color: red;
+    font-size: 14px;
+    margin-top: -10px;
+    margin-bottom: 15px;
+  }
 </style>

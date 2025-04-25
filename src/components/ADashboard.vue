@@ -1,86 +1,76 @@
 <template>
-  <div class="admin-dashboard">
-    <div class="top-navbar">
-      <div class="navbar-content">
-        <div class="profile-dropdown">
-          <div class="profile-icon" @click="toggleProfileMenu">
-            {{ userInitial }}
+  <div class="admin-ploca">
+    <div class="gornja-traka">
+      <div class="traka-sadrzaj">
+        <div class="profil-padajuci">
+          <div class="profil-ikona" @click="promijeniProfilMenu">
+            {{ korisnikInicijali }}
           </div>
-          <div class="profile-menu" v-if="showProfileMenu">
-            <div class="user-email">{{ userEmail }}</div>
-            <div class="menu-item logout-item" @click="logout">Odjava</div>
+          <div class="profil-izbornik" v-if="prikaziProfilMenu">
+            <div class="korisnik-email">{{ korisnikEmail }}</div>
+            <div class="izbornik-opcija odjava-opcija" @click="odjava">Odjava</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="dashboard-container">
-      <nav class="sidebar">
-        <div class="nav-links">
-          <router-link to="/admin" class="nav-link" exact-active-class="active">
-            Admin Dashboard
-          </router-link>
-          <router-link to="/admin/prihodi" class="nav-link" active-class="active">
-            Prihodi
-          </router-link>
-        </div>
+    <div class="ploca-kontejner">
+      <nav class="bocna-traka">
+        <div class="navigacijske-veze">
+  <router-link to="/admin" class="nav-veza" exact-active-class="aktivna">
+    Dashboard
+  </router-link>
+  <router-link to="/admin/prihodi" class="nav-veza" active-class="aktivna">
+    Prihodi
+  </router-link>
+  <router-link to="/admin/oprema" class="nav-veza" active-class="aktivna">
+    Oprema
+  </router-link>
+</div>
       </nav>
       
-      <div class="main-content">
+      <div class="glavni-sadrzaj">
         <router-view></router-view>
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
 
-export default {
-  name: 'AdminDashboard',
-  setup() {
-    const router = useRouter();
-    const { logout: authLogout } = useAuth();
-    const showProfileMenu = ref(false);
-    
-    const userEmail = computed(() => 'naddinko@gmail.com');
-    const userInitial = computed(() => userEmail.value.charAt(0).toUpperCase());
-    
-    const toggleProfileMenu = () => {
-      showProfileMenu.value = !showProfileMenu.value;
-    };
-    
-    const logout = async () => {
-      try {
-        await authLogout();
-        router.push('/login');
-      } catch (error) {
-        console.error('Greška prilikom odjave:', error);
-      }
-    };
-    
-    return {
-      logout,
-      showProfileMenu,
-      toggleProfileMenu,
-      userEmail,
-      userInitial
-    };
+const router = useRouter();
+const { logout: authLogout } = useAuth();
+const prikaziProfilMenu = ref(false);
+
+const korisnikEmail = computed(() => 'naddinko@gmail.com');
+const korisnikInicijali = computed(() => korisnikEmail.value.charAt(0).toUpperCase());
+
+const promijeniProfilMenu = () => {
+  prikaziProfilMenu.value = !prikaziProfilMenu.value;
+};
+
+const odjava = async () => {
+  try {
+    await authLogout();
+    router.push('/login');
+  } catch (error) {
+    console.error('Greška prilikom odjave:', error);
   }
-}
+};
 </script>
 
 <style scoped>
-.admin-dashboard {
+.admin-ploca {
   display: flex;
   flex-direction: column;
   height: 100vh;
   margin: 0;
 }
 
-.top-navbar {
+.gornja-traka {
   height: 50px;
   z-index: 10;
   position: absolute;
@@ -89,18 +79,18 @@ export default {
   padding: 10px 20px;
 }
 
-.navbar-content {
+.traka-sadrzaj {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   height: 100%;
 }
 
-.profile-dropdown {
+.profil-padajuci {
   position: relative;
 }
 
-.profile-icon {
+.profil-ikona {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -116,11 +106,11 @@ export default {
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.profile-icon:hover {
+.profil-ikona:hover {
   transform: scale(1.05);
 }
 
-.profile-menu {
+.profil-izbornik {
   position: absolute;
   top: 50px;
   right: 0;
@@ -143,7 +133,7 @@ export default {
   }
 }
 
-.user-email {
+.korisnik-email {
   padding: 15px;
   border-bottom: 1px solid #eee;
   color: #555;
@@ -151,30 +141,30 @@ export default {
   text-align: center;
 }
 
-.menu-item {
+.izbornik-opcija {
   padding: 12px 15px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.menu-item:hover {
+.izbornik-opcija:hover {
   background-color: #f56358;
 }
 
-.logout-item {
+.odjava-opcija {
   color: white;
   font-weight: bold;
   background-color: #f44336;
   text-align: center;
 }
 
-.dashboard-container {
+.ploca-kontejner {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-.sidebar {
+.bocna-traka {
   width: 250px;
   background-color: #123458;
   display: flex;
@@ -182,12 +172,12 @@ export default {
   margin: 0;
 }
 
-.nav-links {
+.navigacijske-veze {
   display: flex;
   flex-direction: column;
 }
 
-.nav-link {
+.nav-veza {
   padding: 15px;
   text-decoration: none;
   color: #ecf0f1;
@@ -198,20 +188,20 @@ export default {
   text-align: center;
 }
 
-.nav-link:hover {
+.nav-veza:hover {
   background-color: rgba(255,255,255,0.1);
   transform: translateX(5px);
 }
 
-.nav-link.active {
+.nav-veza.aktivna {
   background-color: #2261a5;
 }
 
-.nav-link.router-link-active:not(.active) {
+.nav-veza.router-link-active:not(.aktivna) {
   background-color: transparent;
 }
 
-.main-content {
+.glavni-sadrzaj {
   flex-grow: 1;
   overflow-y: auto;
   background-color: #F1EFEC;

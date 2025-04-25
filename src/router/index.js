@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import LoginPage from '../components/LoginPage.vue';
-import Dashboard from '../components/Dashboard.vue';
-import AdminDashboard from '../components/AdminDashboard.vue';
-import PrihodiView from '../components/PrihodiView.vue';
+import Dashboard from '../korisnik/Dashboard.vue';
+import AdminDashboard from '../components/ADashboard.vue';
+import PrihodiView from '../components/APrihodiView.vue';
+import OpremaView from '../components/AOprema.vue'; 
 
 const routes = [
   {
@@ -31,6 +32,12 @@ const routes = [
         path: 'prihodi',
         name: 'Prihodi',
         component: PrihodiView,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'oprema', // Nova ruta za opremu
+        name: 'Oprema',
+        component: OpremaView,
         meta: { requiresAuth: true, requiresAdmin: true }
       }
     ]
