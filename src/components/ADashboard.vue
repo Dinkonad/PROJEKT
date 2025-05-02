@@ -26,6 +26,9 @@
   <router-link to="/admin/oprema" class="nav-veza" active-class="aktivna">
     Oprema
   </router-link>
+  <router-link to="/admin/cjenovnik" class="nav-veza" active-class="aktivna">
+            Cjenovnik
+          </router-link>
 </div>
       </nav>
       

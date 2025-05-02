@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
 import LoginPage from '../components/LoginPage.vue';
 import Dashboard from '../korisnik/Dashboard.vue';
 import AdminDashboard from '../components/ADashboard.vue';
 import PrihodiView from '../components/APrihodiView.vue';
-import OpremaView from '../components/AOprema.vue'; 
+import OpremaView from '../components/AOprema.vue';
+import CjenovnikView from '../components/ACjenovnik.vue';
 
 const routes = [
   {
@@ -35,9 +37,15 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
-        path: 'oprema', // Nova ruta za opremu
+        path: 'oprema',
         name: 'Oprema',
         component: OpremaView,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'cjenovnik',
+        name: 'Cjenovnik',
+        component: CjenovnikView,
         meta: { requiresAuth: true, requiresAdmin: true }
       }
     ]
@@ -57,7 +65,7 @@ onAuthStateChanged(getAuth(), (user) => {
 router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
-  
+
   if (requiresAuth && !currentUser) {
     next('/login');
   } else if (requiresAdmin && currentUser && currentUser.email !== 'naddinko@gmail.com') {
