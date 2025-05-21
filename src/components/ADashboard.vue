@@ -29,6 +29,9 @@
   <router-link to="/admin/cjenovnik" class="nav-veza" active-class="aktivna">
             Cjenovnik
           </router-link>
+          <router-link to="/admin/korisnici" class="nav-veza" active-class="aktivna">
+            Korisnici
+          </router-link>
 </div>
       </nav>
       

@@ -1,17 +1,20 @@
 import { reactive } from 'vue';
-import { auth } from '../services/firebase'; 
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
+import { auth, db } from '../services/firebase'; // Dodajte db import
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged
 } from 'firebase/auth';
-
+import { 
+  doc, 
+  setDoc, 
+  serverTimestamp 
+} from 'firebase/firestore'; // Dodajte Firestore importe
 
 const googleProvider = new GoogleAuthProvider();
-
 
 const state = reactive({
   currentUser: null,
@@ -21,13 +24,59 @@ const state = reactive({
   error: null
 });
 
-onAuthStateChanged(auth, (user) => {
+// Funkcija za spremanje korisnika u Firestore
+const saveUserToFirestore = async (user) => {
+  if (!user) return;
+  
+  try {
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+      name: user.displayName || user.email.split('@')[0],
+      email: user.email,
+      status: 'online',
+      lastActive: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+      photoURL: user.photoURL || null,
+      createdAt: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.error('Greška pri spremanju korisnika u Firestore:', error);
+  }
+};
+
+// Funkcija za ažuriranje statusa korisnika
+const updateUserStatus = async (userId, status) => {
+  if (!userId) return;
+  
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      status: status,
+      lastActive: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.error('Greška pri ažuriranju statusa korisnika:', error);
+  }
+};
+
+// Dodajemo listener za zatvaranje prozora/taba
+window.addEventListener('beforeunload', () => {
+  if (state.currentUser) {
+    updateUserStatus(state.currentUser.uid, 'offline');
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
   state.loading = false;
   
   if (user) {
     state.currentUser = user;
     state.isLoggedIn = true;
     state.isAdmin = user.email === 'naddinko@gmail.com';
+    
+    // Spremamo korisnika u Firestore i postavljamo status na online
+    await saveUserToFirestore(user);
+    await updateUserStatus(user.uid, 'online');
   } else {
     state.currentUser = null;
     state.isLoggedIn = false;
@@ -40,11 +89,12 @@ const login = async (username, password) => {
   state.error = null;
   
   try {
-    const userEmail = username.includes('@') 
-      ? username 
-      : `${username}@example.com`;  
-    
-    await signInWithEmailAndPassword(auth, userEmail, password); 
+    const userEmail = username.includes('@')
+      ? username
+      : `${username}@example.com`;
+        
+    const userCredential = await signInWithEmailAndPassword(auth, userEmail, password);
+    return userCredential.user;
   } catch (error) {
     state.error = error.message;
     throw error;
@@ -58,7 +108,8 @@ const loginWithGoogle = async () => {
   state.error = null;
   
   try {
-    await signInWithPopup(auth, googleProvider);  
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
   } catch (error) {
     state.error = error.message;
     throw error;
@@ -72,7 +123,8 @@ const signup = async (username, email, password) => {
   state.error = null;
   
   try {
-    await createUserWithEmailAndPassword(auth, email, password);  
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
   } catch (error) {
     state.error = error.message;
     throw error;
@@ -86,7 +138,12 @@ const logout = async () => {
   state.error = null;
   
   try {
-    await signOut(auth); 
+    // Postavimo status na offline prije odjave
+    if (state.currentUser) {
+      await updateUserStatus(state.currentUser.uid, 'offline');
+    }
+    
+    await signOut(auth);
   } catch (error) {
     state.error = error.message;
     throw error;
@@ -106,7 +163,8 @@ const loginAsAdmin = async (email, password) => {
   }
   
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
   } catch (error) {
     state.error = error.message;
     throw error;
@@ -114,6 +172,7 @@ const loginAsAdmin = async (email, password) => {
     state.loading = false;
   }
 };
+
 export function useAuth() {
   return {
     state,
