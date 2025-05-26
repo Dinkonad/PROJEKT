@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { auth, db } from '../services/firebase'; // Dodajte db import
+import { auth, db } from '../services/firebase'; 
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -12,7 +12,7 @@ import {
   doc, 
   setDoc, 
   serverTimestamp 
-} from 'firebase/firestore'; // Dodajte Firestore importe
+} from 'firebase/firestore'; 
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -24,7 +24,6 @@ const state = reactive({
   error: null
 });
 
-// Funkcija za spremanje korisnika u Firestore
 const saveUserToFirestore = async (user) => {
   if (!user) return;
   
@@ -44,7 +43,6 @@ const saveUserToFirestore = async (user) => {
   }
 };
 
-// Funkcija za ažuriranje statusa korisnika
 const updateUserStatus = async (userId, status) => {
   if (!userId) return;
   
@@ -59,7 +57,6 @@ const updateUserStatus = async (userId, status) => {
   }
 };
 
-// Dodajemo listener za zatvaranje prozora/taba
 window.addEventListener('beforeunload', () => {
   if (state.currentUser) {
     updateUserStatus(state.currentUser.uid, 'offline');
@@ -73,8 +70,6 @@ onAuthStateChanged(auth, async (user) => {
     state.currentUser = user;
     state.isLoggedIn = true;
     state.isAdmin = user.email === 'naddinko@gmail.com';
-    
-    // Spremamo korisnika u Firestore i postavljamo status na online
     await saveUserToFirestore(user);
     await updateUserStatus(user.uid, 'online');
   } else {
@@ -138,7 +133,6 @@ const logout = async () => {
   state.error = null;
   
   try {
-    // Postavimo status na offline prije odjave
     if (state.currentUser) {
       await updateUserStatus(state.currentUser.uid, 'offline');
     }

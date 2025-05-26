@@ -30,7 +30,7 @@
             Cjenovnik
           </router-link>
           <router-link to="/admin/korisnici" class="nav-veza" active-class="aktivna">
-            Korisnici
+            Upload
           </router-link>
 </div>
       </nav>

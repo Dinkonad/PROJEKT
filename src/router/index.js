@@ -7,7 +7,7 @@ import AdminDashboard from '../components/ADashboard.vue';
 import PrihodiView from '../components/APrihodiView.vue';
 import OpremaView from '../components/AOprema.vue';
 import CjenovnikView from '../components/ACjenovnik.vue';
-import aUpload from '../components/aUpload.vue'; // Dodajemo uvoz nove komponente
+import aUpload from '../components/aUpload.vue';
 
 const routes = [
   {
@@ -49,7 +49,6 @@ const routes = [
         component: CjenovnikView,
         meta: { requiresAuth: true, requiresAdmin: true }
       },
-      // Dodajemo novu rutu za prikaz korisnika
       {
         path: 'korisnici',
         name: 'Korisnici',
