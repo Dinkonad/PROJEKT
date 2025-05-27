@@ -8,6 +8,7 @@ import PrihodiView from '../components/APrihodiView.vue';
 import OpremaView from '../components/AOprema.vue';
 import CjenovnikView from '../components/ACjenovnik.vue';
 import aUpload from '../components/aUpload.vue';
+import aKalendar from '../components/aKalendar.vue'; // Dodano
 
 const routes = [
   {
@@ -53,6 +54,12 @@ const routes = [
         path: 'korisnici',
         name: 'Korisnici',
         component: aUpload,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'kalendar',
+        name: 'Kalendar',
+        component: aKalendar,
         meta: { requiresAuth: true, requiresAdmin: true }
       }
     ]

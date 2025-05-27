@@ -21,7 +21,6 @@
           <h1>Dobrodošli, {{ userEmail }}</h1>
         </div>
 
-
         <div class="gallery-section">
           <div class="gallery-header">
             <h2>Moje fotografije</h2>
@@ -51,6 +50,11 @@
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
                 </button>
+                <button @click.stop="toggleCommentForm(image.fileName)" class="overlay-comment-btn" title="Dodaj komentar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"></path>
+                  </svg>
+                </button>
               </div>
               
               <div class="image-preview-container" @click="openLightbox(image)">
@@ -62,9 +66,90 @@
                   @error="handleImageError"
                 />
               </div>
-              <div class="image-info">
+              <div class="image-info" :class="{ 'has-content': getImageComments(image).length > 0 || activeCommentForm === image.fileName, 'no-content': getImageComments(image).length === 0 && activeCommentForm !== image.fileName }">
                 <p class="image-name">{{ image.fileName }}</p>
                 <p class="image-date">{{ formatDate(image.uploadedAt) }}</p>
+                
+          
+                <div v-if="getImageComments(image).length > 0" class="comments-section">
+                  <div class="comments-header">
+                    <span class="comments-count">
+                      Komentari ({{ getImageComments(image).length }})
+                    </span>
+                  </div>
+                  
+                  <div class="comments-list">
+                    <div 
+                      v-for="komentar in getImageComments(image)" 
+                      :key="komentar.id"
+                      class="comment-item"
+                    >
+                      <div v-if="editingComment === komentar.id" class="edit-comment-form">
+                        <textarea 
+                          v-model="editCommentText"
+                          class="edit-comment-input"
+                          rows="2"
+                        ></textarea>
+                        <div class="edit-comment-actions">
+                          <button @click="saveEditComment(komentar)" class="save-edit-btn">Spremi</button>
+                          <button @click="cancelEditComment" class="cancel-edit-btn">Otkazi</button>
+                        </div>
+                      </div>
+                      <div v-else>
+                        <div class="comment-header">
+                          <div class="comment-meta">
+                            <span class="comment-author">{{ komentar.authorEmail }}</span>
+                            <span class="comment-date">{{ formatDate(komentar.timestamp) }}</span>
+                            <span v-if="komentar.editedAt" class="comment-edited">(uređeno)</span>
+                          </div>
+                          <div v-if="komentar.authorEmail === userEmail" class="comment-actions">
+                            <button @click="startEditComment(komentar)" class="edit-comment-btn" title="Uredi">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                            </button>
+                            <button @click="deleteComment(komentar.id)" class="delete-comment-btn" title="Obriši">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        <p class="comment-text">{{ komentar.text }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+              
+                <div v-if="activeCommentForm === image.fileName" class="add-comment-form">
+                  <textarea 
+                    :value="newComments[image.fileName] || ''"
+                    @input="updateComment(image.fileName, $event.target.value)"
+                    placeholder="Dodajte komentar..."
+                    class="comment-input"
+                    rows="2"
+                    @keydown.enter.ctrl="addComment(image, $event)"
+                    ref="commentInput"
+                  ></textarea>
+                  <div class="comment-form-actions">
+                    <button 
+                      @click="addComment(image)"
+                      class="add-comment-btn"
+                      :disabled="!newComments[image.fileName] || newComments[image.fileName].trim() === ''"
+                    >
+                      Dodaj
+                    </button>
+                    <button 
+                      @click="cancelComment(image.fileName)"
+                      class="cancel-comment-btn"
+                    >
+                      Otkazi
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -96,21 +181,23 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../store/auth'
 
-
 const router = useRouter()
 const { state: authState, logout: authLogout } = useAuth()
-
 
 const myImages = ref([])
 const selectedImage = ref(null)
 const prikaziProfilMenu = ref(false)
 const downloadingAll = ref(false)
 const downloadProgress = ref(0)
-
+const comments = ref([])
+const newComments = ref({})
+const activeCommentForm = ref(null) 
+const editingComment = ref(null) 
+const editCommentText = ref('') 
 
 const userEmail = computed(() => {
   return authState.currentUser?.email || 'Nepoznat korisnik'
@@ -128,6 +215,106 @@ const korisnikInicijali = computed(() => {
   return userEmail.value.charAt(0).toUpperCase()
 })
 
+const getImageComments = (image) => {
+  return comments.value.filter(comment => comment.imageFileName === image.fileName)
+}
+
+const updateComment = (fileName, value) => {
+  newComments.value[fileName] = value
+}
+
+const toggleCommentForm = async (fileName) => {
+  if (activeCommentForm.value === fileName) {
+
+    activeCommentForm.value = null
+  } else {
+    activeCommentForm.value = fileName
+    await nextTick()
+    const textarea = document.querySelector('.comment-input')
+    if (textarea) {
+      textarea.focus()
+    }
+  }
+}
+
+const cancelComment = (fileName) => {
+  activeCommentForm.value = null
+  newComments.value[fileName] = ''
+}
+
+const startEditComment = (comment) => {
+  editingComment.value = comment.id
+  editCommentText.value = comment.text
+}
+
+const cancelEditComment = () => {
+  editingComment.value = null
+  editCommentText.value = ''
+}
+
+const saveEditComment = (comment) => {
+  if (!editCommentText.value || editCommentText.value.trim() === '') return
+  
+  comment.text = editCommentText.value.trim()
+  comment.editedAt = new Date()
+  saveComments()
+  editingComment.value = null
+  editCommentText.value = ''
+}
+
+const deleteComment = (commentId) => {
+  const index = comments.value.findIndex(c => c.id === commentId)
+  if (index > -1) {
+    comments.value.splice(index, 1)
+    saveComments()
+  }
+}
+
+const addComment = (image, event = null) => {
+  if (event) {
+    event.preventDefault()
+  }
+  
+  const commentText = newComments.value[image.fileName]
+  if (!commentText || commentText.trim() === '') return
+  
+  const newComment = {
+    id: Date.now() + Math.random(),
+    imageFileName: image.fileName,
+    text: commentText.trim(),
+    authorEmail: userEmail.value,
+    timestamp: new Date(),
+    imageOwnerEmail: image.userEmail
+  }
+  
+  comments.value.push(newComment)
+  saveComments()
+  newComments.value[image.fileName] = ''
+  activeCommentForm.value = null 
+}
+
+const loadComments = () => {
+  try {
+    const savedComments = localStorage.getItem('image_comments')
+    if (savedComments) {
+      comments.value = JSON.parse(savedComments).map(comment => ({
+        ...comment,
+        timestamp: new Date(comment.timestamp)
+      }))
+    }
+  } catch (error) {
+    console.error('Greška pri učitavanju komentara:', error)
+    comments.value = []
+  }
+}
+
+const saveComments = () => {
+  try {
+    localStorage.setItem('image_comments', JSON.stringify(comments.value))
+  } catch (error) {
+    console.error('Greška pri spremanju komentara:', error)
+  }
+}
 
 const odjava = async () => {
   try {
@@ -388,6 +575,10 @@ const loadImages = () => {
 
 onMounted(() => {
   loadImages()
+  loadComments()
+
+  newComments.value = {}
+  
   document.addEventListener('click', handleClickOutside)
 })
 
@@ -405,7 +596,6 @@ onBeforeUnmount(() => {
   background-color: #F1EFEC;
   font-family: 'Roboto', sans-serif;
 }
-
 
 .gornja-traka {
   height: 60px;
@@ -595,7 +785,7 @@ onBeforeUnmount(() => {
 
 .images-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 25px;
   margin-top: 30px;
 }
@@ -623,13 +813,16 @@ onBeforeUnmount(() => {
   z-index: 2;
   opacity: 0;
   transition: opacity 0.2s ease;
+  display: flex;
+  gap: 8px;
 }
 
 .image-card:hover .image-overlay {
   opacity: 1;
 }
 
-.overlay-download-btn {
+.overlay-download-btn,
+.overlay-comment-btn {
   background-color: rgba(18, 52, 88, 0.9);
   color: white;
   border: none;
@@ -644,8 +837,17 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(10px);
 }
 
+.overlay-comment-btn {
+  background-color: rgba(0, 123, 255, 0.9);
+}
+
 .overlay-download-btn:hover {
   background-color: rgba(18, 52, 88, 1);
+  transform: scale(1.1);
+}
+
+.overlay-comment-btn:hover {
+  background-color: rgba(0, 123, 255, 1);
   transform: scale(1.1);
 }
 
@@ -666,8 +868,19 @@ onBeforeUnmount(() => {
 
 .image-info {
   padding: 18px;
-  background-color: #F1EFEC;
+  background-color: #ffffff;
   border-top: 1px solid #123458;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.image-info.has-content {
+  min-height: 140px;
+}
+
+.image-info.no-content {
+  min-height: auto;
 }
 
 .image-name {
@@ -683,8 +896,240 @@ onBeforeUnmount(() => {
 .image-date {
   font-size: 0.85rem;
   color: #123458;
-  margin: 0 0 6px 0;
+  margin: 0;
   font-weight: 500;
+}
+
+.image-info-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.comments-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #D4C9BE;
+}
+
+.comments-header {
+  margin-bottom: 10px;
+}
+
+.comments-count {
+  font-weight: 600;
+  color: #123458;
+  font-size: 0.9rem;
+}
+
+.comments-list {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.comment-item {
+  background-color: white;
+  border: 1px solid #D4C9BE;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.comment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.comment-item:hover .comment-actions {
+  opacity: 1;
+}
+
+.edit-comment-btn,
+.delete-comment-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.edit-comment-btn:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.delete-comment-btn:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.comment-edited {
+  font-size: 0.65rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.edit-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-comment-input {
+  border: 1px solid #D4C9BE;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.8rem;
+  resize: vertical;
+  min-height: 40px;
+  font-family: inherit;
+}
+
+.edit-comment-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.edit-comment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-edit-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-edit-btn:hover {
+  background-color: #0056b3;
+}
+
+.cancel-edit-btn {
+  background-color: transparent;
+  color: #6c757d;
+  border: 1px solid #D4C9BE;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-edit-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #6c757d;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #123458;
+  font-size: 0.8rem;
+}
+
+.comment-date {
+  font-size: 0.7rem;
+  color: #6c757d;
+}
+
+.comment-text {
+  margin: 0;
+  color: #333;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.add-comment-form {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #D4C9BE;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+.comment-input {
+  border: 1px solid #D4C9BE;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+  resize: vertical;
+  min-height: 50px;
+  font-family: inherit;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: #123458;
+  box-shadow: 0 0 0 2px rgba(18, 52, 88, 0.1);
+}
+
+.comment-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.add-comment-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-comment-btn:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.add-comment-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.cancel-comment-btn {
+  background-color: transparent;
+  color: #6c757d;
+  border: 1px solid #D4C9BE;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-comment-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #6c757d;
 }
 
 .empty-state {
@@ -757,12 +1202,13 @@ onBeforeUnmount(() => {
 
 .lightbox-image {
   max-width: 100%;
-  max-height: 75vh;
+  max-height: 80vh;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  margin-bottom: 20px;
 }
+
+
 
 .download-notification {
   position: fixed;
@@ -826,7 +1272,7 @@ onBeforeUnmount(() => {
   }
   
   .images-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
   }
   
@@ -855,11 +1301,30 @@ onBeforeUnmount(() => {
   .btn-download-all {
     width: 100%;
   }
+
+  .lightbox-image {
+    max-height: 70vh;
+  }
+
+  .image-overlay {
+    position: static;
+    opacity: 1;
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+    gap: 15px;
+  }
+
+  .overlay-download-btn,
+  .overlay-comment-btn {
+    position: static;
+    transform: none !important;
+  }
 }
 
 @media (max-width: 480px) {
   .images-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 15px;
   }
   
@@ -876,5 +1341,17 @@ onBeforeUnmount(() => {
     right: 20px;
     min-width: auto;
   }
-}
-</style>
+
+  .lightbox-image {
+    max-height: 60vh;
+  }
+
+  .comment-actions {
+    flex-direction: column;
+  }
+
+  .add-comment-btn,
+  .cancel-comment-btn {
+    width: 100%;
+  }
+} </style> 

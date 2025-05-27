@@ -13,7 +13,7 @@
               :key="medij.id || index" 
               class="medij-item"
             >
-              
+              <!-- Delete button overlay -->
               <div class="delete-overlay">
                 <button @click.stop="potvrdiZaBrisanje(medij)" class="overlay-delete-btn" title="Obriši sliku">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -91,6 +91,14 @@
             :class="{ 'active': prikaziSamoOdabranog }"
           >
             {{ prikaziSamoOdabranog ? 'Prikaži sve' : 'Prikaži samo odabranog' }}
+          </button>
+          <button 
+            class="btn-delete-all" 
+            @click="potvrdiZaBrisanjeSvihKorisnika"
+            :disabled="!odabraniEmail || filteredMediji.length === 0"
+            v-if="prikaziSamoOdabranog && odabraniEmail"
+          >
+            Obriši sve od {{ odabraniEmail }}
           </button>
         </div>
         
@@ -183,14 +191,10 @@
         <div v-if="statusPoruka" class="status-poruka" :class="{ 'success': !jeLiGreska, 'error': jeLiGreska }">
           {{ statusPoruka }}
         </div>
-
-        <button class="btn-osvjezi" @click="refreshImages">
-          Osvježi prikaz
-        </button>
       </div>
     </div>
     
-    
+    <!-- Lightbox -->
     <div class="lightbox" v-if="aktivniMedij" @click="zatvoriLightbox">
       <div class="lightbox-content" @click.stop>
         <button class="lightbox-close" @click="zatvoriLightbox">✕</button>
@@ -201,7 +205,7 @@
       </div>
     </div>
     
-    
+    <!-- Modal za brisanje -->
     <div class="modal-backdrop" v-if="zaBrisanjeMedij" @click="zaBrisanjeMedij = null">
       <div class="modal-potvrda" @click.stop>
         <h4>Potvrda brisanja</h4>
@@ -209,8 +213,24 @@
         <p class="file-to-delete">{{ zaBrisanjeMedij ? zaBrisanjeMedij.fileName : '' }}</p>
         <div class="modal-actions">
           <button class="btn-odustani" @click="zaBrisanjeMedij = null">Odustani</button>
-          <button class="btn-potvrdi" @click="obrisiMedij" :disabled="brisanjeUTijeku">
+          <button class="btn-potvrdi" @click="obrisiPojedinacnuDatoteku" :disabled="brisanjeUTijeku">
             {{ brisanjeUTijeku ? 'Brišem...' : 'Obriši' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal za brisanje svih slika korisnika -->
+    <div class="modal-backdrop" v-if="zaBrisanjeSviKorisnik" @click="zaBrisanjeSviKorisnik = null">
+      <div class="modal-potvrda" @click.stop>
+        <h4>Potvrda brisanja svih slika</h4>
+        <p>Jeste li sigurni da želite trajno obrisati SVE slike korisnika?</p>
+        <p class="user-to-delete">{{ zaBrisanjeSviKorisnik }}</p>
+        <p class="files-count">Ukupno {{ filteredMediji.length }} datoteka će biti obrisano!</p>
+        <div class="modal-actions">
+          <button class="btn-odustani" @click="zaBrisanjeSviKorisnik = null">Odustani</button>
+          <button class="btn-potvrdi" @click="obrisiSveKorisnika" :disabled="brisanjeUTijeku">
+            {{ brisanjeUTijeku ? 'Brišem...' : 'Obriši sve' }}
           </button>
         </div>
       </div>
@@ -235,6 +255,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 
+// Refs
 const korisnici = ref([]);
 const odabraniEmail = ref(localStorage.getItem('odabraniKorisnik') || null);
 const prikaziDropdown = ref(false);
@@ -245,10 +266,9 @@ const jeLiGreska = ref(false);
 const uploadaniMediji = ref([]);
 const aktivniMedij = ref(null);
 const zaBrisanjeMedij = ref(null);
+const zaBrisanjeSviKorisnik = ref(null);
 const brisanjeUTijeku = ref(false);
 const prikaziSamoOdabranog = ref(localStorage.getItem('prikaziSamoOdabranog') === 'true');
-
-
 const odabraneDatoteke = ref([]);
 const isDragOver = ref(false);
 const trenutniUpload = ref(0);
@@ -257,7 +277,7 @@ const ukupniProgress = ref(0);
 let unsubscribe = null;
 let unsubscribeUploads = null;
 
-
+// Computed properties
 const filteredMediji = computed(() => {
   if (!prikaziSamoOdabranog.value || !odabraniEmail.value) {
     return uploadaniMediji.value;
@@ -271,6 +291,8 @@ const filteredMediji = computed(() => {
 const ukupnaVelicina = computed(() => {
   return odabraneDatoteke.value.reduce((total, datoteka) => total + datoteka.file.size, 0);
 });
+
+// Drag & Drop handlers
 const handleDragOver = (event) => {
   event.preventDefault();
   isDragOver.value = true;
@@ -288,7 +310,6 @@ const handleDrop = async (event) => {
   const items = event.dataTransfer.items;
   const files = [];
   
-  
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     
@@ -297,11 +318,9 @@ const handleDrop = async (event) => {
       
       if (entry) {
         if (entry.isDirectory) {
-          
           const folderFiles = await readFolderRecursively(entry);
           files.push(...folderFiles);
         } else if (entry.isFile) {
-        
           const file = item.getAsFile();
           if (isValidFile(file)) {
             files.push(file);
@@ -398,7 +417,6 @@ const pokreniUpload = () => {
 };
 
 const ukloniSveDatoteke = () => {
-  
   odabraneDatoteke.value.forEach(datoteka => {
     if (datoteka.previewUrl) {
       URL.revokeObjectURL(datoteka.previewUrl);
@@ -408,7 +426,6 @@ const ukloniSveDatoteke = () => {
   odabraneDatoteke.value = [];
   resetirajStatus();
 };
-
 
 const uploadSveDatoteke = async () => {
   if (odabraneDatoteke.value.length === 0 || !odabraniEmail.value) {
@@ -433,20 +450,15 @@ const uploadSveDatoteke = async () => {
       try {
         await uploadPojedinacnuDatoteku(datoteka);
         ukupniProgress.value = ((i + 1) / ukupnoDatoteka) * 100;
-        
-      
         await new Promise(resolve => setTimeout(resolve, 500));
-        
       } catch (error) {
         console.error(`Greška pri uploadu datoteke ${datoteka.file.name}:`, error);
-        
       }
     }
     
     statusPoruka.value = `Uspješno uploadano ${ukupnoDatoteka} datoteka!`;
     jeLiGreska.value = false;
     
-
     setTimeout(() => {
       ukloniSveDatoteke();
     }, 2000);
@@ -472,7 +484,6 @@ const uploadPojedinacnuDatoteku = async (datoteka) => {
   const datotekaNaziv = `${datumVrijeme}_${file.name.replace(/\s+/g, '_')}`;
   const putanja = `${korisnikDio}/${datotekaNaziv}`;
   
-  
   const { data, error } = await supabase.storage
     .from(tipBucketDio)
     .upload(putanja, file, {
@@ -484,7 +495,6 @@ const uploadPojedinacnuDatoteku = async (datoteka) => {
   if (error) {
     throw error;
   }
-  
   
   const { data: urlData } = supabase.storage
     .from(tipBucketDio)
@@ -509,12 +519,12 @@ const uploadPojedinacnuDatoteku = async (datoteka) => {
     fileCategory: tip
   };
   
-  
   uploadaniMediji.value = [noviMedij, ...uploadaniMediji.value];
 
   const trajna_medij_lista = JSON.parse(localStorage.getItem('uploadani_mediji') || '[]');
   trajna_medij_lista.unshift(noviMedij);  
   localStorage.setItem('uploadani_mediji', JSON.stringify(trajna_medij_lista));
+
   try {
     const docRef = await addDoc(collection(db, 'uploads'), {
       fileName: file.name,
@@ -538,6 +548,7 @@ const uploadPojedinacnuDatoteku = async (datoteka) => {
   }
 };
 
+// Filter and dropdown functions
 const toggleFilter = () => {
   prikaziSamoOdabranog.value = !prikaziSamoOdabranog.value;
   localStorage.setItem('prikaziSamoOdabranog', prikaziSamoOdabranog.value.toString());
@@ -553,6 +564,7 @@ const odaberiEmail = (email) => {
   prikaziDropdown.value = false;
 };
 
+// Helper functions
 const formatirajVelicinuDatoteke = (bytes) => {
   if (!bytes) return '0 Bytes';
   
@@ -606,6 +618,7 @@ const onVideoError = (event) => {
   parent.replaceChild(errorMessage, event.target);
 };
 
+// Lightbox functions
 const otvoriLightbox = (medij) => {
   aktivniMedij.value = medij;
   document.body.style.overflow = 'hidden'; 
@@ -616,11 +629,18 @@ const zatvoriLightbox = () => {
   document.body.style.overflow = 'auto'; 
 };
 
+// Delete functions
 const potvrdiZaBrisanje = (medij) => {
   zaBrisanjeMedij.value = medij;
 };
 
-const obrisiMedij = async () => {
+const potvrdiZaBrisanjeSvihKorisnika = () => {
+  if (odabraniEmail.value && filteredMediji.value.length > 0) {
+    zaBrisanjeSviKorisnik.value = odabraniEmail.value;
+  }
+};
+
+const obrisiPojedinacnuDatoteku = async () => {
   if (!zaBrisanjeMedij.value || brisanjeUTijeku.value) return;
   
   try {
@@ -637,10 +657,7 @@ const obrisiMedij = async () => {
         
       if (error) {
         console.error('Greška pri brisanju iz Supabase:', error);
-        throw error;
       }
-      
-      console.log('Datoteka uspješno obrisana iz Supabase storage');
     } catch (storageError) {
       console.error('Neuspjelo brisanje iz Supabase storage:', storageError);
     }
@@ -648,7 +665,6 @@ const obrisiMedij = async () => {
     if (medij.id && !medij.id.startsWith('temp_')) {
       try {
         await deleteDoc(doc(db, 'uploads', medij.id));
-        console.log('Zapis uspješno obrisan iz Firestore');
       } catch (firestoreError) {
         console.error('Neuspjelo brisanje iz Firestore:', firestoreError);
       }
@@ -663,7 +679,6 @@ const obrisiMedij = async () => {
     if (index !== -1) {
       lokalni_mediji.splice(index, 1);
       localStorage.setItem('uploadani_mediji', JSON.stringify(lokalni_mediji));
-      console.log('Zapis uspješno obrisan iz localStorage');
     }
     
     const reaktivni_index = uploadaniMediji.value.findIndex(m => 
@@ -694,44 +709,57 @@ const obrisiMedij = async () => {
   }
 };
 
+const obrisiSveKorisnika = async () => {
+  if (!zaBrisanjeSviKorisnik.value || brisanjeUTijeku.value) return;
+  
+  try {
+    brisanjeUTijeku.value = true;
+    const korisnikEmail = zaBrisanjeSviKorisnik.value;
+    const sviMediji = filteredMediji.value;
+    
+    statusPoruka.value = `Brišem ${sviMediji.length} datoteka...`;
+    jeLiGreska.value = false;
+    
+    for (const medij of sviMediji) {
+      try {
+        await supabase.storage
+          .from(medij.bucketName)
+          .remove([medij.filePath]);
+        
+        if (medij.id && !medij.id.startsWith('temp_')) {
+          await deleteDoc(doc(db, 'uploads', medij.id));
+        }
+      } catch (error) {
+        console.error(`Greška pri brisanju ${medij.fileName}:`, error);
+      }
+    }
+    
+    const lokalni_mediji = JSON.parse(localStorage.getItem('uploadani_mediji') || '[]');
+    const filtrirani_mediji = lokalni_mediji.filter(m => m.userEmail !== korisnikEmail);
+    localStorage.setItem('uploadani_mediji', JSON.stringify(filtrirani_mediji));
+    
+    uploadaniMediji.value = uploadaniMediji.value.filter(m => m.userEmail !== korisnikEmail);
+    
+    statusPoruka.value = `Uspješno obrisano ${sviMediji.length} datoteka korisnika ${korisnikEmail}`;
+    jeLiGreska.value = false;
+    zaBrisanjeSviKorisnik.value = null;
+    
+    setTimeout(() => {
+      statusPoruka.value = '';
+    }, 5000);
+    
+  } catch (error) {
+    console.error('Greška pri brisanju svih datoteka:', error);
+    statusPoruka.value = `Greška pri brisanju: ${error.message}`;
+    jeLiGreska.value = true;
+  } finally {
+    brisanjeUTijeku.value = false;
+  }
+};
+
 const resetirajStatus = () => {
   statusPoruka.value = '';
   jeLiGreska.value = false;
-};
-
-const refreshImages = async () => {
-  try {
-    statusPoruka.value = "Osvježavam prikaz...";
-    jeLiGreska.value = false;
-    
-    const uploadsRef = collection(db, 'uploads');
-    const uploadsQuery = query(uploadsRef, orderBy('uploadedAt', 'desc'), limit(50));
-    const snapshot = await getDocs(uploadsQuery);
-    
-    const mediji = [];
-    snapshot.forEach((doc) => {
-      mediji.push({ id: doc.id, ...doc.data() });
-    });
-    
-    localStorage.setItem('uploadani_mediji', JSON.stringify(mediji));
-    uploadaniMediji.value = mediji;
-    
-    statusPoruka.value = `Prikaz osvježen.`;
-    setTimeout(() => {
-      statusPoruka.value = '';
-    }, 3000);
-  } catch (error) {
-    console.error('Greška pri osvježavanju:', error);
-    
-    const lokalni_mediji = JSON.parse(localStorage.getItem('uploadani_mediji') || '[]');
-    if (lokalni_mediji.length > 0) {
-      uploadaniMediji.value = lokalni_mediji;
-      statusPoruka.value = `Koriste se lokalno spremljeni podaci`;
-    } else {
-      statusPoruka.value = `Greška pri osvježavanju: ${error.message}`;
-      jeLiGreska.value = true;
-    }
-  }
 };
 
 // Lifecycle hooks
@@ -796,7 +824,6 @@ onUnmounted(() => {
     unsubscribeUploads();
   }
   
-  // Cleanup preview URLs
   odabraneDatoteke.value.forEach(datoteka => {
     if (datoteka.previewUrl) {
       URL.revokeObjectURL(datoteka.previewUrl);
@@ -888,6 +915,39 @@ onUnmounted(() => {
   border-color: #123458;
 }
 
+.delete-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.medij-item:hover .delete-overlay {
+  opacity: 1;
+}
+
+.overlay-delete-btn {
+  background-color: rgba(229, 57, 53, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.overlay-delete-btn:hover {
+  background-color: rgba(229, 57, 53, 1);
+  transform: scale(1.1);
+}
+
 .medij-preview {
   width: 100%;
   height: 180px;
@@ -955,56 +1015,6 @@ onUnmounted(() => {
 .medij-datum {
   color: #6c757d;
   font-weight: 500;
-}
-
-.delete-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.medij-item:hover .delete-overlay {
-  opacity: 1;
-}
-
-.overlay-delete-btn {
-  background-color: rgba(229, 57, 53, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(10px);
-}
-
-.overlay-delete-btn:hover {
-  background-color: rgba(229, 57, 53, 1);
-  transform: scale(1.1);
-}
-
-.btn-brisi {
-  width: 100%;
-  padding: 6px 12px;
-  background-color: #e53935;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-brisi:hover {
-  background-color: #c62828;
 }
 
 .prazno-stanje {
@@ -1139,12 +1149,15 @@ onUnmounted(() => {
 
 .filter-controls {
   margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .btn-filter {
   width: 100%;
   padding: 8px 12px;
-  background-color: #5D8AA8;
+  background-color: #123458;
   color: white;
   border: none;
   border-radius: 6px;
@@ -1155,12 +1168,35 @@ onUnmounted(() => {
 }
 
 .btn-filter:hover {
-  background-color: #123458;
+  background-color: #1c4c80;
 }
 
 .btn-filter.active {
-  background-color: #123458;
+  background-color: #1c4c80;
   box-shadow: 0 2px 8px rgba(18, 52, 88, 0.3);
+}
+
+.btn-delete-all {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-all:hover:not(:disabled) {
+  background-color: #c62828;
+}
+
+.btn-delete-all:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .upload-zona {
@@ -1431,24 +1467,6 @@ onUnmounted(() => {
   border: 1px solid #E53935;
 }
 
-.btn-osvjezi {
-  width: 100%;
-  background-color: #5D8AA8;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px;
-  margin-top: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.btn-osvjezi:hover {
-  background-color: #123458;
-}
-
 .lightbox {
   position: fixed;
   top: 0;
@@ -1571,6 +1589,26 @@ onUnmounted(() => {
   word-break: break-all;
 }
 
+.user-to-delete {
+  font-weight: 600;
+  color: #123458;
+  background-color: rgba(18, 52, 88, 0.1);
+  padding: 8px;
+  border-radius: 5px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+.files-count {
+  font-weight: 500;
+  color: #e53935;
+  background-color: rgba(229, 57, 53, 0.1);
+  padding: 8px;
+  border-radius: 5px;
+  margin: 15px 0;
+  text-align: center;
+}
+
 .modal-actions {
   display: flex;
   justify-content: space-between;
@@ -1635,66 +1673,5 @@ onUnmounted(() => {
   text-align: center;
   font-weight: 500;
   font-size: 0.8rem;
-}
-
-@media (max-width: 992px) {
-  .glavni-sadrzaj {
-    grid-template-columns: 1fr 280px;
-    gap: 15px;
-  }
-  
-  .datoteke-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-  }
-}
-
-@media (max-width: 768px) {
-  .glavni-sadrzaj {
-    grid-template-columns: 1fr;
-  }
-  
-  .upload-panel {
-    order: -1; 
-  }
-
-  .datoteke-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 15px;
-  }
-}
-
-@media (max-width: 576px) {
-  .datoteke-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 15px;
-  }
-  
-  .medij-preview {
-    height: 140px;
-  }
-  
-  .naslov {
-    font-size: 1.5rem;
-  }
-  
-  .lightbox-media img,
-  .lightbox-media video {
-    max-height: 85vh;
-  }
-  
-  .modal-potvrda {
-    width: 95%;
-    padding: 15px;
-  }
-  
-  .modal-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .btn-odustani, .btn-potvrdi {
-    margin: 0;
-  }
 }
 </style>
