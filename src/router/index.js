@@ -8,7 +8,8 @@ import PrihodiView from '../components/APrihodiView.vue';
 import OpremaView from '../components/AOprema.vue';
 import CjenovnikView from '../components/ACjenovnik.vue';
 import aUpload from '../components/aUpload.vue';
-import aKalendar from '../components/aKalendar.vue'; // Dodano
+import aKalendar from '../components/aKalendar.vue';
+import aKorisnici from '../components/aKorisnici.vue'; // Dodano
 
 const routes = [
   {
@@ -51,8 +52,14 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
-        path: 'korisnici',
-        name: 'Korisnici',
+        path: 'aktivnosti',
+        name: 'Aktivnosti',
+        component: aKorisnici, 
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'upload',
+        name: 'Upload',
         component: aUpload,
         meta: { requiresAuth: true, requiresAdmin: true }
       },
@@ -61,7 +68,13 @@ const routes = [
         name: 'Kalendar',
         component: aKalendar,
         meta: { requiresAuth: true, requiresAdmin: true }
-      }
+      }, 
+    {
+        path: 'upload',
+        name: 'upload',
+        component: aUpload,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
     ]
   }
 ];

@@ -29,22 +29,27 @@
           <router-link to="/admin/cjenovnik" class="nav-veza" active-class="aktivna">
             Cjenovnik
           </router-link>
-          <router-link to="/admin/korisnici" class="nav-veza" active-class="aktivna">
-            Upload
-          </router-link>
           <router-link to="/admin/kalendar" class="nav-veza" active-class="aktivna">
             Kalendar
           </router-link>
+          <router-link to="/admin/upload" class="nav-veza" active-class="aktivna">
+            Upload
+          </router-link>
+          <router-link to="/admin/aktivnosti" class="nav-veza" active-class="aktivna">
+            Aktivnost
+          </router-link>
+          
+
+          
         </div>
       </nav>
       
       <div class="glavni-sadrzaj">
         <div v-if="$route.path === '/admin'" class="dashboard-stranica">
-          
-          <!-- Novi sekcija za nadolazeće događaje -->
+
           <div class="nadolazeci-dogadaji">
             <div class="dogadaji-header">
-              <h2>Nadolazeći događaji (sljedećih 7 dana)</h2>
+              <h2>Nadolazeći događaji </h2>
               <router-link to="/admin/kalendar" class="btn-kalendar">
                 Vidi sve u kalendaru
               </router-link>
@@ -80,8 +85,8 @@
 
             <div v-if="nadolazeciDogadaji.length === 0" class="nema-dogadaja">
               <div class="prazan-sadrzaj">
-                <div class="prazan-ikona">📅</div>
-                <p>Nema nadolazećih događaja u sljedećih 7 dana</p>
+                <div class="prazan-ikona"></div>
+                <p>Nema nadolazećih događaja</p>
               </div>
             </div>
           </div>
@@ -137,7 +142,6 @@
 
             <div v-if="displayedKomentari.length === 0" class="nema-komentara">
               <div class="prazan-sadrzaj">
-                <div class="prazan-ikona">💬</div>
                 <p>{{ sviKomentari.length === 0 ? 'Nema komentara za prikaz' : 'Nema komentara koji odgovaraju filteru' }}</p>
               </div>
             </div>
@@ -156,7 +160,7 @@
         <h3>Potvrda brisanja</h3>
         <p>Jeste li sigurni da želite obrisati ovaj komentar?</p>
         <div class="potvrda-akcije">
-          <button @click="otkaziPotvrdu" class="btn-otkazi">Otkazi</button>
+          <button @click="otkaziPotvrdu" class="btn-otkazi">Otkaži</button>
           <button @click="potvrdiObrisiKomentar" class="btn-potvrdi">Obriši</button>
         </div>
       </div>
@@ -177,8 +181,6 @@ const filterStatus = ref('');
 const prikaziPotvrdu = ref(false);
 const komentarZaBrisanje = ref(null);
 const prikaziSveKomentare = ref(false);
-
-// Novi reactive data za događaje
 const kalendarDogadaji = ref([]);
 
 const korisnikEmail = computed(() => 'naddinko@gmail.com');
@@ -206,7 +208,6 @@ const displayedKomentari = computed(() => {
   return filteredKomentari.value.slice(0, 5);
 });
 
-// Novi computed za nadolazeće događaje
 const nadolazeciDogadaji = computed(() => {
   const danas = new Date();
   const sljedecihSedam = new Date();
@@ -249,7 +250,6 @@ const loadKomentari = () => {
   }
 };
 
-// Nova funkcija za učitavanje događaja
 const loadKalendarDogadaji = () => {
   try {
     const savedEvents = localStorage.getItem('calendar-events');
@@ -317,7 +317,6 @@ const formatDate = (timestamp) => {
   }
 };
 
-// Nove funkcije za formatiranje događaja
 const formatEventDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('hr-HR', {
@@ -340,11 +339,11 @@ const getDaysUntilEvent = (dateString) => {
 
 onMounted(() => {
   loadKomentari();
-  loadKalendarDogadaji(); // Učitaj događaje
+  loadKalendarDogadaji();
   
   setInterval(() => {
     loadKomentari();
-    loadKalendarDogadaji(); // Redovito ažuriraj događaje
+    loadKalendarDogadaji();
   }, 30000);
 });
 </script>

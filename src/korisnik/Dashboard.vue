@@ -156,7 +156,6 @@
           <div v-else class="empty-state">
             <div class="empty-icon">📷</div>
             <p>Nemate uploadanih fotografija</p>
-            <p class="empty-subtitle">Idite na stranicu za upload kako biste dodali nove fotografije</p>
           </div>
         </div>
       </div>
