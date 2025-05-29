@@ -1,58 +1,65 @@
 <template>
-  <div class="korisnici-container">
+  <div class="pregled-korisnika">
     <h2 class="naslov">Pregled korisnika</h2>
     
-    <div class="status-filter">
+    <div class="filteri-status">
       <button 
-        class="filter-button" 
-        :class="{ 'active': odabraniFilter === 'svi' }"
+        class="gumb-filter" 
+        :class="{ 'aktivan': odabraniFilter === 'svi' }"
         @click="odabraniFilter = 'svi'"
       >
         Svi korisnici
       </button>
       <button 
-        class="filter-button" 
-        :class="{ 'active': odabraniFilter === 'online' }"
+        class="gumb-filter" 
+        :class="{ 'aktivan': odabraniFilter === 'online' }"
         @click="odabraniFilter = 'online'"
       >
         Online
       </button>
       <button 
-        class="filter-button" 
-        :class="{ 'active': odabraniFilter === 'offline' }"
+        class="gumb-filter" 
+        :class="{ 'aktivan': odabraniFilter === 'offline' }"
         @click="odabraniFilter = 'offline'"
       >
         Offline
       </button>
     </div>
 
-    <div v-if="ucitavanje" class="ucitavanje">
+    <div v-if="ucitavanje" class="poruka-ucitavanje">
       Učitavanje korisnika...
     </div>
     
-    <div v-else-if="filtriranKorisnici.length === 0" class="nema-korisnika">
+    <div v-else-if="filtrirani.length === 0" class="poruka-prazno">
       Nema pronađenih korisnika
     </div>
     
-    <div v-else class="korisnici-tablica-wrapper">
-      <table class="korisnici-tablica">
+    <div v-else class="tablica-omotac">
+      <table class="tablica-korisnici">
         <thead>
           <tr>
             <th>Status</th>
             <th>Ime</th>
             <th>Email</th>
             <th>Zadnja aktivnost</th>
+            <th>Broj preuzimanja</th>
             <th>Uloga</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="korisnik in filtriranKorisnici" :key="korisnik.id" class="korisnik-red">
+          <tr v-for="korisnik in filtrirani" :key="korisnik.id" class="red-korisnik">
             <td>
-              <div class="status-indikator" :class="{ 'online': korisnik.status === 'online' }"></div>
+              <div class="indikator-status" :class="{ 'online': korisnik.status === 'online' }"></div>
             </td>
             <td>{{ korisnik.name || korisnik.email.split('@')[0] }}</td>
             <td>{{ korisnik.email }}</td>
-            <td>{{ formatLastActive(korisnik.lastActive) }}</td>
+            <td>{{ formatirajZadnjuAktivnost(korisnik.lastActive) }}</td>
+            <td>
+              <div class="statistike-preuzimanja">
+                <span class="broj-preuzimanja">{{ dohvatiBrojPreuzimanja(korisnik.email) }}</span>
+                <span class="oznaka-preuzimanja">preuzimanja</span>
+              </div>
+            </td>
             <td>{{ korisnik.email === 'naddinko@gmail.com' ? 'Admin' : 'Korisnik' }}</td>
           </tr>
         </tbody>
@@ -72,36 +79,52 @@ import {
   orderBy
 } from 'firebase/firestore';
 
-const korisnici = ref([]);
+const listaKorisnika = ref([]);
 const ucitavanje = ref(true);
 const odabraniFilter = ref('svi');
-let unsubscribe = null;
+const statistikePreuzimanja = ref({});
+let prekiniPracenje = null;
 
-// Filtrirani korisnici prema odabranom filteru
-const filtriranKorisnici = computed(() => {
-  if (odabraniFilter.value === 'svi') {
-    return korisnici.value;
-  } else if (odabraniFilter.value === 'online') {
-    return korisnici.value.filter(korisnik => korisnik.status === 'online');
-  } else if (odabraniFilter.value === 'offline') {
-    return korisnici.value.filter(korisnik => korisnik.status === 'offline' || !korisnik.status);
+const ucitajStatistike = () => {
+  try {
+    const spremljeno = localStorage.getItem('download_stats');
+    if (spremljeno) {
+      statistikePreuzimanja.value = JSON.parse(spremljeno);
+    } else {
+      statistikePreuzimanja.value = {};
+    }
+  } catch (greska) {
+    console.error('Greška pri učitavanju statistika preuzimanja:', greska);
+    statistikePreuzimanja.value = {};
   }
-  return korisnici.value;
+};
+const dohvatiBrojPreuzimanja = (emailKorisnika) => {
+  return statistikePreuzimanja.value[emailKorisnika] || 0;
+};
+
+const filtrirani = computed(() => {
+  if (odabraniFilter.value === 'svi') {
+    return listaKorisnika.value;
+  } else if (odabraniFilter.value === 'online') {
+    return listaKorisnika.value.filter(korisnik => korisnik.status === 'online');
+  } else if (odabraniFilter.value === 'offline') {
+    return listaKorisnika.value.filter(korisnik => korisnik.status === 'offline' || !korisnik.status);
+  }
+  return listaKorisnika.value;
 });
 
-// Funkcija za formatiranje vremena zadnje aktivnosti
-const formatLastActive = (timestamp) => {
-  if (!timestamp || !timestamp.toDate) return 'Nepoznato';
+const formatirajZadnjuAktivnost = (vremenskiZig) => {
+  if (!vremenskiZig || !vremenskiZig.toDate) return 'Nepoznato';
   
-  const date = timestamp.toDate();
-  const now = new Date();
-  const diffMinutes = Math.floor((now - date) / (1000 * 60));
+  const datum = vremenskiZig.toDate();
+  const sada = new Date();
+  const razlikaMinute = Math.floor((sada - datum) / (1000 * 60));
   
-  if (diffMinutes < 1) return 'Upravo sada';
-  if (diffMinutes < 60) return `Prije ${diffMinutes} min`;
-  if (diffMinutes < 1440) { // manje od 24 sata
-    const hours = Math.floor(diffMinutes / 60);
-    return `Prije ${hours} ${hours === 1 ? 'sat' : hours < 5 ? 'sata' : 'sati'}`;
+  if (razlikaMinute < 1) return 'Upravo sada';
+  if (razlikaMinute < 60) return `Prije ${razlikaMinute} min`;
+  if (razlikaMinute < 1440) { 
+    const sati = Math.floor(razlikaMinute / 60);
+    return `Prije ${sati} ${sati === 1 ? 'sat' : sati < 5 ? 'sata' : 'sati'}`;
   }
   
   return new Intl.DateTimeFormat('hr', {
@@ -110,38 +133,58 @@ const formatLastActive = (timestamp) => {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  }).format(date);
+  }).format(datum);
+};
+
+const rukujPromjenom = (dogadaj) => {
+  if (dogadaj.key === 'download_stats') {
+    ucitajStatistike();
+  }
 };
 
 onMounted(() => {
-  // Dohvaćamo sve korisnike umjesto samo aktivnih
-  const usersRef = collection(db, 'users');
-  const korisniciQuery = query(usersRef, orderBy('lastActive', 'desc'));
+  ucitajStatistike();
+  
+  window.addEventListener('storage', rukujPromjenom);
+  
+
+  const intervalStatistika = setInterval(() => {
+    ucitajStatistike();
+  }, 2000);
+  
+
+  const referenceKorisnika = collection(db, 'users');
+  const upitKorisnici = query(referenceKorisnika, orderBy('lastActive', 'desc'));
   
   ucitavanje.value = true;
   
-  unsubscribe = onSnapshot(korisniciQuery, (snapshot) => {
-    const korisniciLista = [];
-    snapshot.forEach((doc) => {
-      korisniciLista.push({ id: doc.id, ...doc.data() });
+  prekiniPracenje = onSnapshot(upitKorisnici, (snimka) => {
+    const novaLista = [];
+    snimka.forEach((dokument) => {
+      novaLista.push({ id: dokument.id, ...dokument.data() });
     });
-    korisnici.value = korisniciLista;
+    listaKorisnika.value = novaLista;
     ucitavanje.value = false;
-  }, (error) => {
-    console.error("Greška pri dohvaćanju korisnika:", error);
+  }, (greska) => {
+    console.error("Greška pri dohvaćanju korisnika:", greska);
     ucitavanje.value = false;
+  });
+  
+  onUnmounted(() => {
+    clearInterval(intervalStatistika);
   });
 });
 
 onUnmounted(() => {
-  if (unsubscribe) {
-    unsubscribe();
+  if (prekiniPracenje) {
+    prekiniPracenje();
   }
+  window.removeEventListener('storage', rukujPromjenom);
 });
 </script>
 
 <style scoped>
-.korisnici-container {
+.pregled-korisnika {
   padding: 20px;
   background-color: white;
   border-radius: 8px;
@@ -157,13 +200,13 @@ onUnmounted(() => {
   padding-bottom: 10px;
 }
 
-.status-filter {
+.filteri-status {
   display: flex;
   margin-bottom: 20px;
   gap: 10px;
 }
 
-.filter-button {
+.gumb-filter {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -173,26 +216,26 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-.filter-button:hover {
+.gumb-filter:hover {
   background-color: #e6e6e6;
 }
 
-.filter-button.active {
+.gumb-filter.aktivan {
   background-color: #123458;
   color: white;
 }
 
-.korisnici-tablica-wrapper {
+.tablica-omotac {
   overflow-x: auto;
 }
 
-.korisnici-tablica {
+.tablica-korisnici {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
 
-.korisnici-tablica th {
+.tablica-korisnici th {
   text-align: left;
   padding: 12px 15px;
   background-color: #f8f9fa;
@@ -201,17 +244,17 @@ onUnmounted(() => {
   color: #495057;
 }
 
-.korisnici-tablica td {
+.tablica-korisnici td {
   padding: 12px 15px;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
 }
 
-.korisnik-red:hover {
+.red-korisnik:hover {
   background-color: #f8f9fa;
 }
 
-.status-indikator {
+.indikator-status {
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -219,15 +262,129 @@ onUnmounted(() => {
   display: inline-block;
 }
 
-.status-indikator.online {
+.indikator-status.online {
   background-color: #4CAF50;
   box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
 
-.ucitavanje, .nema-korisnika {
+.statistike-preuzimanja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.broj-preuzimanja {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #123458;
+}
+
+.oznaka-preuzimanja {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.poruka-ucitavanje, 
+.poruka-prazno {
   text-align: center;
   padding: 30px;
   color: #6c757d;
   font-style: italic;
 }
+
+@media (max-width: 768px) {
+  .tablica-omotac {
+    font-size: 0.9rem;
+  }
+  
+  .tablica-korisnici th,
+  .tablica-korisnici td {
+    padding: 8px 10px;
+  }
+  
+  .broj-preuzimanja {
+    font-size: 1rem;
+  }
+  
+  .oznaka-preuzimanja {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tablica-korisnici {
+    font-size: 0.8rem;
+  }
+  
+  .tablica-korisnici th,
+  .tablica-korisnici td {
+    padding: 6px 8px;
+  }
+  
+  .statistike-preuzimanja {
+    gap: 1px;
+  }
+  
+  .broj-preuzimanja {
+    font-size: 0.9rem;
+  }
+  
+  .oznaka-preuzimanja {
+    font-size: 0.65rem;
+  }
+
+  .filteri-status {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gumb-filter {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.red-korisnik {
+  transition: background-color 0.2s ease;
+}
+
+.indikator-status {
+  transition: all 0.3s ease;
+}
+
+.indikator-status.online {
+  animation: pulziraj 2s infinite;
+}
+
+@keyframes pulziraj {
+  0% {
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  }
+}
+
+.broj-preuzimanja {
+  transition: color 0.2s ease;
+}
+
+.red-korisnik:hover .broj-preuzimanja {
+  color: #007bff;
+}
+
+.gumb-filter:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.tablica-korisnici th {
+  user-select: none;
+}
+
 </style>

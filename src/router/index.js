@@ -9,7 +9,7 @@ import OpremaView from '../components/AOprema.vue';
 import CjenovnikView from '../components/ACjenovnik.vue';
 import aUpload from '../components/aUpload.vue';
 import aKalendar from '../components/aKalendar.vue';
-import aKorisnici from '../components/aKorisnici.vue'; // Dodano
+import aKorisnici from '../components/aKorisnici.vue'; 
 
 const routes = [
   {

@@ -1,14 +1,13 @@
 <template>
-  <div class="dashboard-container">
-
+  <div class="nadzorna-ploca">
     <div class="gornja-traka">
       <div class="traka-sadrzaj">
         <div class="profil-padajuci">
-          <div class="profil-ikona" @click="promijeniProfilMenu">
-            {{ korisnikInicijali }}
+          <div class="profil-ikona" @click="toggleProfilMenu">
+            {{ inicijalKorisnika }}
           </div>
-          <div class="profil-izbornik" v-if="prikaziProfilMenu">
-            <div class="korisnik-email">{{ userEmail }}</div>
+          <div class="profil-izbornik" v-if="pokaziProfilMenu">
+            <div class="korisnik-email">{{ emailKorisnika }}</div>
             <div class="izbornik-opcija odjava-opcija" @click="odjava">Odjava</div>
           </div>
         </div>
@@ -16,100 +15,80 @@
     </div>
 
     <div class="glavni-sadrzaj">
-      <div class="content-wrapper">
-        <div class="page-header">
-          <h1>Dobrodošli, {{ userEmail }}</h1>
+      <div class="sadrzaj-omotac">
+        <div class="zaglavlje-stranice">
+          <h1>Dobrodošli, {{ emailKorisnika }}</h1>
         </div>
 
-        <div class="gallery-section">
-          <div class="gallery-header">
+        <div class="galerija-sekcija">
+          <div class="galerija-zaglavlje">
             <h2>Moje fotografije</h2>
-            <div class="gallery-actions">
-              <button @click="downloadAllImages" class="btn-download-all" :disabled="myImages.length === 0 || downloadingAll">
+            <div class="galerija-akcije">
+              <button @click="preuzmiSve" class="gumb-preuzmi-sve" :disabled="slikeKorisnika.length === 0 || preuzimaSeSve">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                {{ downloadingAll ? `Preuzimanje ${downloadProgress}/${myImages.length}` : `Preuzmi sve (${myImages.length})` }}
+                {{ preuzimaSeSve ? `Preuzimanje ${brojPreuzeto}/${slikeKorisnika.length}` : `Preuzmi sve (${slikeKorisnika.length})` }}
               </button>
             </div>
           </div>
-          <div v-if="myImages.length > 0" class="images-grid">
-            <div 
-              v-for="(image, index) in myImages" 
-              :key="index"
-              class="image-card"
-            >
-         
-              <div class="image-overlay">
-                <button @click.stop="downloadImage(image)" class="overlay-download-btn" title="Preuzmi sliku">
+          
+          <div v-if="slikeKorisnika.length > 0" class="slike-mreza">
+            <div v-for="(slika, indeks) in slikeKorisnika" :key="indeks" class="slika-kartica">
+              <div class="slika-prekrivni-sloj">
+                <button @click.stop="preuzmiSliku(slika)" class="prekrivni-gumb-preuzmi" title="Preuzmi sliku">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
                 </button>
-                <button @click.stop="toggleCommentForm(image.fileName)" class="overlay-comment-btn" title="Dodaj komentar">
+                <button @click.stop="toggleKomentarFormu(slika.fileName)" class="prekrivni-gumb-komentar" title="Dodaj komentar">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14"></path>
                   </svg>
                 </button>
               </div>
               
-              <div class="image-preview-container" @click="openLightbox(image)">
-                <img 
-                  v-if="image.publicUrl"
-                  :src="image.publicUrl" 
-                  :alt="image.fileName"
-                  class="image-preview"
-                  @error="handleImageError"
-                />
+              <div class="slika-pregled-kontejner" @click="prikaziSliku(slika)">
+                <img v-if="slika.publicUrl" :src="slika.publicUrl" :alt="slika.fileName" class="slika-pregled" @error="greskaSlike" />
               </div>
-              <div class="image-info" :class="{ 'has-content': getImageComments(image).length > 0 || activeCommentForm === image.fileName, 'no-content': getImageComments(image).length === 0 && activeCommentForm !== image.fileName }">
-                <p class="image-name">{{ image.fileName }}</p>
-                <p class="image-date">{{ formatDate(image.uploadedAt) }}</p>
+              
+              <div class="slika-informacije" :class="{ 'ima-sadrzaj': komentariSlike(slika).length > 0 || otvorenaForma === slika.fileName, 'nema-sadrzaj': komentariSlike(slika).length === 0 && otvorenaForma !== slika.fileName }">
+                <p class="slika-naziv">{{ slika.fileName }}</p>
+                <p class="slika-datum">{{ formatirajDatum(slika.uploadedAt) }}</p>
                 
-          
-                <div v-if="getImageComments(image).length > 0" class="comments-section">
-                  <div class="comments-header">
-                    <span class="comments-count">
-                      Komentari ({{ getImageComments(image).length }})
-                    </span>
+                <div v-if="komentariSlike(slika).length > 0" class="komentari-sekcija">
+                  <div class="komentari-zaglavlje">
+                    <span class="komentari-broj">Komentari ({{ komentariSlike(slika).length }})</span>
                   </div>
                   
-                  <div class="comments-list">
-                    <div 
-                      v-for="komentar in getImageComments(image)" 
-                      :key="komentar.id"
-                      class="comment-item"
-                    >
-                      <div v-if="editingComment === komentar.id" class="edit-comment-form">
-                        <textarea 
-                          v-model="editCommentText"
-                          class="edit-comment-input"
-                          rows="2"
-                        ></textarea>
-                        <div class="edit-comment-actions">
-                          <button @click="saveEditComment(komentar)" class="save-edit-btn">Spremi</button>
-                          <button @click="cancelEditComment" class="cancel-edit-btn">Otkazi</button>
+                  <div class="komentari-lista">
+                    <div v-for="komentar in komentariSlike(slika)" :key="komentar.id" class="komentar-stavka">
+                      <div v-if="uredujemo === komentar.id" class="uredi-komentar-forma">
+                        <textarea v-model="tekstZaUredbu" class="uredi-komentar-unos" rows="2"></textarea>
+                        <div class="uredi-komentar-akcije">
+                          <button @click="spremiUredbu(komentar)" class="spremi-uredbu-gumb">Spremi</button>
+                          <button @click="odustaniUredbu" class="otkazi-uredbu-gumb">Otkazi</button>
                         </div>
                       </div>
                       <div v-else>
-                        <div class="comment-header">
-                          <div class="comment-meta">
-                            <span class="comment-author">{{ komentar.authorEmail }}</span>
-                            <span class="comment-date">{{ formatDate(komentar.timestamp) }}</span>
-                            <span v-if="komentar.editedAt" class="comment-edited">(uređeno)</span>
+                        <div class="komentar-zaglavlje">
+                          <div class="komentar-meta">
+                            <span class="komentar-autor">{{ komentar.authorEmail }}</span>
+                            <span class="komentar-datum">{{ formatirajDatum(komentar.timestamp) }}</span>
+                            <span v-if="komentar.editedAt" class="komentar-uredjen">(uređeno)</span>
                           </div>
-                          <div v-if="komentar.authorEmail === userEmail" class="comment-actions">
-                            <button @click="startEditComment(komentar)" class="edit-comment-btn" title="Uredi">
+                          <div v-if="komentar.authorEmail === emailKorisnika" class="komentar-akcije">
+                            <button @click="pocniUredbu(komentar)" class="uredi-komentar-gumb" title="Uredi">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                               </svg>
                             </button>
-                            <button @click="deleteComment(komentar.id)" class="delete-comment-btn" title="Obriši">
+                            <button @click="ukloniKomentar(komentar.id)" class="ukloni-komentar-gumb" title="Obriši">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -117,63 +96,42 @@
                             </button>
                           </div>
                         </div>
-                        <p class="comment-text">{{ komentar.text }}</p>
+                        <p class="komentar-tekst">{{ komentar.text }}</p>
                       </div>
                     </div>
                   </div>
                 </div>
                 
-              
-                <div v-if="activeCommentForm === image.fileName" class="add-comment-form">
-                  <textarea 
-                    :value="newComments[image.fileName] || ''"
-                    @input="updateComment(image.fileName, $event.target.value)"
-                    placeholder="Dodajte komentar..."
-                    class="comment-input"
-                    rows="2"
-                    @keydown.enter.ctrl="addComment(image, $event)"
-                    ref="commentInput"
-                  ></textarea>
-                  <div class="comment-form-actions">
-                    <button 
-                      @click="addComment(image)"
-                      class="add-comment-btn"
-                      :disabled="!newComments[image.fileName] || newComments[image.fileName].trim() === ''"
-                    >
-                      Dodaj
-                    </button>
-                    <button 
-                      @click="cancelComment(image.fileName)"
-                      class="cancel-comment-btn"
-                    >
-                      Otkazi
-                    </button>
+                <div v-if="otvorenaForma === slika.fileName" class="dodaj-komentar-forma">
+                  <textarea :value="noviKomentari[slika.fileName] || ''" @input="azurirajKomentar(slika.fileName, $event.target.value)" placeholder="Dodajte komentar..." class="komentar-unos" rows="2" @keydown.enter.ctrl="dodajKomentar(slika, $event)" ref="komentarUnos"></textarea>
+                  <div class="komentar-forma-akcije">
+                    <button @click="dodajKomentar(slika)" class="dodaj-komentar-gumb" :disabled="!noviKomentari[slika.fileName] || noviKomentari[slika.fileName].trim() === ''">Dodaj</button>
+                    <button @click="odustaniKomentar(slika.fileName)" class="otkazi-komentar-gumb">Otkazi</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div v-else class="empty-state">
-            <div class="empty-icon">📷</div>
+          
+          <div v-else class="prazno-stanje">
+            <div class="prazno-ikona">📷</div>
             <p>Nemate uploadanih fotografija</p>
           </div>
         </div>
       </div>
     </div>
     
-
-    <div v-if="selectedImage" class="lightbox" @click="closeLightbox">
-      <div class="lightbox-content" @click.stop>
-        <button @click="closeLightbox" class="lightbox-close">✕</button>
-        <img :src="selectedImage.publicUrl" :alt="selectedImage.fileName" class="lightbox-image">
+    <div v-if="trenutnaSlika" class="lightbox" @click="zatvoriPrikaz">
+      <div class="lightbox-sadrzaj" @click.stop>
+        <button @click="zatvoriPrikaz" class="lightbox-zatvori">✕</button>
+        <img :src="trenutnaSlika.publicUrl" :alt="trenutnaSlika.fileName" class="lightbox-slika">
       </div>
     </div>
     
-
-    <div v-if="downloadingAll" class="download-notification">
-      <p>Preuzimanje {{ downloadProgress }}/{{ myImages.length }} slika...</p>
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: (downloadProgress / myImages.length) * 100 + '%' }"></div>
+    <div v-if="preuzimaSeSve" class="obavijest-preuzimanja">
+      <p>Preuzimanje {{ brojPreuzeto }}/{{ slikeKorisnika.length }} slika...</p>
+      <div class="traka-napretka">
+        <div class="ispunjavanje-napretka" :style="{ width: (brojPreuzeto / slikeKorisnika.length) * 100 + '%' }"></div>
       </div>
     </div>
   </div>
@@ -185,202 +143,226 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../store/auth'
 
 const router = useRouter()
-const { state: authState, logout: authLogout } = useAuth()
+const { state: authStanje, logout: authOdjava } = useAuth()
 
-const myImages = ref([])
-const selectedImage = ref(null)
-const prikaziProfilMenu = ref(false)
-const downloadingAll = ref(false)
-const downloadProgress = ref(0)
-const comments = ref([])
-const newComments = ref({})
-const activeCommentForm = ref(null) 
-const editingComment = ref(null) 
-const editCommentText = ref('') 
+const slikeKorisnika = ref([])
+const trenutnaSlika = ref(null)
+const pokaziProfilMenu = ref(false)
+const preuzimaSeSve = ref(false)
+const brojPreuzeto = ref(0)
+const komentari = ref([])
+const noviKomentari = ref({})
+const otvorenaForma = ref(null) 
+const uredujemo = ref(null) 
+const tekstZaUredbu = ref('') 
 
-const userEmail = computed(() => {
-  return authState.currentUser?.email || 'Nepoznat korisnik'
+const emailKorisnika = computed(() => {
+  return authStanje.currentUser?.email || 'Nepoznat korisnik'
 })
 
-const isLoggedIn = computed(() => {
-  return authState.isLoggedIn
+const prijavljen = computed(() => {
+  return authStanje.isLoggedIn
 })
 
-const isLoading = computed(() => {
-  return authState.loading
+const ucitava = computed(() => {
+  return authStanje.loading
 })
 
-const korisnikInicijali = computed(() => {
-  return userEmail.value.charAt(0).toUpperCase()
+const inicijalKorisnika = computed(() => {
+  return emailKorisnika.value.charAt(0).toUpperCase()
 })
 
-const getImageComments = (image) => {
-  return comments.value.filter(comment => comment.imageFileName === image.fileName)
+const komentariSlike = (slika) => {
+  return komentari.value.filter(komentar => komentar.imageFileName === slika.fileName)
 }
 
-const updateComment = (fileName, value) => {
-  newComments.value[fileName] = value
+const zabiljeziPreuzimanje = (email) => {
+  try {
+    const podaci = localStorage.getItem('download_stats');
+    let statistike = {};
+    
+    if (podaci) {
+      statistike = JSON.parse(podaci);
+    }
+    
+    if (statistike[email]) {
+      statistike[email]++;
+    } else {
+      statistike[email] = 1;
+    }
+    
+    localStorage.setItem('download_stats', JSON.stringify(statistike));
+    
+    window.dispatchEvent(new CustomEvent('downloadStatsUpdated', {
+      detail: { userEmail: email, newCount: statistike[email] }
+    }));
+    
+    console.log(`Zabilježeno preuzimanje za ${email}. Ukupno: ${statistike[email]}`);
+    
+  } catch (greska) {
+    console.error('Greška pri praćenju preuzimanja:', greska);
+  }
+};
+
+const azurirajKomentar = (datoteka, vrijednost) => {
+  noviKomentari.value[datoteka] = vrijednost
 }
 
-const toggleCommentForm = async (fileName) => {
-  if (activeCommentForm.value === fileName) {
-
-    activeCommentForm.value = null
+const toggleKomentarFormu = async (datoteka) => {
+  if (otvorenaForma.value === datoteka) {
+    otvorenaForma.value = null
   } else {
-    activeCommentForm.value = fileName
+    otvorenaForma.value = datoteka
     await nextTick()
-    const textarea = document.querySelector('.comment-input')
+    const textarea = document.querySelector('.komentar-unos')
     if (textarea) {
       textarea.focus()
     }
   }
 }
 
-const cancelComment = (fileName) => {
-  activeCommentForm.value = null
-  newComments.value[fileName] = ''
+const odustaniKomentar = (datoteka) => {
+  otvorenaForma.value = null
+  noviKomentari.value[datoteka] = ''
 }
 
-const startEditComment = (comment) => {
-  editingComment.value = comment.id
-  editCommentText.value = comment.text
+const pocniUredbu = (komentar) => {
+  uredujemo.value = komentar.id
+  tekstZaUredbu.value = komentar.text
 }
 
-const cancelEditComment = () => {
-  editingComment.value = null
-  editCommentText.value = ''
+const odustaniUredbu = () => {
+  uredujemo.value = null
+  tekstZaUredbu.value = ''
 }
 
-const saveEditComment = (comment) => {
-  if (!editCommentText.value || editCommentText.value.trim() === '') return
+const spremiUredbu = (komentar) => {
+  if (!tekstZaUredbu.value || tekstZaUredbu.value.trim() === '') return
   
-  comment.text = editCommentText.value.trim()
-  comment.editedAt = new Date()
-  saveComments()
-  editingComment.value = null
-  editCommentText.value = ''
+  komentar.text = tekstZaUredbu.value.trim()
+  komentar.editedAt = new Date()
+  spremiKomentare()
+  uredujemo.value = null
+  tekstZaUredbu.value = ''
 }
 
-const deleteComment = (commentId) => {
-  const index = comments.value.findIndex(c => c.id === commentId)
+const ukloniKomentar = (id) => {
+  const index = komentari.value.findIndex(k => k.id === id)
   if (index > -1) {
-    comments.value.splice(index, 1)
-    saveComments()
+    komentari.value.splice(index, 1)
+    spremiKomentare()
   }
 }
 
-const addComment = (image, event = null) => {
+const dodajKomentar = (slika, event = null) => {
   if (event) {
     event.preventDefault()
   }
   
-  const commentText = newComments.value[image.fileName]
-  if (!commentText || commentText.trim() === '') return
+  const tekst = noviKomentari.value[slika.fileName]
+  if (!tekst || tekst.trim() === '') return
   
-  const newComment = {
+  const komentar = {
     id: Date.now() + Math.random(),
-    imageFileName: image.fileName,
-    text: commentText.trim(),
-    authorEmail: userEmail.value,
+    imageFileName: slika.fileName,
+    text: tekst.trim(),
+    authorEmail: emailKorisnika.value,
     timestamp: new Date(),
-    imageOwnerEmail: image.userEmail
+    imageOwnerEmail: slika.userEmail
   }
   
-  comments.value.push(newComment)
-  saveComments()
-  newComments.value[image.fileName] = ''
-  activeCommentForm.value = null 
+  komentari.value.push(komentar)
+  spremiKomentare()
+  noviKomentari.value[slika.fileName] = ''
+  otvorenaForma.value = null 
 }
 
-const loadComments = () => {
+const ucitajKomentare = () => {
   try {
-    const savedComments = localStorage.getItem('image_comments')
-    if (savedComments) {
-      comments.value = JSON.parse(savedComments).map(comment => ({
-        ...comment,
-        timestamp: new Date(comment.timestamp)
+    const podaci = localStorage.getItem('image_comments')
+    if (podaci) {
+      komentari.value = JSON.parse(podaci).map(komentar => ({
+        ...komentar,
+        timestamp: new Date(komentar.timestamp)
       }))
     }
-  } catch (error) {
-    console.error('Greška pri učitavanju komentara:', error)
-    comments.value = []
+  } catch (greska) {
+    console.error('Greška pri učitavanju komentara:', greska)
+    komentari.value = []
   }
 }
 
-const saveComments = () => {
+const spremiKomentare = () => {
   try {
-    localStorage.setItem('image_comments', JSON.stringify(comments.value))
-  } catch (error) {
-    console.error('Greška pri spremanju komentara:', error)
+    localStorage.setItem('image_comments', JSON.stringify(komentari.value))
+  } catch (greska) {
+    console.error('Greška pri spremanju komentara:', greska)
   }
 }
 
 const odjava = async () => {
   try {
-    prikaziProfilMenu.value = false
-    await authLogout()
+    pokaziProfilMenu.value = false
+    await authOdjava()
     router.push('/login')
-  } catch (error) {
-    console.error('Greška prilikom odjave:', error)
+  } catch (greska) {
+    console.error('Greška prilikom odjave:', greska)
   }
 }
 
-const promijeniProfilMenu = () => {
-  prikaziProfilMenu.value = !prikaziProfilMenu.value
+const toggleProfilMenu = () => {
+  pokaziProfilMenu.value = !pokaziProfilMenu.value
 }
 
-const handleClickOutside = (event) => {
-  const profilContainer = document.querySelector('.profil-padajuci')
-  if (profilContainer && !profilContainer.contains(event.target)) {
-    prikaziProfilMenu.value = false
+const klikIzvan = (event) => {
+  const profil = document.querySelector('.profil-padajuci')
+  if (profil && !profil.contains(event.target)) {
+    pokaziProfilMenu.value = false
   }
 }
 
-const handleImageError = (event) => {
+const greskaSlike = (event) => {
   console.error('Greška učitavanja slike:', event.target.src)
   event.target.style.display = 'none'
 }
 
-const refreshImages = () => {
-  loadImages()
-}
-
-const openLightbox = (image) => {
-  selectedImage.value = image
+const prikaziSliku = (slika) => {
+  trenutnaSlika.value = slika
   document.body.style.overflow = 'hidden'
 }
 
-const closeLightbox = () => {
-  selectedImage.value = null
+const zatvoriPrikaz = () => {
+  trenutnaSlika.value = null
   document.body.style.overflow = 'auto'
 }
 
-const downloadImage = (image) => {
+const preuzmiSliku = (slika) => {
   try {
-    downloadImageAsBlob(image)
-  } catch (error) {
-    console.error('Greška pri preuzimanju:', error)
-    window.open(image.publicUrl, '_blank')
+    zabiljeziPreuzimanje(emailKorisnika.value);
+    preuzmiKaoBlob(slika)
+  } catch (greska) {
+    console.error('Greška pri preuzimanju:', greska)
+    window.open(slika.publicUrl, '_blank')
   }
 }
 
-const downloadImageAsBlob = async (image) => {
+const preuzmiKaoBlob = async (slika) => {
   try {
-    const response = await fetch(image.publicUrl, {
+    const response = await fetch(slika.publicUrl, {
       mode: 'cors',
       method: 'GET'
     })
     
     if (!response.ok) {
-      throw new Error('Network response was not ok')
+      throw new Error('Mrežni odgovor nije bio u redu')
     }
     
     const blob = await response.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
+    const url = window.URL.createObjectURL(blob)
     
     const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = image.fileName || 'slika.jpg'
+    link.href = url
+    link.download = slika.fileName || 'slika.jpg'
     link.style.display = 'none'
     
     document.body.appendChild(link)
@@ -388,15 +370,15 @@ const downloadImageAsBlob = async (image) => {
     document.body.removeChild(link)
     
     setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl)
+      window.URL.revokeObjectURL(url)
     }, 100)
     
-  } catch (error) {
-    downloadImageViaCanvas(image)
+  } catch (greska) {
+    preuzmiCanvas(slika)
   }
 }
 
-const downloadImageViaCanvas = (image) => {
+const preuzmiCanvas = (slika) => {
   try {
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -415,39 +397,39 @@ const downloadImageViaCanvas = (image) => {
           const url = window.URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
-          link.download = image.fileName || 'slika.jpg'
+          link.download = slika.fileName || 'slika.jpg'
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
           window.URL.revokeObjectURL(url)
         }, 'image/jpeg', 0.95)
         
-      } catch (canvasError) {
-        downloadImageFallback(image)
+      } catch (err) {
+        rezervaPreuzmi(slika)
       }
     }
     
     img.onerror = () => {
-      downloadImageFallback(image)
+      rezervaPreuzmi(slika)
     }
     
-    img.src = image.publicUrl
+    img.src = slika.publicUrl
     
-  } catch (error) {
-    downloadImageFallback(image)
+  } catch (greska) {
+    rezervaPreuzmi(slika)
   }
 }
 
-const downloadImageFallback = (image) => {
+const rezervaPreuzmi = (slika) => {
   const link = document.createElement('a')
-  link.href = image.publicUrl
-  link.download = image.fileName || 'slika.jpg'
+  link.href = slika.publicUrl
+  link.download = slika.fileName || 'slika.jpg'
   link.target = '_blank'
   link.rel = 'noopener noreferrer'
   
-  const url = new URL(image.publicUrl)
+  const url = new URL(slika.publicUrl)
   url.searchParams.append('download', 'true')
-  url.searchParams.append('filename', image.fileName)
+  url.searchParams.append('filename', slika.fileName)
   link.href = url.toString()
   
   document.body.appendChild(link)
@@ -455,53 +437,53 @@ const downloadImageFallback = (image) => {
   document.body.removeChild(link)
 }
 
-const downloadAllImages = async () => {
-  if (myImages.value.length === 0 || downloadingAll.value) {
+const preuzmiSve = async () => {
+  if (slikeKorisnika.value.length === 0 || preuzimaSeSve.value) {
     return
   }
 
-  downloadingAll.value = true
-  downloadProgress.value = 0
+  preuzimaSeSve.value = true
+  brojPreuzeto.value = 0
 
   try {
-    for (let i = 0; i < myImages.value.length; i++) {
-      const image = myImages.value[i]
-      downloadProgress.value = i + 1
+    for (let i = 0; i < slikeKorisnika.value.length; i++) {
+      const slika = slikeKorisnika.value[i]
+      brojPreuzeto.value = i + 1
       
       try {
-        await downloadSingleImageForBatch(image, i)
-      
+        await preuzmiJednu(slika, i)
+        zabiljeziPreuzimanje(emailKorisnika.value);
         await new Promise(resolve => setTimeout(resolve, 800))
-      } catch (error) {
-        console.error(`Greška pri preuzimanju slike ${image.fileName}:`, error)
+      } catch (greska) {
+        console.error(`Greška pri preuzimanju slike ${slika.fileName}:`, greska)
       }
     }
-  } catch (error) {
-    console.error('Greška pri preuzimanju svih slika:', error)
+  } catch (greska) {
+    console.error('Greška pri preuzimanju svih slika:', greska)
   } finally {
-    downloadingAll.value = false
-    downloadProgress.value = 0
+    preuzimaSeSve.value = false
+    brojPreuzeto.value = 0
   }
 }
 
-const downloadSingleImageForBatch = async (image, index) => {
+const preuzmiJednu = async (slika, index) => {
   try {
-    const response = await fetch(image.publicUrl, {
+    const response = await fetch(slika.publicUrl, {
       mode: 'cors',
       method: 'GET'
     })
     
     if (!response.ok) {
-      throw new Error('Network response was not ok')
+      throw new Error('Mrežni odgovor nije bio u redu')
     }
     
     const blob = await response.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
-    const fileName = `${String(index + 1).padStart(3, '0')}_${image.fileName}`
+    const url = window.URL.createObjectURL(blob)
+    const naziv = `${String(index + 1).padStart(3, '0')}_${slika.fileName}`
     
     const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = fileName
+    link.href = url
+    link.download = naziv
     link.style.display = 'none'
     
     document.body.appendChild(link)
@@ -509,86 +491,74 @@ const downloadSingleImageForBatch = async (image, index) => {
     document.body.removeChild(link)
     
     setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl)
+      window.URL.revokeObjectURL(url)
     }, 1000)
     
-  } catch (error) {
-    downloadImageFallback(image)
+  } catch (greska) {
+    rezervaPreuzmi(slika)
   }
 }
 
-const formatDate = (timestamp) => {
-  if (!timestamp) return 'Nepoznat datum'
+const formatirajDatum = (datum) => {
+  if (!datum) return 'Nepoznat datum'
   
   try {
-    const date = timestamp instanceof Date ? timestamp : 
-                timestamp.seconds ? new Date(timestamp.seconds * 1000) : 
-                new Date(timestamp)
+    const d = datum instanceof Date ? datum : 
+                datum.seconds ? new Date(datum.seconds * 1000) : 
+                new Date(datum)
                 
-    return date.toLocaleDateString('hr-HR', {
+    return d.toLocaleDateString('hr-HR', {
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
-  } catch (error) {
+  } catch (greska) {
     return 'Greška datuma'
   }
 }
 
-const formatFileSize = (bytes) => {
-  if (!bytes) return ''
-  
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-const loadImages = () => {
+const ucitajSlike = () => {
   try {
-    if (!userEmail.value || userEmail.value === 'Nepoznat korisnik') {
-      myImages.value = []
+    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
+      slikeKorisnika.value = []
       return
     }
     
-    const localStorageData = localStorage.getItem('uploadani_mediji')
+    const podaci = localStorage.getItem('uploadani_mediji')
     
-    if (localStorageData) {
-      const allImages = JSON.parse(localStorageData)
-      
-      myImages.value = allImages.filter(img => {
-        return img.userEmail === userEmail.value
+    if (podaci) {
+      const sve = JSON.parse(podaci)
+      slikeKorisnika.value = sve.filter(slika => {
+        return slika.userEmail === emailKorisnika.value
       })
     } else {
-      myImages.value = []
+      slikeKorisnika.value = []
     }
     
-  } catch (error) {
-    console.error('Greška pri učitavanju slika:', error)
-    myImages.value = []
+  } catch (greska) {
+    console.error('Greška pri učitavanju slika:', greska)
+    slikeKorisnika.value = []
   }
 }
 
 onMounted(() => {
-  loadImages()
-  loadComments()
-
-  newComments.value = {}
-  
-  document.addEventListener('click', handleClickOutside)
+  ucitajSlike()
+  ucitajKomentare()
+  noviKomentari.value = {}
+  document.addEventListener('click', klikIzvan)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', klikIzvan)
   document.body.style.overflow = 'auto'
 })
 </script>
 
+
 <style scoped>
-.dashboard-container {
+.nadzorna-ploca {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -642,11 +612,11 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  animation: slideDown 0.3s ease;
+  animation: klizanjeDolje 0.3s ease;
   border: 1px solid #D4C9BE;
 }
 
-@keyframes slideDown {
+@keyframes klizanjeDolje {
   from {
     opacity: 0;
     transform: translateY(-10px);
@@ -690,13 +660,13 @@ onBeforeUnmount(() => {
   padding-top: 70px;
 }
 
-.content-wrapper {
+.sadrzaj-omotac {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
 
-.page-header {
+.zaglavlje-stranice {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -708,14 +678,14 @@ onBeforeUnmount(() => {
   border: 1px solid #D4C9BE;
 }
 
-.page-header h1 {
+.zaglavlje-stranice h1 {
   color: #123458;
   margin: 0;
   font-weight: 700;
   font-size: 1.8rem;
 }
 
-.gallery-section {
+.galerija-sekcija {
   background-color: white;
   border-radius: 12px;
   padding: 30px;
@@ -723,14 +693,14 @@ onBeforeUnmount(() => {
   border: 1px solid #D4C9BE;
 }
 
-.gallery-header {
+.galerija-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
 }
 
-.gallery-section h2 {
+.galerija-sekcija h2 {
   color: #123458;
   margin: 0;
   font-weight: 600;
@@ -738,7 +708,7 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.gallery-section h2::after {
+.galerija-sekcija h2::after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -749,12 +719,12 @@ onBeforeUnmount(() => {
   border-radius: 2px;
 }
 
-.gallery-actions {
+.galerija-akcije {
   display: flex;
   align-items: center;
 }
 
-.btn-download-all {
+.gumb-preuzmi-sve {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -771,41 +741,40 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-.btn-download-all:hover:not(:disabled) {
+.gumb-preuzmi-sve:hover:not(:disabled) {
   background-color: #1c4c80;
   transform: translateY(-2px);
 }
 
-.btn-download-all:disabled {
+.gumb-preuzmi-sve:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-.images-grid {
+.slike-mreza {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 25px;
   margin-top: 30px;
 }
 
-.image-card {
+.slika-kartica {
   background-color: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border: 2px solid #123458;
   position: relative;
 }
 
-.image-card:hover {
+.slika-kartica:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 24px rgba(18, 52, 88, 0.15);
   border-color: #123458;
 }
 
-.image-overlay {
+.slika-prekrivni-sloj {
   position: absolute;
   bottom: 10px;
   right: 10px;
@@ -816,12 +785,12 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.image-card:hover .image-overlay {
+.slika-kartica:hover .slika-prekrivni-sloj {
   opacity: 1;
 }
 
-.overlay-download-btn,
-.overlay-comment-btn {
+.prekrivni-gumb-preuzmi,
+.prekrivni-gumb-komentar {
   background-color: rgba(18, 52, 88, 0.9);
   color: white;
   border: none;
@@ -836,36 +805,36 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(10px);
 }
 
-.overlay-comment-btn {
+.prekrivni-gumb-komentar {
   background-color: rgba(0, 123, 255, 0.9);
 }
 
-.overlay-download-btn:hover {
+.prekrivni-gumb-preuzmi:hover {
   background-color: rgba(18, 52, 88, 1);
   transform: scale(1.1);
 }
 
-.overlay-comment-btn:hover {
+.prekrivni-gumb-komentar:hover {
   background-color: rgba(0, 123, 255, 1);
   transform: scale(1.1);
 }
 
-.image-preview-container {
+.slika-pregled-kontejner {
   cursor: pointer;
 }
 
-.image-preview {
+.slika-pregled {
   width: 100%;
   height: 220px;
   object-fit: cover;
   transition: transform 0.5s ease;
 }
 
-.image-card:hover .image-preview {
+.slika-kartica:hover .slika-pregled {
   transform: scale(1.05);
 }
 
-.image-info {
+.slika-informacije {
   padding: 18px;
   background-color: #ffffff;
   border-top: 1px solid #123458;
@@ -874,15 +843,15 @@ onBeforeUnmount(() => {
   justify-content: flex-start;
 }
 
-.image-info.has-content {
+.slika-informacije.ima-sadrzaj {
   min-height: 140px;
 }
 
-.image-info.no-content {
+.slika-informacije.nema-sadrzaj {
   min-height: auto;
 }
 
-.image-name {
+.slika-naziv {
   font-weight: 600;
   color: #123458;
   font-size: 1rem;
@@ -892,43 +861,36 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
-.image-date {
+.slika-datum {
   font-size: 0.85rem;
   color: #123458;
   margin: 0;
   font-weight: 500;
 }
 
-.image-info-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.comments-section {
+.komentari-sekcija {
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #D4C9BE;
 }
 
-.comments-header {
+.komentari-zaglavlje {
   margin-bottom: 10px;
 }
 
-.comments-count {
+.komentari-broj {
   font-weight: 600;
   color: #123458;
   font-size: 0.9rem;
 }
 
-.comments-list {
+.komentari-lista {
   max-height: 150px;
   overflow-y: auto;
   margin-bottom: 15px;
 }
 
-.comment-item {
+.komentar-stavka {
   background-color: white;
   border: 1px solid #D4C9BE;
   border-radius: 6px;
@@ -936,32 +898,32 @@ onBeforeUnmount(() => {
   margin-bottom: 8px;
 }
 
-.comment-header {
+.komentar-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 5px;
 }
 
-.comment-meta {
+.komentar-meta {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.comment-actions {
+.komentar-akcije {
   display: flex;
   gap: 5px;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.comment-item:hover .comment-actions {
+.komentar-stavka:hover .komentar-akcije {
   opacity: 1;
 }
 
-.edit-comment-btn,
-.delete-comment-btn {
+.uredi-komentar-gumb,
+.ukloni-komentar-gumb {
   background: none;
   border: none;
   cursor: pointer;
@@ -971,29 +933,29 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 
-.edit-comment-btn:hover {
+.uredi-komentar-gumb:hover {
   background-color: #007bff;
   color: white;
 }
 
-.delete-comment-btn:hover {
+.ukloni-komentar-gumb:hover {
   background-color: #dc3545;
   color: white;
 }
 
-.comment-edited {
+.komentar-uredjen {
   font-size: 0.65rem;
   color: #6c757d;
   font-style: italic;
 }
 
-.edit-comment-form {
+.uredi-komentar-forma {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.edit-comment-input {
+.uredi-komentar-unos {
   border: 1px solid #D4C9BE;
   border-radius: 6px;
   padding: 8px;
@@ -1003,18 +965,18 @@ onBeforeUnmount(() => {
   font-family: inherit;
 }
 
-.edit-comment-input:focus {
+.uredi-komentar-unos:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
-.edit-comment-actions {
+.uredi-komentar-akcije {
   display: flex;
   gap: 8px;
 }
 
-.save-edit-btn {
+.spremi-uredbu-gumb {
   background-color: #007bff;
   color: white;
   border: none;
@@ -1025,11 +987,11 @@ onBeforeUnmount(() => {
   transition: background-color 0.2s;
 }
 
-.save-edit-btn:hover {
+.spremi-uredbu-gumb:hover {
   background-color: #0056b3;
 }
 
-.cancel-edit-btn {
+.otkazi-uredbu-gumb {
   background-color: transparent;
   color: #6c757d;
   border: 1px solid #D4C9BE;
@@ -1040,40 +1002,40 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 
-.cancel-edit-btn:hover {
+.otkazi-uredbu-gumb:hover {
   background-color: #f8f9fa;
   border-color: #6c757d;
 }
 
-.comment-author {
+.komentar-autor {
   font-weight: 600;
   color: #123458;
   font-size: 0.8rem;
 }
 
-.comment-date {
+.komentar-datum {
   font-size: 0.7rem;
   color: #6c757d;
 }
 
-.comment-text {
+.komentar-tekst {
   margin: 0;
   color: #333;
   font-size: 0.85rem;
   line-height: 1.3;
 }
 
-.add-comment-form {
+.dodaj-komentar-forma {
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #D4C9BE;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  animation: slideDown 0.3s ease;
+  animation: klizanjeDolje 0.3s ease;
 }
 
-.comment-input {
+.komentar-unos {
   border: 1px solid #D4C9BE;
   border-radius: 6px;
   padding: 10px;
@@ -1083,19 +1045,19 @@ onBeforeUnmount(() => {
   font-family: inherit;
 }
 
-.comment-input:focus {
+.komentar-unos:focus {
   outline: none;
   border-color: #123458;
   box-shadow: 0 0 0 2px rgba(18, 52, 88, 0.1);
 }
 
-.comment-form-actions {
+.komentar-forma-akcije {
   display: flex;
   gap: 10px;
   margin-top: 8px;
 }
 
-.add-comment-btn {
+.dodaj-komentar-gumb {
   background-color: #007bff;
   color: white;
   border: none;
@@ -1106,16 +1068,16 @@ onBeforeUnmount(() => {
   transition: background-color 0.2s;
 }
 
-.add-comment-btn:hover:not(:disabled) {
+.dodaj-komentar-gumb:hover:not(:disabled) {
   background-color: #0056b3;
 }
 
-.add-comment-btn:disabled {
+.dodaj-komentar-gumb:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
 }
 
-.cancel-comment-btn {
+.otkazi-komentar-gumb {
   background-color: transparent;
   color: #6c757d;
   border: 1px solid #D4C9BE;
@@ -1126,34 +1088,27 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 
-.cancel-comment-btn:hover {
+.otkazi-komentar-gumb:hover {
   background-color: #f8f9fa;
   border-color: #6c757d;
 }
 
-.empty-state {
+.prazno-stanje {
   text-align: center;
   padding: 80px 20px;
   color: #123458;
 }
 
-.empty-icon {
+.prazno-ikona {
   font-size: 4rem;
   margin-bottom: 20px;
   opacity: 0.6;
 }
 
-.empty-state p {
+.prazno-stanje p {
   margin: 15px 0;
   font-size: 1.2rem;
   font-weight: 500;
-}
-
-.empty-subtitle {
-  color: #6c757d !important;
-  font-size: 1rem !important;
-  font-weight: 400 !important;
-  margin-top: 20px !important;
 }
 
 .lightbox {
@@ -1170,7 +1125,7 @@ onBeforeUnmount(() => {
   padding: 20px;
 }
 
-.lightbox-content {
+.lightbox-sadrzaj {
   position: relative;
   max-width: 90%;
   max-height: 90%;
@@ -1179,7 +1134,7 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-.lightbox-close {
+.lightbox-zatvori {
   position: absolute;
   top: -50px;
   right: 0;
@@ -1195,11 +1150,11 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 
-.lightbox-close:hover {
+.lightbox-zatvori:hover {
   background-color: rgba(255, 255, 255, 0.4);
 }
 
-.lightbox-image {
+.lightbox-slika {
   max-width: 100%;
   max-height: 80vh;
   object-fit: contain;
@@ -1207,9 +1162,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-
-
-.download-notification {
+.obavijest-preuzimanja {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -1219,11 +1172,11 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  animation: slideInUp 0.3s ease;
+  animation: klizanjeGore 0.3s ease;
   min-width: 280px;
 }
 
-@keyframes slideInUp {
+@keyframes klizanjeGore {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -1234,13 +1187,13 @@ onBeforeUnmount(() => {
   }
 }
 
-.download-notification p {
+.obavijest-preuzimanja p {
   margin: 0 0 10px 0;
   font-weight: 500;
   text-align: center;
 }
 
-.progress-bar {
+.traka-napretka {
   width: 100%;
   height: 8px;
   background-color: rgba(255, 255, 255, 0.3);
@@ -1248,64 +1201,49 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.progress-fill {
+.ispunjavanje-napretka {
   height: 100%;
   background-color: white;
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
+
 @media (max-width: 768px) {
-  .content-wrapper {
+  .sadrzaj-omotac {
     padding: 15px;
   }
   
-  .page-header {
+  .zaglavlje-stranice {
     flex-direction: column;
     gap: 15px;
     text-align: center;
   }
   
-  .page-header h1 {
+  .zaglavlje-stranice h1 {
     font-size: 1.5rem;
   }
   
-  .images-grid {
+  .slike-mreza {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
   }
   
-  .gallery-section {
+  .galerija-sekcija {
     padding: 25px;
   }
   
-  .gallery-section h2 {
-    font-size: 1.3rem;
-  }
-  
-  .gornja-traka {
-    height: 55px;
-  }
-  
-  .glavni-sadrzaj {
-    padding-top: 65px;
-  }
-
-  .gallery-header {
+  .galerija-zaglavlje {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
 
-  .btn-download-all {
+  .gumb-preuzmi-sve {
     width: 100%;
   }
 
-  .lightbox-image {
-    max-height: 70vh;
-  }
-
-  .image-overlay {
+  .slika-prekrivni-sloj {
     position: static;
     opacity: 1;
     display: flex;
@@ -1313,44 +1251,146 @@ onBeforeUnmount(() => {
     margin: 10px 0;
     gap: 15px;
   }
-
-  .overlay-download-btn,
-  .overlay-comment-btn {
-    position: static;
-    transform: none !important;
-  }
 }
 
 @media (max-width: 480px) {
-  .images-grid {
+  .nadzorna-ploca {
+    font-size: 14px;
+  }
+
+  .sadrzaj-omotac {
+    padding: 10px;
+  }
+
+  .zaglavlje-stranice {
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+
+  .zaglavlje-stranice h1 {
+    font-size: 1.3rem;
+  }
+
+  .galerija-sekcija {
+    padding: 20px 15px;
+  }
+
+  .slike-mreza {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 15px;
+    margin-top: 20px;
   }
   
-  .image-preview {
+  .slika-pregled {
     height: 150px;
   }
-  
+
+  .profil-ikona {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
   .profil-izbornik {
     width: 180px;
+    font-size: 0.85rem;
   }
 
-  .download-notification {
-    left: 20px;
-    right: 20px;
-    min-width: auto;
-  }
-
-  .lightbox-image {
-    max-height: 60vh;
-  }
-
-  .comment-actions {
+  .komentar-forma-akcije {
     flex-direction: column;
+    gap: 8px;
   }
 
-  .add-comment-btn,
-  .cancel-comment-btn {
+  .dodaj-komentar-gumb,
+  .otkazi-komentar-gumb {
     width: 100%;
+    text-align: center;
   }
-} </style> 
+}
+
+.komentari-lista::-webkit-scrollbar {
+  width: 4px;
+}
+
+.komentari-lista::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.komentari-lista::-webkit-scrollbar-thumb {
+  background: #123458;
+  border-radius: 2px;
+}
+
+.komentari-lista::-webkit-scrollbar-thumb:hover {
+  background: #1c4c80;
+}
+
+.prekrivni-gumb-preuzmi:focus,
+.prekrivni-gumb-komentar:focus,
+.profil-ikona:focus,
+.lightbox-zatvori:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.dodaj-komentar-gumb:focus,
+.otkazi-komentar-gumb:focus,
+.spremi-uredbu-gumb:focus,
+.otkazi-uredbu-gumb:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 1px;
+}
+
+@media print {
+  .gornja-traka,
+  .obavijest-preuzimanja,
+  .lightbox,
+  .slika-prekrivni-sloj,
+  .komentar-forma-akcije {
+    display: none !important;
+  }
+
+  .nadzorna-ploca {
+    height: auto;
+  }
+
+  .glavni-sadrzaj {
+    padding-top: 0;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .slika-kartica {
+    border-width: 3px;
+    border-color: #000;
+  }
+
+  .prekrivni-gumb-preuzmi,
+  .prekrivni-gumb-komentar {
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 2px solid #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slika-kartica,
+  .slika-pregled,
+  .prekrivni-gumb-preuzmi,
+  .prekrivni-gumb-komentar,
+  .gumb-preuzmi-sve,
+  .profil-ikona,
+  .ispunjavanje-napretka {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .slika-kartica:hover {
+    transform: none !important;
+  }
+
+  .slika-kartica:hover .slika-pregled {
+    transform: none !important;
+  }
+}
+</style>
