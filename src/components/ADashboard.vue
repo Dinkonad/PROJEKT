@@ -38,6 +38,9 @@
           <router-link to="/admin/aktivnosti" class="nav-veza" active-class="aktivna">
             Aktivnost
           </router-link>
+          <router-link to="/admin/karte" class="nav-veza" active-class="aktivna">
+            Karta
+          </router-link>
           
 
           
@@ -501,7 +504,7 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* Novi stilovi za nadolazeće događaje */
+
 .nadolazeci-dogadaji {
   background-color: white;
   border-radius: 12px;

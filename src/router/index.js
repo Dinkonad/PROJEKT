@@ -9,7 +9,8 @@ import OpremaView from '../components/AOprema.vue';
 import CjenovnikView from '../components/ACjenovnik.vue';
 import aUpload from '../components/aUpload.vue';
 import aKalendar from '../components/aKalendar.vue';
-import aKorisnici from '../components/aKorisnici.vue'; 
+import aKorisnici from '../components/aKorisnici.vue';
+import aKarte from '../components/aKarte.vue'; // Nova komponenta
 
 const routes = [
   {
@@ -68,13 +69,13 @@ const routes = [
         name: 'Kalendar',
         component: aKalendar,
         meta: { requiresAuth: true, requiresAdmin: true }
-      }, 
-    {
-        path: 'upload',
-        name: 'upload',
-        component: aUpload,
-        meta: { requiresAuth: true, requiresAdmin: true }
       },
+      {
+        path: 'karte',
+        name: 'Karte',
+        component: aKarte,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      }
     ]
   }
 ];

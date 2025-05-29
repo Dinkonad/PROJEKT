@@ -92,7 +92,7 @@
               <p>{{ detalji.imeIPrezime }}</p>
             </div>
             <div class="podatak-red">
-              <label>Lokacija:</label>
+              <label>Adresa lokacije:</label>
               <p>{{ detalji.lokacija }}</p>
             </div>
             <div class="podatak-red">
@@ -143,8 +143,39 @@
             </div>
             
             <div class="forma-grupa">
-              <label for="lokacija">Lokacija:</label>
-              <input type="text" id="lokacija" v-model="noviPrihod.lokacija" required placeholder="Mjesto održavanja eventa">
+              <label for="lokacija">Adresa lokacije:</label>
+              <div class="adresa-autocomplete">
+                <input 
+                  type="text" 
+                  id="lokacija" 
+                  v-model="noviPrihod.lokacija" 
+                  required 
+                  @input="pretraziAdrese"
+                  @blur="sakrijPrijedloge"
+                  @focus="prikaziPrijedloge"
+                  @keydown="navigirajPrijedloge"
+                  class="adresa-input"
+                  autocomplete="off"
+                >
+                
+                <div v-if="prijedloziVisible && prijedloziAdresa.length > 0" class="adresa-dropdown">
+                  <div 
+                    v-for="(prijedlog, index) in prijedloziAdresa" 
+                    :key="index"
+                    :class="['dropdown-item', { 'selected': selectedIndex === index }]"
+                    @mousedown="odaberiAdresu(prijedlog)"
+                    @mouseenter="selectedIndex = index"
+                  >
+                    <div class="adresa-naziv">{{ prijedlog.display_name.split(',')[0] }}</div>
+                    <div class="adresa-detalji">{{ prijedlog.display_name }}</div>
+                  </div>
+                  
+                  <div v-if="pretragaUTijeku" class="dropdown-loading">
+                    <span class="material-icons spinning">sync</span>
+                    Pretražujem...
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div class="forma-grupa">
@@ -207,10 +238,15 @@
 import { ref, computed, onMounted } from 'vue';
 
 const prihodi = ref(JSON.parse(localStorage.getItem('prihodi')) || []);
-
 const detalji = ref(null);
 const prikaziFormu = ref(false);
 const brisanjeIndeks = ref(null);
+const prijedloziAdresa = ref([]);
+const prijedloziVisible = ref(false);
+const pretragaUTijeku = ref(false);
+const selectedIndex = ref(-1);
+const pretragaTimeout = ref(null);
+
 const noviPrihod = ref({
   nazivEventa: '',
   imeIPrezime: '',
@@ -265,6 +301,85 @@ const formatDatum = (dateString) => {
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
   return `${day}.${month}.${year}`;
+};
+
+const pretraziAdrese = async () => {
+  const query = noviPrihod.value.lokacija.trim();
+  selectedIndex.value = -1;
+  
+  if (query.length < 3) {
+    prijedloziAdresa.value = [];
+    prijedloziVisible.value = false;
+    return;
+  }
+  
+  if (pretragaTimeout.value) {
+    clearTimeout(pretragaTimeout.value);
+  }
+  
+  pretragaTimeout.value = setTimeout(async () => {
+    try {
+      pretragaUTijeku.value = true;
+      prijedloziVisible.value = true;
+ 
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=hr&limit=8`
+      );
+      const data = await response.json();
+      
+      prijedloziAdresa.value = data || [];
+      
+    } catch (error) {
+      console.error('Greška pri pretraživanju adresa:', error);
+      prijedloziAdresa.value = [];
+    } finally {
+      pretragaUTijeku.value = false;
+    }
+  }, 300);
+};
+
+const odaberiAdresu = (prijedlog) => {
+  noviPrihod.value.lokacija = prijedlog.display_name;
+  prijedloziVisible.value = false;
+  prijedloziAdresa.value = [];
+  selectedIndex.value = -1;
+};
+
+const navigirajPrijedloge = (event) => {
+  if (!prijedloziVisible.value || prijedloziAdresa.value.length === 0) return;
+  
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault();
+      selectedIndex.value = Math.min(selectedIndex.value + 1, prijedloziAdresa.value.length - 1);
+      break;
+    case 'ArrowUp':
+      event.preventDefault();
+      selectedIndex.value = Math.max(selectedIndex.value - 1, -1);
+      break;
+    case 'Enter':
+      event.preventDefault();
+      if (selectedIndex.value >= 0 && selectedIndex.value < prijedloziAdresa.value.length) {
+        odaberiAdresu(prijedloziAdresa.value[selectedIndex.value]);
+      }
+      break;
+    case 'Escape':
+      sakrijPrijedloge();
+      break;
+  }
+};
+
+const prikaziPrijedloge = () => {
+  if (prijedloziAdresa.value.length > 0) {
+    prijedloziVisible.value = true;
+  }
+};
+
+const sakrijPrijedloge = () => {
+  setTimeout(() => {
+    prijedloziVisible.value = false;
+    selectedIndex.value = -1;
+  }, 150);
 };
 
 const prikaziDetalje = (prihod) => {
@@ -328,6 +443,10 @@ const dodajNoviPrihod = () => {
     placeno: false,
     opisSnimanja: ''
   };
+  
+  prijedloziAdresa.value = [];
+  prijedloziVisible.value = false;
+  selectedIndex.value = -1;
   prikaziFormu.value = false;
 };
 </script>
@@ -664,6 +783,15 @@ form {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+.adresa-input {
+  border: 2px solid #D4C9BE !important;
+}
+
+.adresa-input:focus {
+  border-color: #123458 !important;
+  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2) !important;
+}
+
 .forma-grupa input:focus, 
 .forma-grupa textarea:focus {
   outline: none;
@@ -674,6 +802,64 @@ form {
 .forma-grupa textarea {
   height: 100px;
   resize: vertical;
+}
+
+.adresa-autocomplete {
+  position: relative;
+}
+
+.adresa-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #D4C9BE;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #F1EFEC;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item.selected {
+  background-color: rgba(18, 52, 88, 0.05);
+  border-left: 3px solid #123458;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.adresa-naziv {
+  font-weight: 600;
+  color: #123458;
+  font-size: 1rem;
+}
+
+.adresa-detalji {
+  color: #5D8AA8;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.dropdown-loading {
+  padding: 16px;
+  text-align: center;
+  color: #5D8AA8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .forma-grupa.checkbox {
@@ -825,4 +1011,12 @@ input:checked + .klizac:before {
   padding: 15px;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
-</style>
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+} </style>
