@@ -41,7 +41,9 @@
           <router-link to="/admin/karte" class="nav-veza" active-class="aktivna">
             Karta
           </router-link>
-          
+          <router-link to="/admin/korisni-linkovi" class="nav-veza" active-class="aktivna">
+            Linkovi
+          </router-link>
 
           
         </div>

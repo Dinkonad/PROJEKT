@@ -10,7 +10,8 @@ import CjenovnikView from '../components/ACjenovnik.vue';
 import aUpload from '../components/aUpload.vue';
 import aKalendar from '../components/aKalendar.vue';
 import aKorisnici from '../components/aKorisnici.vue';
-import aKarte from '../components/aKarte.vue'; // Nova komponenta
+import aKarte from '../components/aKarte.vue';
+import aKorisnilinkovi from '../components/aKorisnilinkovi.vue'; 
 
 const routes = [
   {
@@ -74,6 +75,12 @@ const routes = [
         path: 'karte',
         name: 'Karte',
         component: aKarte,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'korisni-linkovi',
+        name: 'KorisniLinkovi',
+        component: aKorisnilinkovi,
         meta: { requiresAuth: true, requiresAdmin: true }
       }
     ]
