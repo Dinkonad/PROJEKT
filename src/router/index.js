@@ -11,7 +11,8 @@ import aUpload from '../components/aUpload.vue';
 import aKalendar from '../components/aKalendar.vue';
 import aKorisnici from '../components/aKorisnici.vue';
 import aKarte from '../components/aKarte.vue';
-import aKorisnilinkovi from '../components/aKorisnilinkovi.vue'; 
+import aKorisnilinkovi from '../components/aKorisnilinkovi.vue';
+import aKreativnaideja from '../components/aKreativnaideja.vue';
 
 const routes = [
   {
@@ -81,6 +82,12 @@ const routes = [
         path: 'korisni-linkovi',
         name: 'KorisniLinkovi',
         component: aKorisnilinkovi,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'kreativna-zona',
+        name: 'KreativnaZona',
+        component: aKreativnaideja,
         meta: { requiresAuth: true, requiresAdmin: true }
       }
     ]

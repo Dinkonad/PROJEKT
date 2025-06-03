@@ -44,7 +44,9 @@
           <router-link to="/admin/korisni-linkovi" class="nav-veza" active-class="aktivna">
             Linkovi
           </router-link>
-
+          <router-link to="/admin/kreativna-zona" class="nav-veza" active-class="aktivna">
+            Kreativna zona
+          </router-link>
           
         </div>
       </nav>
