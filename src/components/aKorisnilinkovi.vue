@@ -878,12 +878,12 @@ onMounted(() => {
 }
 
 .gumb-potvrdi {
-  background-color: #E53935;
+  background-color: #123458;
   color: #F1EFEC;
 }
 
 .gumb-potvrdi:hover {
-  background-color: #C62828;
+  background-color: #1c4c80;
 }
 
 .fade-enter-active, .fade-leave-active {

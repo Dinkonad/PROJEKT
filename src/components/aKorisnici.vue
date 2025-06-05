@@ -1,6 +1,6 @@
 <template>
   <div class="pregled-korisnika">
-    <h2 class="naslov">Pregled korisnika</h2>
+    <h1 class="naslov">Pregled korisnika</h1>
     
     <div class="filteri-status">
       <button 
@@ -98,6 +98,7 @@ const ucitajStatistike = () => {
     statistikePreuzimanja.value = {};
   }
 };
+
 const dohvatiBrojPreuzimanja = (emailKorisnika) => {
   return statistikePreuzimanja.value[emailKorisnika] || 0;
 };
@@ -147,12 +148,10 @@ onMounted(() => {
   
   window.addEventListener('storage', rukujPromjenom);
   
-
   const intervalStatistika = setInterval(() => {
     ucitajStatistike();
   }, 2000);
   
-
   const referenceKorisnika = collection(db, 'users');
   const upitKorisnici = query(referenceKorisnika, orderBy('lastActive', 'desc'));
   
@@ -185,98 +184,149 @@ onUnmounted(() => {
 
 <style scoped>
 .pregled-korisnika {
-  padding: 20px;
-  background-color: white;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  font-family: 'Roboto', sans-serif;
+  color: #030303;
+  background-color: #F1EFEC;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  margin: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .naslov {
+  text-align: center;
   color: #123458;
-  margin-bottom: 20px;
-  font-weight: 600;
-  border-bottom: 2px solid #f2f2f2;
-  padding-bottom: 10px;
+  margin-bottom: 40px;
+  font-weight: 700;
+  position: relative;
+}
+
+.naslov::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: #123458;
+  border-radius: 2px;
 }
 
 .filteri-status {
   display: flex;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   gap: 10px;
+  justify-content: center;
 }
 
 .gumb-filter {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 4px;
-  background-color: #f2f2f2;
+  border-radius: 6px;
+  background-color: #D4C9BE;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  color: #123458;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .gumb-filter:hover {
-  background-color: #e6e6e6;
+  background-color: #c5b7a9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .gumb-filter.aktivan {
   background-color: #123458;
   color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.gumb-filter.aktivan:hover {
+  background-color: #1c4c80;
 }
 
 .tablica-omotac {
   overflow-x: auto;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .tablica-korisnici {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
 }
 
 .tablica-korisnici th {
   text-align: left;
-  padding: 12px 15px;
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #e9ecef;
+  padding: 15px;
+  background-color: #123458;
+  color: white;
   font-weight: 600;
-  color: #495057;
+  border-bottom: none;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.tablica-korisnici th:first-child {
+  border-radius: 8px 0 0 0;
+}
+
+.tablica-korisnici th:last-child {
+  border-radius: 0 8px 0 0;
 }
 
 .tablica-korisnici td {
-  padding: 12px 15px;
-  border-bottom: 1px solid #e9ecef;
+  padding: 15px;
+  border-bottom: 1px solid #D4C9BE;
   color: #495057;
+  background-color: white;
 }
 
 .red-korisnik:hover {
   background-color: #f8f9fa;
 }
 
+.red-korisnik:hover td {
+  background-color: #f8f9fa;
+}
+
+.red-korisnik:last-child td:first-child {
+  border-radius: 0 0 0 8px;
+}
+
+.red-korisnik:last-child td:last-child {
+  border-radius: 0 0 8px 0;
+}
+
 .indikator-status {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: #adb5bd;
   display: inline-block;
+  margin: 0 auto;
 }
 
 .indikator-status.online {
   background-color: #4CAF50;
-  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
 }
 
 .statistike-preuzimanja {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .broj-preuzimanja {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: #123458;
 }
 
@@ -289,23 +339,36 @@ onUnmounted(() => {
 .poruka-ucitavanje, 
 .poruka-prazno {
   text-align: center;
-  padding: 30px;
+  padding: 60px 30px;
   color: #6c757d;
   font-style: italic;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 1.1rem;
 }
 
 @media (max-width: 768px) {
+  .pregled-korisnika {
+    padding: 20px;
+  }
+  
+  .filteri-status {
+    justify-content: stretch;
+  }
+  
   .tablica-omotac {
     font-size: 0.9rem;
+    padding: 15px;
   }
   
   .tablica-korisnici th,
   .tablica-korisnici td {
-    padding: 8px 10px;
+    padding: 10px 8px;
   }
   
   .broj-preuzimanja {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
   
   .oznaka-preuzimanja {
@@ -320,15 +383,15 @@ onUnmounted(() => {
   
   .tablica-korisnici th,
   .tablica-korisnici td {
-    padding: 6px 8px;
+    padding: 8px 6px;
   }
   
   .statistike-preuzimanja {
-    gap: 1px;
+    gap: 2px;
   }
   
   .broj-preuzimanja {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
   
   .oznaka-preuzimanja {
@@ -344,10 +407,14 @@ onUnmounted(() => {
     width: 100%;
     text-align: center;
   }
+  
+  .naslov {
+    font-size: 1.5rem;
+  }
 }
 
 .red-korisnik {
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .indikator-status {
@@ -360,18 +427,18 @@ onUnmounted(() => {
 
 @keyframes pulziraj {
   0% {
-    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
   }
   50% {
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.9);
   }
   100% {
-    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
   }
 }
 
 .broj-preuzimanja {
-  transition: color 0.2s ease;
+  transition: color 0.3s ease;
 }
 
 .red-korisnik:hover .broj-preuzimanja {
@@ -386,5 +453,4 @@ onUnmounted(() => {
 .tablica-korisnici th {
   user-select: none;
 }
-
 </style>

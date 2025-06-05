@@ -1,7 +1,8 @@
 <template>
   <div class="kontejner-kalendara">
+    <h1 class="naslov">Kalendar</h1>
+    
     <div class="zaglavlje-kalendara">
-      <h2>Kalendar</h2>
       <div class="akcije-zaglavlja">
         <button @click="prikaziEmailPostavke = true" class="gumb-postavke">
           📧 Email postavke
@@ -766,9 +767,29 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+.naslov {
+  text-align: center;
+  color: #123458;
+  margin-bottom: 40px;
+  font-weight: 700;
+  position: relative;
+}
+
+.naslov::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: #123458;
+  border-radius: 2px;
+}
+
 .zaglavlje-kalendara {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-bottom: 20px;
   padding: 16px;
@@ -796,13 +817,6 @@ export default {
 
 .gumb-postavke:hover {
   background-color: #1c4c80;
-}
-
-.zaglavlje-kalendara h2 {
-  margin: 0;
-  color: #123458;
-  font-size: 24px;
-  font-weight: 700;
 }
 
 .gumb-dodaj-dogadaj {

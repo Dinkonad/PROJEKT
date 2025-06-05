@@ -3,19 +3,19 @@
     <div class="gornja-traka">
       <div class="traka-sadrzaj">
         <div class="profil-padajuci">
-          <div class="profil-ikona" @click="promijeniProfilMenu">
+          <div class="profil-ikona" @click="promijeniProfilIzbornik">
             {{ korisnikInicijali }}
           </div>
-          <div class="profil-izbornik" v-if="prikaziProfilMenu">
+          <div class="profil-izbornik" v-if="prikaziProfilIzbornik">
             <div class="korisnik-email">{{ korisnikEmail }}</div>
-            <div class="izbornik-opcija odjava-opcija" @click="odjava">Odjava</div>
+            <div class="izbornik-opcija odjava-opcija" @click="odjaviKorisnika">Odjava</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="ploca-kontejner">
-      <nav class="bocna-traka">
+    <div class="ploca-sadrzaj">
+      <nav class="bocna-navigacija">
         <div class="navigacijske-veze">
           <router-link to="/admin" class="nav-veza" exact-active-class="aktivna">
             Dashboard
@@ -47,7 +47,6 @@
           <router-link to="/admin/kreativna-zona" class="nav-veza" active-class="aktivna">
             Kreativna zona
           </router-link>
-          
         </div>
       </nav>
       
@@ -55,54 +54,54 @@
         <div v-if="$route.path === '/admin'" class="dashboard-stranica">
 
           <div class="nadolazeci-dogadaji">
-            <div class="dogadaji-header">
-              <h2>Nadolazeći događaji </h2>
-              <router-link to="/admin/kalendar" class="btn-kalendar">
+            <div class="dogadaji-zaglavlje">
+              <h2>Nadolazeći događaji</h2>
+              <router-link to="/admin/kalendar" class="gumb-kalendar">
                 Vidi sve u kalendaru
               </router-link>
             </div>
 
             <div class="dogadaji-lista">
               <div 
-                v-for="event in nadolazeciDogadaji" 
-                :key="event.id"
-                :class="['dogadaj-kartica', `dogadaj-${event.color}`]"
+                v-for="dogadaj in nadolazeciDogadaji" 
+                :key="dogadaj.id"
+                :class="['dogadaj-kartica', `dogadaj-${dogadaj.boja}`]"
               >
-                <div class="dogadaj-header">
-                  <div class="dogadaj-info">
-                    <div class="dogadaj-klijent">{{ event.client }}</div>
+                <div class="dogadaj-zaglavlje">
+                  <div class="dogadaj-informacije">
+                    <div class="dogadaj-klijent">{{ dogadaj.klijent }}</div>
                     <div class="dogadaj-datum">
-                      <span v-if="event.startDate === event.endDate">
-                        {{ formatEventDate(event.startDate) }}
+                      <span v-if="dogadaj.pocetniDatum === dogadaj.zavrsniDatum">
+                        {{ formatirajDatumDogadaja(dogadaj.pocetniDatum) }}
                       </span>
                       <span v-else>
-                        {{ formatEventDate(event.startDate) }} - {{ formatEventDate(event.endDate) }}
+                        {{ formatirajDatumDogadaja(dogadaj.pocetniDatum) }} - {{ formatirajDatumDogadaja(dogadaj.zavrsniDatum) }}
                       </span>
                     </div>
                   </div>
-                  <div class="dogadaj-badge" :class="`badge-${event.color}`">
-                    {{ getDaysUntilEvent(event.startDate) }}
+                  <div class="dogadaj-oznaka" :class="`oznaka-${dogadaj.boja}`">
+                    {{ izracunajDanaDoDogadaja(dogadaj.pocetniDatum) }}
                   </div>
                 </div>
                 <div class="dogadaj-opis">
-                  {{ event.description }}
+                  {{ dogadaj.opis }}
                 </div>
               </div>
             </div>
 
             <div v-if="nadolazeciDogadaji.length === 0" class="nema-dogadaja">
               <div class="prazan-sadrzaj">
-                <div class="prazan-ikona"></div>
+                
                 <p>Nema nadolazećih događaja</p>
               </div>
             </div>
           </div>
 
           <div class="nedavni-komentari">
-            <div class="komentari-header">
+            <div class="komentari-zaglavlje">
               <h2>Nedavni komentari</h2>
-              <div class="komentari-filteri-mini">
-                <select v-model="filterStatus" class="filter-select">
+              <div class="komentari-filteri">
+                <select v-model="statusFiltera" class="filter-select">
                   <option value="">Svi komentari</option>
                   <option value="neprocitan">Neprocitani</option>
                   <option value="procitan">Procitani</option>
@@ -112,29 +111,29 @@
 
             <div class="komentari-lista">
               <div 
-                v-for="komentar in displayedKomentari" 
+                v-for="komentar in prikazaniKomentari" 
                 :key="komentar.id"
                 class="komentar-kartica"
                 :class="{ 'neprocitan': !komentar.procitan }"
               >
-                <div class="komentar-header-mini">
+                <div class="komentar-zaglavlje">
                   <div class="komentar-meta">
                     <span class="komentar-autor">{{ komentar.authorEmail }}</span>
-                    <span class="komentar-datum">{{ formatDate(komentar.timestamp) }}</span>
+                    <span class="komentar-datum">{{ formatirajDatum(komentar.timestamp) }}</span>
                     <span class="komentar-slika">na slici: {{ komentar.imageFileName }}</span>
                   </div>
                   <div class="komentar-akcije">
                     <button 
-                      @click="toggleProcitan(komentar)"
-                      class="btn-procitan"
+                      @click="promijeniStatusProcitano(komentar)"
+                      class="gumb-procitan"
                       :class="{ 'procitan': komentar.procitan }"
                       :title="komentar.procitan ? 'Označi kao neprocitan' : 'Označi kao procitan'"
                     >
                       {{ komentar.procitan ? '✓' : '○' }}
                     </button>
                     <button 
-                      @click="obrisiKomentar(komentar)"
-                      class="btn-obrisi"
+                      @click="pokreniObrisiKomentar(komentar)"
+                      class="gumb-obrisi"
                       title="Obriši komentar"
                     >
                       ✕
@@ -147,14 +146,14 @@
               </div>
             </div>
 
-            <div v-if="displayedKomentari.length === 0" class="nema-komentara">
+            <div v-if="prikazaniKomentari.length === 0" class="nema-komentara">
               <div class="prazan-sadrzaj">
                 <p>{{ sviKomentari.length === 0 ? 'Nema komentara za prikaz' : 'Nema komentara koji odgovaraju filteru' }}</p>
               </div>
             </div>
-            <div v-if="filteredKomentari.length > 5" class="pokazi-vise">
-              <button @click="togglePrikaziSve" class="btn-pokazi-vise">
-                {{ prikaziSveKomentare ? 'Prikaži manje' : `Prikaži sve (${filteredKomentari.length})` }}
+            <div v-if="filtriraniKomentari.length > 5" class="pokazi-vise">
+              <button @click="promijeniPrikazSvihKomentara" class="gumb-pokazi-vise">
+                {{ prikaziSveKomentare ? 'Prikaži manje' : `Prikaži sve (${filtriraniKomentari.length})` }}
               </button>
             </div>
           </div>
@@ -162,13 +161,14 @@
         <router-view v-else></router-view>
       </div>
     </div>
-    <div v-if="prikaziPotvrdu" class="potvrda-overlay" @click="otkaziPotvrdu">
+    
+    <div v-if="prikaziPotvrdBrisanja" class="potvrda-prekrivka" @click="otkaziPotvrdBrisanja">
       <div class="potvrda-modal" @click.stop>
         <h3>Potvrda brisanja</h3>
         <p>Jeste li sigurni da želite obrisati ovaj komentar?</p>
-        <div class="potvrda-akcije">
-          <button @click="otkaziPotvrdu" class="btn-otkazi">Otkaži</button>
-          <button @click="potvrdiObrisiKomentar" class="btn-potvrdi">Obriši</button>
+        <div class="potvrda-gumbovi">
+          <button @click="otkaziPotvrdBrisanja" class="gumb-otkazi">Otkaži</button>
+          <button @click="potvrdiBrisanjeKomentara" class="gumb-potvrdi">Obriši</button>
         </div>
       </div>
     </div>
@@ -182,37 +182,41 @@ import { useAuth } from '../store/auth';
 
 const router = useRouter();
 const { logout: authLogout } = useAuth();
-const prikaziProfilMenu = ref(false);
+
+const prikaziProfilIzbornik = ref(false);
 const sviKomentari = ref([]);
-const filterStatus = ref('');
-const prikaziPotvrdu = ref(false);
+const statusFiltera = ref('');
+const prikaziPotvrdBrisanja = ref(false);
 const komentarZaBrisanje = ref(null);
 const prikaziSveKomentare = ref(false);
-const kalendarDogadaji = ref([]);
+const kalendar = ref([]);
+
 
 const korisnikEmail = computed(() => 'naddinko@gmail.com');
 const korisnikInicijali = computed(() => korisnikEmail.value.charAt(0).toUpperCase());
 
-const neprocetiKomentari = computed(() => {
+
+const brojNeprocetiKomentari = computed(() => {
   return sviKomentari.value.filter(k => !k.procitan).length;
 });
 
-const filteredKomentari = computed(() => {
-  let filtered = [...sviKomentari.value];
+
+const filtriraniKomentari = computed(() => {
+  let filtrirani = [...sviKomentari.value];
   
-  if (filterStatus.value === 'neprocitan') {
-    filtered = filtered.filter(k => !k.procitan);
-  } else if (filterStatus.value === 'procitan') {
-    filtered = filtered.filter(k => k.procitan);
+  if (statusFiltera.value === 'neprocitan') {
+    filtrirani = filtrirani.filter(k => !k.procitan);
+  } else if (statusFiltera.value === 'procitan') {
+    filtrirani = filtrirani.filter(k => k.procitan);
   }
-  return filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  return filtrirani.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 });
 
-const displayedKomentari = computed(() => {
+const prikazaniKomentari = computed(() => {
   if (prikaziSveKomentare.value) {
-    return filteredKomentari.value;
+    return filtriraniKomentari.value;
   }
-  return filteredKomentari.value.slice(0, 5);
+  return filtriraniKomentari.value.slice(0, 5);
 });
 
 const nadolazeciDogadaji = computed(() => {
@@ -220,19 +224,19 @@ const nadolazeciDogadaji = computed(() => {
   const sljedecihSedam = new Date();
   sljedecihSedam.setDate(danas.getDate() + 7);
   
-  return kalendarDogadaji.value
-    .filter(event => {
-      const eventDate = new Date(event.startDate);
-      return eventDate >= danas && eventDate <= sljedecihSedam;
+  return kalendar.value
+    .filter(dogadaj => {
+      const datumDogadaja = new Date(dogadaj.pocetniDatum);
+      return datumDogadaja >= danas && datumDogadaja <= sljedecihSedam;
     })
-    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    .sort((a, b) => new Date(a.pocetniDatum) - new Date(b.pocetniDatum));
 });
 
-const promijeniProfilMenu = () => {
-  prikaziProfilMenu.value = !prikaziProfilMenu.value;
+const promijeniProfilIzbornik = () => {
+  prikaziProfilIzbornik.value = !prikaziProfilIzbornik.value;
 };
 
-const odjava = async () => {
+const odjaviKorisnika = async () => {
   try {
     await authLogout();
     router.push('/login');
@@ -241,14 +245,14 @@ const odjava = async () => {
   }
 };
 
-const loadKomentari = () => {
+const ucitajKomentare = () => {
   try {
-    const savedComments = localStorage.getItem('image_comments');
-    if (savedComments) {
-      sviKomentari.value = JSON.parse(savedComments).map(comment => ({
-        ...comment,
-        timestamp: new Date(comment.timestamp),
-        procitan: comment.procitan || false
+    const spremljeniKomentari = localStorage.getItem('image_comments');
+    if (spremljeniKomentari) {
+      sviKomentari.value = JSON.parse(spremljeniKomentari).map(komentar => ({
+        ...komentar,
+        timestamp: new Date(komentar.timestamp),
+        procitan: komentar.procitan || false
       }));
     }
   } catch (error) {
@@ -257,19 +261,32 @@ const loadKomentari = () => {
   }
 };
 
-const loadKalendarDogadaji = () => {
+const ucitajKalendar = () => {
   try {
-    const savedEvents = localStorage.getItem('calendar-events');
-    if (savedEvents) {
-      kalendarDogadaji.value = JSON.parse(savedEvents);
+    let spremljeniDogadaji = localStorage.getItem('kalendar-dogadaji');
+    if (!spremljeniDogadaji) {
+      spremljeniDogadaji = localStorage.getItem('calendar-events');
+    }
+    
+    if (spremljeniDogadaji) {
+      const dogadaji = JSON.parse(spremljeniDogadaji);
+
+      kalendar.value = dogadaji.map(dogadaj => ({
+        id: dogadaj.id,
+        klijent: dogadaj.klijent || dogadaj.client,
+        pocetniDatum: dogadaj.pocetniDatum || dogadaj.startDate,
+        zavrsniDatum: dogadaj.zavrsniDatum || dogadaj.endDate,
+        opis: dogadaj.opis || dogadaj.description,
+        boja: dogadaj.boja || dogadaj.color
+      }));
     }
   } catch (error) {
-    console.error('Greška pri učitavanju događaja:', error);
-    kalendarDogadaji.value = [];
+    console.error('Greška pri učitavanju kalendara:', error);
+    kalendar.value = [];
   }
 };
 
-const saveKomentari = () => {
+const spremiKomentare = () => {
   try {
     localStorage.setItem('image_comments', JSON.stringify(sviKomentari.value));
   } catch (error) {
@@ -277,42 +294,43 @@ const saveKomentari = () => {
   }
 };
 
-const toggleProcitan = (komentar) => {
+const promijeniStatusProcitano = (komentar) => {
   komentar.procitan = !komentar.procitan;
-  saveKomentari();
+  spremiKomentare();
 };
 
-const obrisiKomentar = (komentar) => {
+const pokreniObrisiKomentar = (komentar) => {
   komentarZaBrisanje.value = komentar;
-  prikaziPotvrdu.value = true;
+  prikaziPotvrdBrisanja.value = true;
 };
 
-const potvrdiObrisiKomentar = () => {
+const potvrdiBrisanjeKomentara = () => {
   if (komentarZaBrisanje.value) {
-    const index = sviKomentari.value.findIndex(k => k.id === komentarZaBrisanje.value.id);
-    if (index > -1) {
-      sviKomentari.value.splice(index, 1);
-      saveKomentari();
+    const indeks = sviKomentari.value.findIndex(k => k.id === komentarZaBrisanje.value.id);
+    if (indeks > -1) {
+      sviKomentari.value.splice(indeks, 1);
+      spremiKomentare();
     }
   }
-  otkaziPotvrdu();
+  otkaziPotvrdBrisanja();
 };
 
-const otkaziPotvrdu = () => {
-  prikaziPotvrdu.value = false;
+const otkaziPotvrdBrisanja = () => {
+  prikaziPotvrdBrisanja.value = false;
   komentarZaBrisanje.value = null;
 };
 
-const togglePrikaziSve = () => {
+const promijeniPrikazSvihKomentara = () => {
   prikaziSveKomentare.value = !prikaziSveKomentare.value;
 };
 
-const formatDate = (timestamp) => {
+
+const formatirajDatum = (timestamp) => {
   if (!timestamp) return 'Nepoznat datum';
   
   try {
-    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    return date.toLocaleDateString('hr-HR', {
+    const datum = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return datum.toLocaleDateString('hr-HR', {
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric',
@@ -324,33 +342,34 @@ const formatDate = (timestamp) => {
   }
 };
 
-const formatEventDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('hr-HR', {
+const formatirajDatumDogadaja = (datumString) => {
+  const datum = new Date(datumString);
+  return datum.toLocaleDateString('hr-HR', {
     weekday: 'short',
     day: 'numeric',
     month: 'short'
   });
 };
 
-const getDaysUntilEvent = (dateString) => {
-  const today = new Date();
-  const eventDate = new Date(dateString);
-  const diffTime = eventDate - today;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const izracunajDanaDoDogadaja = (datumString) => {
+  const danas = new Date();
+  const datumDogadaja = new Date(datumString);
+  const razlikaVremena = datumDogadaja - danas;
+  const razlikaDana = Math.ceil(razlikaVremena / (1000 * 60 * 60 * 24));
   
-  if (diffDays === 0) return 'Danas';
-  if (diffDays === 1) return 'Sutra';
-  return `Za ${diffDays} dana`;
+  if (razlikaDana === 0) return 'Danas';
+  if (razlikaDana === 1) return 'Sutra';
+  return `Za ${razlikaDana} dana`;
 };
 
 onMounted(() => {
-  loadKomentari();
-  loadKalendarDogadaji();
+  ucitajKomentare();
+  ucitajKalendar();
   
+ 
   setInterval(() => {
-    loadKomentari();
-    loadKalendarDogadaji();
+    ucitajKomentare();
+    ucitajKalendar();
   }, 30000);
 });
 </script>
@@ -451,13 +470,13 @@ onMounted(() => {
   text-align: center;
 }
 
-.ploca-kontejner {
+.ploca-sadrzaj {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-.bocna-traka {
+.bocna-navigacija {
   width: 250px;
   background-color: #123458;
   display: flex;
@@ -508,7 +527,6 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-
 .nadolazeci-dogadaji {
   background-color: white;
   border-radius: 12px;
@@ -518,21 +536,21 @@ onMounted(() => {
   margin-bottom: 30px;
 }
 
-.dogadaji-header {
+.dogadaji-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
 }
 
-.dogadaji-header h2 {
+.dogadaji-zaglavlje h2 {
   color: #123458;
   margin: 0;
   font-weight: 600;
   font-size: 1.5rem;
 }
 
-.btn-kalendar {
+.gumb-kalendar {
   padding: 8px 16px;
   background-color: #123458;
   color: white;
@@ -543,7 +561,7 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 
-.btn-kalendar:hover {
+.gumb-kalendar:hover {
   background-color: #1c4c80;
 }
 
@@ -566,23 +584,23 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.dogadaj-kartica.dogadaj-yellow { border-left-color: #ffc107; }
-.dogadaj-kartica.dogadaj-green { border-left-color: #4caf50; }
-.dogadaj-kartica.dogadaj-blue { border-left-color: #2196f3; }
-.dogadaj-kartica.dogadaj-orange { border-left-color: #ff9800; }
-.dogadaj-kartica.dogadaj-purple { border-left-color: #9c27b0; }
-.dogadaj-kartica.dogadaj-red { border-left-color: #f44336; }
-.dogadaj-kartica.dogadaj-teal { border-left-color: #009688; }
-.dogadaj-kartica.dogadaj-pink { border-left-color: #e91e63; }
+.dogadaj-kartica.dogadaj-zuta { border-left-color: #ffc107; }
+.dogadaj-kartica.dogadaj-zelena { border-left-color: #4caf50; }
+.dogadaj-kartica.dogadaj-plava { border-left-color: #2196f3; }
+.dogadaj-kartica.dogadaj-narancasta { border-left-color: #ff9800; }
+.dogadaj-kartica.dogadaj-ljubicasta { border-left-color: #9c27b0; }
+.dogadaj-kartica.dogadaj-crvena { border-left-color: #f44336; }
+.dogadaj-kartica.dogadaj-tirkizna { border-left-color: #009688; }
+.dogadaj-kartica.dogadaj-ruzicasta { border-left-color: #e91e63; }
 
-.dogadaj-header {
+.dogadaj-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 10px;
 }
 
-.dogadaj-info {
+.dogadaj-informacije {
   flex: 1;
 }
 
@@ -599,7 +617,7 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.dogadaj-badge {
+.dogadaj-oznaka {
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -608,14 +626,14 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.badge-yellow { background-color: #ffc107; color: #000; }
-.badge-green { background-color: #4caf50; }
-.badge-blue { background-color: #2196f3; }
-.badge-orange { background-color: #ff9800; }
-.badge-purple { background-color: #9c27b0; }
-.badge-red { background-color: #f44336; }
-.badge-teal { background-color: #009688; }
-.badge-pink { background-color: #e91e63; }
+.oznaka-zuta { background-color: #ffc107; color: #000; }
+.oznaka-zelena { background-color: #4caf50; }
+.oznaka-plava { background-color: #2196f3; }
+.oznaka-narancasta { background-color: #ff9800; }
+.oznaka-ljubicasta { background-color: #9c27b0; }
+.oznaka-crvena { background-color: #f44336; }
+.oznaka-tirkizna { background-color: #009688; }
+.oznaka-ruzicasta { background-color: #e91e63; }
 
 .dogadaj-opis {
   color: #030303;
@@ -648,7 +666,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Postojeći stilovi za komentare */
 .nedavni-komentari {
   background-color: white;
   border-radius: 12px;
@@ -657,14 +674,14 @@ onMounted(() => {
   border: 1px solid #D4C9BE;
 }
 
-.komentari-header {
+.komentari-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
 }
 
-.komentari-filteri-mini {
+.komentari-filteri {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -717,7 +734,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.komentar-header-mini {
+.komentar-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -752,7 +769,7 @@ onMounted(() => {
   gap: 8px;
 }
 
-.btn-procitan {
+.gumb-procitan {
   width: 28px;
   height: 28px;
   border: 1px solid #123458;
@@ -767,22 +784,22 @@ onMounted(() => {
   justify-content: center;
 }
 
-.btn-procitan:hover {
+.gumb-procitan:hover {
   background-color: #123458;
   color: white;
 }
 
-.btn-procitan.procitan {
+.gumb-procitan.procitan {
   background-color: #28a745;
   border-color: #28a745;
   color: white;
 }
 
-.btn-procitan.procitan:hover {
+.gumb-procitan.procitan:hover {
   background-color: #218838;
 }
 
-.btn-obrisi {
+.gumb-obrisi {
   width: 28px;
   height: 28px;
   background-color: #e53935;
@@ -797,7 +814,7 @@ onMounted(() => {
   justify-content: center;
 }
 
-.btn-obrisi:hover {
+.gumb-obrisi:hover {
   background-color: #c62828;
 }
 
@@ -816,16 +833,6 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-.komentar-vlasnik {
-  text-align: right;
-}
-
-.komentar-vlasnik small {
-  color: #6c757d;
-  font-style: italic;
-  font-size: 0.8rem;
-}
-
 .pokazi-vise {
   text-align: center;
   margin-top: 20px;
@@ -833,7 +840,7 @@ onMounted(() => {
   border-top: 1px solid #D4C9BE;
 }
 
-.btn-pokazi-vise {
+.gumb-pokazi-vise {
   padding: 10px 20px;
   background-color: #123458;
   color: white;
@@ -844,7 +851,7 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 
-.btn-pokazi-vise:hover {
+.gumb-pokazi-vise:hover {
   background-color: #1c4c80;
 }
 
@@ -869,7 +876,7 @@ onMounted(() => {
   margin: 0;
 }
 
-.potvrda-overlay {
+.potvrda-prekrivka {
   position: fixed;
   top: 0;
   left: 0;
@@ -917,13 +924,13 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-.potvrda-akcije {
+.potvrda-gumbovi {
   display: flex;
   justify-content: flex-end;
   gap: 15px;
 }
 
-.btn-otkazi {
+.gumb-otkazi {
   padding: 10px 20px;
   background-color: #6c757d;
   color: white;
@@ -934,11 +941,11 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 
-.btn-otkazi:hover {
+.gumb-otkazi:hover {
   background-color: #5a6268;
 }
 
-.btn-potvrdi {
+.gumb-potvrdi {
   padding: 10px 20px;
   background-color: #e53935;
   color: white;
@@ -949,7 +956,7 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 
-.btn-potvrdi:hover {
+.gumb-potvrdi:hover {
   background-color: #c62828;
 }
 
@@ -963,24 +970,24 @@ onMounted(() => {
     padding: 20px;
   }
 
-  .dogadaji-header,
-  .komentari-header {
+  .dogadaji-zaglavlje,
+  .komentari-zaglavlje {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
 
-  .dogadaj-header {
+  .dogadaj-zaglavlje {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
   }
 
-  .dogadaj-badge {
+  .dogadaj-oznaka {
     align-self: flex-start;
   }
 
-  .komentar-header-mini {
+  .komentar-zaglavlje {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
@@ -1032,13 +1039,13 @@ onMounted(() => {
     margin: 10px;
   }
 
-  .potvrda-akcije {
+  .potvrda-gumbovi {
     flex-direction: column;
     gap: 10px;
   }
 
-  .btn-otkazi,
-  .btn-potvrdi {
+  .gumb-otkazi,
+  .gumb-potvrdi {
     width: 100%;
   }
-} </style>
+} </style> 
