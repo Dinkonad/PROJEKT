@@ -3,31 +3,31 @@
     <h1 class="naslov">Cjenovnik snimanja</h1>
     
     <div class="glavni-sadrzaj">
-      <div class="forma-okvir">
-        <div class="forma-grupa">
+      <div class="unos-okvir">
+        <div class="grupa">
           <label>Satnica (EUR):</label>
           <input type="number" v-model.number="satnica" min="0" placeholder="Koliko ide po satu..." />
         </div>
         
-        <div class="forma-grupa">
+        <div class="grupa">
           <label>Broj sati:</label>
           <input type="number" v-model.number="brojSati" min="0" placeholder="Upisi koliko se sati radi..."/>
         </div>
         
-        <div class="forma-grupa">
+        <div class="grupa">
           <label>Polazni grad:</label>
-          <div class="input-with-suggestions">
+          <div class="unos-sa-prijedlozima">
             <input 
               type="text" 
               v-model="polazniGrad" 
               @input="traziGradove('polazni')" 
               @blur="zatvoriFokus('polazni')" 
               placeholder="Upiši polazni grad..." />
-            <div v-if="prijedloziPolazni.length > 0" class="suggestions-dropdown">
+            <div v-if="prijedloziPolazni.length > 0" class="prijedlozi-dropdown">
               <div 
                 v-for="(grad, index) in prijedloziPolazni" 
                 :key="index" 
-                class="suggestion-item"
+                class="prijedlog-stavka"
                 @mousedown="odaberiGrad('polazni', grad)">
                 {{ grad.name }}, {{ grad.country }}
               </div>
@@ -35,20 +35,20 @@
           </div>
         </div>
         
-        <div class="forma-grupa">
+        <div class="grupa">
           <label>Odredišni grad:</label>
-          <div class="input-with-suggestions">
+          <div class="unos-sa-prijedlozima">
             <input 
               type="text" 
               v-model="odredisniGrad" 
               @input="traziGradove('odredisni')" 
               @blur="zatvoriFokus('odredisni')" 
               placeholder="Upiši odredišnji grad..." />
-            <div v-if="prijedloziOdredisni.length > 0" class="suggestions-dropdown">
+            <div v-if="prijedloziOdredisni.length > 0" class="prijedlozi-dropdown">
               <div 
                 v-for="(grad, index) in prijedloziOdredisni" 
                 :key="index" 
-                class="suggestion-item"
+                class="prijedlog-stavka"
                 @mousedown="odaberiGrad('odredisni', grad)">
                 {{ grad.name }}, {{ grad.country }}
               </div>
@@ -56,37 +56,37 @@
           </div>
         </div>
         
-        <div class="forma-grupa">
+        <div class="grupa">
           <label>Udaljenost (km):</label>
           <div class="udaljenost-wrapper">
             <input type="number" v-model.number="udaljenost" min="0" placeholder="Udaljenost..." />
-            <span v-if="ucitavanjeUdaljenosti" class="status-text">Izračunavanje...</span>
+            <span v-if="ucitavanjeUdaljenosti" class="status-tekst">Izračunavanje...</span>
           </div>
         </div>
         
-        <div class="opcije-container">
+        <div class="opcije-kontejner">
           <h3>Dodatne opcije</h3>
           
           <div class="opcija-red">
-            <button class="gumb-opcija" :class="{ aktivno: dron }" @click="dron = !dron">
+            <button class="opcija-gumb" :class="{ aktivno: dron }" @click="dron = !dron">
               <span class="material-icons">{{ dron ? 'check_circle' : 'add_circle' }}</span>
               Snimanje dronom (+50 EUR)
             </button>
           </div>
           
           <div class="opcija-red">
-            <button class="gumb-opcija" :class="{ aktivno: edit }" @click="edit = !edit">
-              <span class="material-icons">{{ edit ? 'check_circle' : 'add_circle' }}</span>
+            <button class="opcija-gumb" :class="{ aktivno: editiranje }" @click="editiranje = !editiranje">
+              <span class="material-icons">{{ editiranje ? 'check_circle' : 'add_circle' }}</span>
               Editiranje (+50 EUR)
             </button>
           </div>
         </div>
       </div>
       
-      <div class="izracun-okvir">
+      <div class="pregled-okvir">
         <h2>Pregled izračuna</h2>
         
-        <div class="pregled-container">
+        <div class="pregled-kontejner">
           <div class="stavka-red" v-if="puniPolazniGrad && puniOdredisniGrad">
             <span>Lokacija:</span>
             <span>{{ puniPolazniGrad }} - {{ puniOdredisniGrad }}</span>
@@ -98,7 +98,7 @@
           </div>
           
           <div class="stavka-red" v-if="udaljenost > 0">
-            <span>Putni troškovi (cestovna udaljenost):</span>
+            <span>Putni troškovi:</span>
             <span>{{ udaljenost }} km × 2 × 0.4 = {{ putniTroskovi }} EUR</span> 
           </div>
           
@@ -107,7 +107,7 @@
             <span>50 EUR</span>
           </div>
           
-          <div class="stavka-red" v-if="edit">
+          <div class="stavka-red" v-if="editiranje">
             <span>Editiranje:</span>
             <span>50 EUR</span>
           </div>
@@ -118,7 +118,7 @@
           </div>
         </div>
         
-        <button @click="preuzmiPDF" class="gumb-preuzmi">
+        <button @click="preuzmiPDF" class="preuzmi-gumb">
           <span class="material-icons">download</span> Preuzmi PDF
         </button>
       </div>
@@ -145,10 +145,10 @@ const puniOdredisniGrad = ref('')
 const polazneKoordinate = ref(null)
 const odredisneKoordinate = ref(null)
 
-let timerId = null
+let tajmerID = null
 
 const dron = ref(false)
-const edit = ref(false)
+const editiranje = ref(false)
 
 const osnovnaCijena = computed(() => {
   return satnica.value * brojSati.value
@@ -162,7 +162,7 @@ const ukupnaCijena = computed(() => {
   let cijena = osnovnaCijena.value + putniTroskovi.value
   
   if (dron.value) cijena += 50
-  if (edit.value) cijena += 50
+  if (editiranje.value) cijena += 50
   
   return Math.round(cijena * 100) / 100
 })
@@ -176,8 +176,8 @@ const traziGradove = async (tip) => {
     return
   }
   
-  clearTimeout(timerId)
-  timerId = setTimeout(async () => {
+  clearTimeout(tajmerID)
+  tajmerID = setTimeout(async () => {
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(upit)}&countrycodes=hr,si,it,at,hu,ba,rs,me,de,fr,es,ch,be,nl&limit=5`
       const response = await fetch(url)
@@ -213,8 +213,7 @@ const traziGradove = async (tip) => {
             name: item.name,
             country: country,
             lat: parseFloat(item.lat),
-            lon: parseFloat(item.lon),
-            display_name: item.display_name
+            lon: parseFloat(item.lon)
           }
         })
       
@@ -243,7 +242,7 @@ const odaberiGrad = (tip, grad) => {
   }
   
   if (polazneKoordinate.value && odredisneKoordinate.value) {
-    izracunajUdaljenostIzKoordinata()
+    izracunajUdaljenost()
   }
 }
 
@@ -253,7 +252,8 @@ const zatvoriFokus = (tip) => {
     else prijedloziOdredisni.value = []
   }, 150)
 }
-const izracunajUdaljenostIzKoordinata = async () => {
+
+const izracunajUdaljenost = async () => {
   ucitavanjeUdaljenosti.value = true
   
   try {
@@ -285,37 +285,14 @@ const izracunajUdaljenostIzKoordinata = async () => {
   }
 }
 
-const dohvatiKoordinate = async (adresa) => {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresa)}`
-    const response = await fetch(url)
-    const data = await response.json()
-    
-    if (data && data.length > 0) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lon: parseFloat(data[0].lon)
-      }
-    }
-    return null
-  } catch (error) {
-    console.error('Greška pri dohvaćanju koordinata:', error)
-    return null
-  }
-}
-
-const toRad = (value) => {
-  return value * Math.PI / 180
-}
-
 const izracunajHaversineUdaljenost = (lat1, lon1, lat2, lon2) => {
   const R = 6371
-  const dLat = toRad(lat2 - lat1)
-  const dLon = toRad(lon2 - lon1)
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
   
   const a = 
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
     Math.sin(dLon / 2) * Math.sin(dLon / 2)
   
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
@@ -323,6 +300,7 @@ const izracunajHaversineUdaljenost = (lat1, lon1, lat2, lon2) => {
   
   return d * 1.3
 }
+
 const dohvatiCestovnuUdaljenost = async (lon1, lat1, lon2, lat2) => {
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`
@@ -339,55 +317,11 @@ const dohvatiCestovnuUdaljenost = async (lon1, lat1, lon2, lat2) => {
   }
 }
 
-const izracunajUdaljenost = async () => {
-  if (!polazniGrad.value || !odredisniGrad.value) {
-    return
-  }
-  
-  ucitavanjeUdaljenosti.value = true
-  
-  try {
-    const koordinate1 = await dohvatiKoordinate(polazniGrad.value)
-    const koordinate2 = await dohvatiKoordinate(odredisniGrad.value)
-    
-    if (koordinate1 && koordinate2) {
-      polazneKoordinate.value = koordinate1
-      odredisneKoordinate.value = koordinate2
-
-      const cestovnaUdaljenost = await dohvatiCestovnuUdaljenost(
-        koordinate1.lon, koordinate1.lat,
-        koordinate2.lon, koordinate2.lat
-      )
-      
-      if (cestovnaUdaljenost) {
-        udaljenost.value = Math.round(cestovnaUdaljenost)
-      } else {
-        const izracunataUdaljenost = izracunajHaversineUdaljenost(
-          koordinate1.lat, koordinate1.lon,
-          koordinate2.lat, koordinate2.lon
-        )
-        
-        udaljenost.value = Math.round(izracunataUdaljenost)
-      }
-    } else {
-      console.error('Nije moguće pronaći jedan ili oba grada')
-      alert('Nije moguće izračunati udaljenost. Molimo provjerite nazive gradova ili unesite udaljenost ručno.')
-    }
-  } catch (error) {
-    console.error('Greška pri izračunu udaljenosti:', error)
-    alert('Došlo je do greške pri izračunu udaljenosti. Molimo unesite udaljenost ručno.')
-  } finally {
-    ucitavanjeUdaljenosti.value = false
-  }
-}
-
 const preuzmiPDF = () => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
-  const lineHeight = 7;
   let y = 30;
-
 
   doc.setFontSize(22);
   doc.setTextColor(18, 52, 88);
@@ -400,7 +334,6 @@ const preuzmiPDF = () => {
   doc.line(margin, y, pageWidth - margin, y);
   y += 10;
 
-
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'normal');
@@ -412,19 +345,17 @@ const preuzmiPDF = () => {
   });
   
   doc.text(`Datum: ${datum}`, margin, y);
-  y += lineHeight;
+  y += 7;
 
   if (puniPolazniGrad.value && puniOdredisniGrad.value) {
     doc.text(`Lokacija: ${puniPolazniGrad.value} - ${puniOdredisniGrad.value}`, margin, y);
-    y += lineHeight;
+    y += 7;
   } else if (polazniGrad.value && odredisniGrad.value) {
     doc.text(`Lokacija: ${polazniGrad.value} - ${odredisniGrad.value}`, margin, y);
-    y += lineHeight;
+    y += 7;
   }
 
-
   y += 10;
-
 
   const stavke = [
     { naziv: 'Snimanje', vrijednost: `${brojSati.value} h × ${satnica.value} EUR`, iznos: `${osnovnaCijena.value} EUR` }
@@ -432,7 +363,7 @@ const preuzmiPDF = () => {
 
   if (udaljenost.value > 0) {
     stavke.push({
-      naziv: 'Putni troškovi (cestovna udaljenost)',
+      naziv: 'Putni troškovi',
       vrijednost: `${udaljenost.value} km × 0.4 × 2`,
       iznos: `${putniTroskovi.value} EUR`
     });
@@ -442,7 +373,7 @@ const preuzmiPDF = () => {
     stavke.push({ naziv: 'Snimanje dronom', vrijednost: '', iznos: '50 EUR' });
   }
 
-  if (edit.value) {
+  if (editiranje.value) {
     stavke.push({ naziv: 'Editiranje', vrijednost: '', iznos: '50 EUR' });
   }
 
@@ -455,7 +386,6 @@ const preuzmiPDF = () => {
   doc.text('Detalji', pageWidth / 2 - 20, y + 7);
   doc.text('Iznos', pageWidth - margin - 25, y + 7);
   y += 12;
-
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
@@ -471,27 +401,16 @@ const preuzmiPDF = () => {
     y += 12;
   });
 
-
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(18, 52, 88);
   doc.text('UKUPNO:', pageWidth - margin - 55, y + 10);
   doc.text(`${ukupnaCijena.value} EUR`, pageWidth - margin - 25, y + 10);
   
-
   doc.setDrawColor(18, 52, 88);
   doc.setLineWidth(0.5);
   doc.line(pageWidth - margin - 60, y + 5, pageWidth - margin, y + 5);
   y += 20;
-
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(100, 100, 100);
-  doc.text('neki tekst moze biti', margin, y);
-  y += 5;
- 
-
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -506,7 +425,9 @@ const preuzmiPDF = () => {
 watch([polazniGrad, odredisniGrad], () => {
   if (polazniGrad.value && odredisniGrad.value) {
     setTimeout(() => {
-      izracunajUdaljenost()
+      if (polazneKoordinate.value && odredisneKoordinate.value) {
+        izracunajUdaljenost()
+      }
     }, 500)
   }
 })
@@ -552,7 +473,7 @@ watch([polazniGrad, odredisniGrad], () => {
   gap: 30px;
 }
 
-.forma-okvir, .izracun-okvir {
+.unos-okvir, .pregled-okvir {
   flex: 1;
   padding: 24px;
   border-radius: 12px;
@@ -561,24 +482,24 @@ watch([polazniGrad, odredisniGrad], () => {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.forma-okvir:hover, .izracun-okvir:hover {
+.unos-okvir:hover, .pregled-okvir:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-.forma-grupa {
+.grupa {
   margin-bottom: 20px;
 }
 
-.forma-grupa label {
+.grupa label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
   color: #123458;
 }
 
-.forma-grupa input[type="text"],
-.forma-grupa input[type="number"] {
+.grupa input[type="text"],
+.grupa input[type="number"] {
   width: 100%;
   padding: 12px;
   border-radius: 6px;
@@ -589,18 +510,17 @@ watch([polazniGrad, odredisniGrad], () => {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.forma-grupa input:focus {
+.grupa input:focus {
   outline: none;
   border-color: #123458;
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
-/* Stilovi za autocomplete dropdown */
-.input-with-suggestions {
+.unos-sa-prijedlozima {
   position: relative;
 }
 
-.suggestions-dropdown {
+.prijedlozi-dropdown {
   position: absolute;
   width: 100%;
   max-height: 200px;
@@ -612,13 +532,13 @@ watch([polazniGrad, odredisniGrad], () => {
   z-index: 10;
 }
 
-.suggestion-item {
+.prijedlog-stavka {
   padding: 10px 12px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.suggestion-item:hover {
+.prijedlog-stavka:hover {
   background-color: #f5f5f5;
 }
 
@@ -628,7 +548,7 @@ watch([polazniGrad, odredisniGrad], () => {
   align-items: center;
 }
 
-.status-text {
+.status-tekst {
   margin-left: 10px;
   font-size: 0.85rem;
   color: #666;
@@ -642,11 +562,11 @@ watch([polazniGrad, odredisniGrad], () => {
   100% { opacity: 0.6; }
 }
 
-.opcije-container {
+.opcije-kontejner {
   margin-top: 25px;
 }
 
-.opcije-container h3 {
+.opcije-kontejner h3 {
   color: #123458;
   font-size: 1.2rem;
   margin-bottom: 15px;
@@ -658,7 +578,7 @@ watch([polazniGrad, odredisniGrad], () => {
   margin-bottom: 12px;
 }
 
-.gumb-opcija {
+.opcija-gumb {
   width: 100%;
   display: flex;
   align-items: center;
@@ -675,32 +595,32 @@ watch([polazniGrad, odredisniGrad], () => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.gumb-opcija .material-icons {
+.opcija-gumb .material-icons {
   color: #123458;
   font-size: 20px;
 }
 
-.gumb-opcija:hover {
+.opcija-gumb:hover {
   background-color: #c5b7a9;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.gumb-opcija.aktivno {
+.opcija-gumb.aktivno {
   background-color: #123458;
   color: #F1EFEC;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.gumb-opcija.aktivno .material-icons {
+.opcija-gumb.aktivno .material-icons {
   color: #F1EFEC;
 }
 
-.gumb-opcija.aktivno:hover {
+.opcija-gumb.aktivno:hover {
   background-color: #1c4c80;
 }
 
-.pregled-container {
+.pregled-kontejner {
   background-color: #f9f9f9;
   padding: 20px;
   border-radius: 8px;
@@ -726,7 +646,7 @@ watch([polazniGrad, odredisniGrad], () => {
   color: #123458;
 }
 
-.gumb-preuzmi {
+.preuzmi-gumb {
   background-color: #123458;
   color: #F1EFEC;
   border: none;
@@ -744,32 +664,179 @@ watch([polazniGrad, odredisniGrad], () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.gumb-preuzmi:hover {
+.preuzmi-gumb:hover {
   background-color: #1c4c80;
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.gumb-preuzmi .material-icons {
+.preuzmi-gumb .material-icons {
   font-size: 20px;
 }
 
-@media (max-width: 768px) {
-  .glavni-sadrzaj {
-    flex-direction: column;
+@media (max-width: 1024px) {
+  .cjenovnik {
+    padding: 25px;
   }
-  
+
+  .glavni-sadrzaj {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cjenovnik {
+    padding: 20px;
+  }
+
   .naslov {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     margin-bottom: 30px;
   }
+
+  .glavni-sadrzaj {
+    flex-direction: column;
+    gap: 20px;
+  }
   
-  .forma-okvir, .izracun-okvir {
+  .unos-okvir, .pregled-okvir {
     padding: 20px;
   }
   
-  .suggestions-dropdown {
+  .prijedlozi-dropdown {
     max-height: 150px;
   }
+
+  .opcije-kontejner {
+    margin-top: 20px;
+  }
+
+  .opcija-gumb {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .opcija-gumb .material-icons {
+    font-size: 18px;
+  }
+
+  .pregled-kontejner {
+    padding: 16px;
+  }
+
+  .stavka-red {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .ukupno {
+    font-size: 1.1rem;
+    margin-top: 12px;
+    padding-top: 8px;
+  }
+
+  .preuzmi-gumb {
+    padding: 12px 0;
+    font-size: 14px;
+  }
 }
-</style>
+
+@media (max-width: 480px) {
+  .cjenovnik {
+    padding: 15px;
+  }
+
+  .naslov {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
+  }
+
+  .glavni-sadrzaj {
+    gap: 15px;
+  }
+
+  .unos-okvir, .pregled-okvir {
+    padding: 16px;
+  }
+
+  .grupa {
+    margin-bottom: 16px;
+  }
+
+  .grupa label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .grupa input {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .prijedlozi-dropdown {
+    max-height: 120px;
+  }
+
+  .prijedlog-stavka {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .status-tekst {
+    font-size: 0.8rem;
+    margin-left: 8px;
+  }
+
+  .opcije-kontejner {
+    margin-top: 16px;
+  }
+
+  .opcije-kontejner h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .opcija-red {
+    margin-bottom: 10px;
+  }
+
+  .opcija-gumb {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .opcija-gumb .material-icons {
+    font-size: 16px;
+  }
+
+  .pregled-okvir h2 {
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+  }
+
+  .pregled-kontejner {
+    padding: 12px;
+  }
+
+  .stavka-red {
+    font-size: 14px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+
+  .ukupno {
+    font-size: 1rem;
+    margin-top: 10px;
+    padding-top: 6px;
+  }
+
+  .preuzmi-gumb {
+    padding: 10px 0;
+    font-size: 13px;
+  }
+
+  .preuzmi-gumb .material-icons {
+    font-size: 18px;
+  }
+} </style>

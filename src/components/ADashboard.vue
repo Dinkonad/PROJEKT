@@ -1,58 +1,138 @@
 <template>
   <div class="admin-ploca">
-    <div class="gornja-traka">
-      <div class="traka-sadrzaj">
-        <div class="profil-padajuci">
-          <div class="profil-ikona" @click="promijeniProfilIzbornik">
+    <div class="bocna-traka" :class="{ 'otvorena': bocnaTrakaOtvorena }">
+      <div class="bocna-traka-sadrzaj">
+        <button class="zatvori-bocnu-traku" @click="toggleBocnaTraka">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="bocna-profil-sekcija">
+          <div class="bocna-profil-ikona">
             {{ korisnikInicijali }}
           </div>
-          <div class="profil-izbornik" v-if="prikaziProfilIzbornik">
-            <div class="korisnik-email">{{ korisnikEmail }}</div>
-            <div class="izbornik-opcija odjava-opcija" @click="odjaviKorisnika">Odjava</div>
+          <div class="bocna-korisnik-info">
+            <div class="bocna-korisnik-email">{{ korisnikEmail }}</div>
+            <div class="bocna-korisnik-uloga">Administrator</div>
+          </div>
+          <div class="odjava-sekcija">
+            <button class="gumb-odjava" @click="odjaviKorisnika">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Odjava
+            </button>
           </div>
         </div>
+
+        <nav class="bocna-navigacija">
+          <div class="nav-grupa">
+            <router-link to="/admin" class="nav-stavka" exact-active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="9"></rect>
+                <rect x="14" y="3" width="7" height="5"></rect>
+                <rect x="14" y="12" width="7" height="9"></rect>
+                <rect x="3" y="16" width="7" height="5"></rect>
+              </svg>
+              Dashboard
+            </router-link>
+            <router-link to="/admin/prihodi" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              Prihodi
+            </router-link>
+            <router-link to="/admin/oprema" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21,15 16,10 5,21"></polyline>
+              </svg>
+              Oprema
+            </router-link>
+          </div>
+
+          <div class="nav-grupa">
+            <router-link to="/admin/cjenovnik" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14,2 14,8 20,8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10,9 9,9 8,9"></polyline>
+              </svg>
+              Cjenovnik
+            </router-link>
+            <router-link to="/admin/upload" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Upload
+            </router-link>
+            <router-link to="/admin/karte" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              Karta
+            </router-link>
+          </div>
+
+          <div class="nav-grupa">
+            <router-link to="/admin/kalendar" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Kalendar
+            </router-link>
+            <router-link to="/admin/aktivnosti" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              Aktivnost
+            </router-link>
+            <router-link to="/admin/korisni-linkovi" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              Linkovi
+            </router-link>
+            <router-link to="/admin/kreativna-zona" class="nav-stavka" active-class="aktivna">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              Kreativna zona
+            </router-link>
+          </div>
+        </nav>
       </div>
     </div>
 
-    <div class="ploca-sadrzaj">
-      <nav class="bocna-navigacija">
-        <div class="navigacijske-veze">
-          <router-link to="/admin" class="nav-veza" exact-active-class="aktivna">
-            Dashboard
-          </router-link>
-          <router-link to="/admin/prihodi" class="nav-veza" active-class="aktivna">
-            Prihodi
-          </router-link>
-          <router-link to="/admin/oprema" class="nav-veza" active-class="aktivna">
-            Oprema
-          </router-link>
-          <router-link to="/admin/cjenovnik" class="nav-veza" active-class="aktivna">
-            Cjenovnik
-          </router-link>
-          <router-link to="/admin/kalendar" class="nav-veza" active-class="aktivna">
-            Kalendar
-          </router-link>
-          <router-link to="/admin/upload" class="nav-veza" active-class="aktivna">
-            Upload
-          </router-link>
-          <router-link to="/admin/aktivnosti" class="nav-veza" active-class="aktivna">
-            Aktivnost
-          </router-link>
-          <router-link to="/admin/karte" class="nav-veza" active-class="aktivna">
-            Karta
-          </router-link>
-          <router-link to="/admin/korisni-linkovi" class="nav-veza" active-class="aktivna">
-            Linkovi
-          </router-link>
-          <router-link to="/admin/kreativna-zona" class="nav-veza" active-class="aktivna">
-            Kreativna zona
-          </router-link>
-        </div>
-      </nav>
-      
-      <div class="glavni-sadrzaj">
-        <div v-if="$route.path === '/admin'" class="dashboard-stranica">
+    <div v-if="bocnaTrakaOtvorena" class="bocna-overlay" @click="toggleBocnaTraka"></div>
 
+    <button v-if="!bocnaTrakaOtvorena" class="otvori-bocnu-traku" @click="toggleBocnaTraka">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="glavni-sadrzaj" :class="{ 'pomjeren': bocnaTrakaOtvorena }">
+      <div class="sadrzaj-omotac">
+        <div v-if="$route.path === '/admin'" class="dashboard-stranica">
           <div class="nadolazeci-dogadaji">
             <div class="dogadaji-zaglavlje">
               <h2>Nadolazeći događaji</h2>
@@ -91,7 +171,6 @@
 
             <div v-if="nadolazeciDogadaji.length === 0" class="nema-dogadaja">
               <div class="prazan-sadrzaj">
-                
                 <p>Nema nadolazećih događaja</p>
               </div>
             </div>
@@ -183,7 +262,7 @@ import { useAuth } from '../store/auth';
 const router = useRouter();
 const { logout: authLogout } = useAuth();
 
-const prikaziProfilIzbornik = ref(false);
+const bocnaTrakaOtvorena = ref(false);
 const sviKomentari = ref([]);
 const statusFiltera = ref('');
 const prikaziPotvrdBrisanja = ref(false);
@@ -191,15 +270,8 @@ const komentarZaBrisanje = ref(null);
 const prikaziSveKomentare = ref(false);
 const kalendar = ref([]);
 
-
 const korisnikEmail = computed(() => 'naddinko@gmail.com');
 const korisnikInicijali = computed(() => korisnikEmail.value.charAt(0).toUpperCase());
-
-
-const brojNeprocetiKomentari = computed(() => {
-  return sviKomentari.value.filter(k => !k.procitan).length;
-});
-
 
 const filtriraniKomentari = computed(() => {
   let filtrirani = [...sviKomentari.value];
@@ -232,8 +304,8 @@ const nadolazeciDogadaji = computed(() => {
     .sort((a, b) => new Date(a.pocetniDatum) - new Date(b.pocetniDatum));
 });
 
-const promijeniProfilIzbornik = () => {
-  prikaziProfilIzbornik.value = !prikaziProfilIzbornik.value;
+const toggleBocnaTraka = () => {
+  bocnaTrakaOtvorena.value = !bocnaTrakaOtvorena.value;
 };
 
 const odjaviKorisnika = async () => {
@@ -324,7 +396,6 @@ const promijeniPrikazSvihKomentara = () => {
   prikaziSveKomentare.value = !prikaziSveKomentare.value;
 };
 
-
 const formatirajDatum = (timestamp) => {
   if (!timestamp) return 'Nepoznat datum';
   
@@ -366,7 +437,6 @@ onMounted(() => {
   ucitajKomentare();
   ucitajKalendar();
   
- 
   setInterval(() => {
     ucitajKomentare();
     ucitajKalendar();
@@ -377,211 +447,266 @@ onMounted(() => {
 <style scoped>
 .admin-ploca {
   display: flex;
-  flex-direction: column;
   height: 100vh;
-  margin: 0;
-}
-
-.gornja-traka {
-  height: 50px;
-  z-index: 10;
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 10px 20px;
-}
-
-.traka-sadrzaj {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 100%;
-}
-
-.profil-padajuci {
+  background-color: #F1EFEC;
+  font-family: 'Roboto', sans-serif;
   position: relative;
 }
 
-.profil-ikona {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.bocna-traka {
+  position: fixed;
+  left: -300px;
+  top: 0;
+  width: 300px;
+  height: 100vh;
   background-color: #123458;
   color: white;
+  transition: left 0.3s ease;
+  z-index: 1000;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.bocna-traka.otvorena {
+  left: 0;
+}
+
+.bocna-traka-sadrzaj {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 16px;
-  transition: transform 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
 }
 
-.profil-ikona:hover {
-  transform: scale(1.05);
-}
-
-.profil-izbornik {
+.zatvori-bocnu-traku {
   position: absolute;
-  top: 50px;
-  right: 0;
-  width: 200px;
-  background-color: white;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  overflow: hidden;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.korisnik-email {
-  padding: 15px;
-  border-bottom: 1px solid #eee;
-  color: #555;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.izbornik-opcija {
-  padding: 12px 15px;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
   cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
   transition: background-color 0.2s;
 }
 
-.izbornik-opcija:hover {
-  background-color: #f56358;
+.zatvori-bocnu-traku:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
-.odjava-opcija {
-  color: white;
-  font-weight: bold;
-  background-color: #f44336;
-  text-align: center;
-}
-
-.ploca-sadrzaj {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.bocna-navigacija {
-  width: 250px;
-  background-color: #123458;
+.bocna-profil-sekcija {
   display: flex;
   flex-direction: column;
-  margin: 0;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.navigacijske-veze {
-  display: flex;
-  flex-direction: column;
-}
-
-.nav-veza {
-  padding: 15px;
-  text-decoration: none;
-  color: #ecf0f1;
-  transition: background-color 0.3s, transform 0.2s;
+.bocna-profil-ikona {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  position: relative;
-}
-
-.nav-veza:hover {
-  background-color: rgba(255,255,255,0.1);
-  transform: translateX(5px);
-}
-
-.nav-veza.aktivna {
-  background-color: #2261a5;
-}
-
-.nav-veza.router-link-active:not(.aktivna) {
-  background-color: transparent;
-}
-
-.glavni-sadrzaj {
-  flex-grow: 1;
-  overflow-y: auto;
-  background-color: #F1EFEC;
-  margin: 0;
-}
-
-.dashboard-stranica {
-  padding: 30px;
-  max-width: 1200px;
+  font-weight: bold;
+  font-size: 18px;
+  flex-shrink: 0;
   margin: 0 auto;
 }
 
-.nadolazeci-dogadaji {
-  background-color: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #D4C9BE;
-  margin-bottom: 30px;
+.bocna-korisnik-info {
+  text-align: center;
 }
 
-.dogadaji-zaglavlje {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.dogadaji-zaglavlje h2 {
-  color: #123458;
-  margin: 0;
-  font-weight: 600;
-  font-size: 1.5rem;
-}
-
-.gumb-kalendar {
-  padding: 8px 16px;
-  background-color: #123458;
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
+.bocna-korisnik-email {
   font-size: 0.9rem;
+  opacity: 0.9;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
+
+.bocna-korisnik-uloga {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  color: #D4C9BE;
+}
+
+.odjava-sekcija {
+  display: flex;
+  justify-content: center;
+}
+
+.gumb-odjava {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
-.gumb-kalendar:hover {
-  background-color: #1c4c80;
+.gumb-odjava:hover {
+  background-color: #c62828;
 }
 
-.dogadaji-lista {
+.bocna-navigacija {
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.nav-grupa {
+  margin-bottom: 25px;
+}
+
+.nav-stavka {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 5px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.nav-stavka:hover,
+.nav-stavka.aktivna {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.nav-stavka.aktivna {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid #D4C9BE;
+}
+
+.bocna-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+}
+
+.otvori-bocnu-traku {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background-color: #123458;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.otvori-bocnu-traku:hover {
+  background-color: #1c4c80;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.glavni-sadrzaj {
+  flex: 1;
+  transition: margin-left 0.3s ease;
+  overflow-y: auto;
+}
+
+.glavni-sadrzaj.pomjeren {
+  margin-left: 300px;
+}
+
+.sadrzaj-omotac {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.dashboard-stranica {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 40px;
+}
+
+.nadolazeci-dogadaji,
+.nedavni-komentari {
+  background-color: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #D4C9BE;
+}
+
+.dogadaji-zaglavlje,
+.komentari-zaglavlje {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.dogadaji-zaglavlje h2,
+.komentari-zaglavlje h2 {
+  color: #123458;
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.8rem;
+}
+
+.gumb-kalendar {
+  padding: 12px 20px;
+  background-color: #123458;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.gumb-kalendar:hover {
+  background-color: #1c4c80;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dogadaji-lista,
+.komentari-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .dogadaj-kartica {
   background-color: #F1EFEC;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 24px;
   border-left: 4px solid;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .dogadaj-kartica:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .dogadaj-kartica.dogadaj-zuta { border-left-color: #ffc107; }
@@ -645,42 +770,6 @@ onMounted(() => {
   border: 1px solid #D4C9BE;
 }
 
-.nema-dogadaja {
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.nema-dogadaja .prazan-sadrzaj {
-  color: #123458;
-}
-
-.nema-dogadaja .prazan-ikona {
-  font-size: 3rem;
-  margin-bottom: 15px;
-  opacity: 0.6;
-}
-
-.nema-dogadaja .prazan-sadrzaj p {
-  font-size: 1rem;
-  font-weight: 500;
-  margin: 0;
-}
-
-.nedavni-komentari {
-  background-color: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #D4C9BE;
-}
-
-.komentari-zaglavlje {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
 .komentari-filteri {
   display: flex;
   gap: 10px;
@@ -701,19 +790,6 @@ onMounted(() => {
   outline: none;
   border-color: #123458;
   box-shadow: 0 0 0 2px rgba(18, 52, 88, 0.1);
-}
-
-.nedavni-komentari h2 {
-  color: #123458;
-  margin: 0;
-  font-weight: 600;
-  font-size: 1.5rem;
-}
-
-.komentari-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
 }
 
 .komentar-kartica {
@@ -855,6 +931,7 @@ onMounted(() => {
   background-color: #1c4c80;
 }
 
+.nema-dogadaja,
 .nema-komentara {
   padding: 40px 20px;
   text-align: center;
@@ -862,12 +939,6 @@ onMounted(() => {
 
 .prazan-sadrzaj {
   color: #123458;
-}
-
-.prazan-ikona {
-  font-size: 3rem;
-  margin-bottom: 15px;
-  opacity: 0.6;
 }
 
 .prazan-sadrzaj p {
@@ -908,6 +979,17 @@ onMounted(() => {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -960,21 +1042,56 @@ onMounted(() => {
   background-color: #c62828;
 }
 
-@media (max-width: 768px) {
-  .dashboard-stranica {
-    padding: 20px;
+@media (max-width: 1024px) {
+  .gornja-traka.pomjerena {
+    left: 0;
+  }
+  
+  .glavni-sadrzaj.pomjeren {
+    margin-left: 0;
+  }
+  
+  .bocna-overlay {
+    display: block;
+  }
+
+  .sadrzaj-omotac {
+    padding: 30px;
   }
 
   .nadolazeci-dogadaji,
   .nedavni-komentari {
+    padding: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sadrzaj-omotac {
     padding: 20px;
   }
+  
+  .nadolazeci-dogadaji,
+  .nedavni-komentari {
+    padding: 20px;
+    border-radius: 12px;
+  }
 
+  .dogadaji-zaglavlje h2,
+  .komentari-zaglavlje h2 {
+    font-size: 1.4rem;
+  }
+  
   .dogadaji-zaglavlje,
   .komentari-zaglavlje {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
+  }
+
+  .gumb-kalendar {
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 0.9rem;
   }
 
   .dogadaj-zaglavlje {
@@ -987,6 +1104,19 @@ onMounted(() => {
     align-self: flex-start;
   }
 
+  .dogadaj-klijent {
+    font-size: 1.2rem;
+  }
+
+  .dogadaj-datum {
+    font-size: 0.9rem;
+  }
+
+  .dogadaj-opis {
+    font-size: 0.9rem;
+    padding: 12px;
+  }
+
   .komentar-zaglavlje {
     flex-direction: column;
     gap: 10px;
@@ -996,29 +1126,70 @@ onMounted(() => {
   .komentar-akcije {
     align-self: flex-end;
   }
+
+  .komentar-autor {
+    font-size: 0.95rem;
+  }
+
+  .komentar-datum,
+  .komentar-slika {
+    font-size: 0.85rem;
+  }
+
+  .komentar-sadrzaj p {
+    font-size: 0.9rem;
+  }
+
+  .bocna-traka {
+    width: 100%;
+    left: -100%;
+  }
+
+  .bocna-traka.otvorena {
+    left: 0;
+  }
+
+  .traka-sadrzaj {
+    padding: 0 20px;
+  }
 }
 
 @media (max-width: 480px) {
-  .dashboard-stranica {
+  .sadrzaj-omotac {
     padding: 15px;
+  }
+
+  .dashboard-stranica {
+    gap: 25px;
   }
 
   .nadolazeci-dogadaji,
   .nedavni-komentari {
-    padding: 20px;
+    padding: 15px;
+    border-radius: 10px;
+  }
+
+  .dogadaji-zaglavlje h2,
+  .komentari-zaglavlje h2 {
+    font-size: 1.2rem;
   }
 
   .dogadaj-kartica,
   .komentar-kartica {
-    padding: 12px;
+    padding: 15px;
   }
 
   .dogadaj-klijent {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
   .dogadaj-datum {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .dogadaj-opis {
+    font-size: 0.85rem;
+    padding: 10px;
   }
 
   .komentar-meta {
@@ -1026,12 +1197,20 @@ onMounted(() => {
   }
 
   .komentar-autor {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 
   .komentar-datum,
   .komentar-slika {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .komentar-sadrzaj {
+    padding: 12px;
+  }
+
+  .komentar-sadrzaj p {
+    font-size: 0.85rem;
   }
 
   .potvrda-modal {
@@ -1048,4 +1227,54 @@ onMounted(() => {
   .gumb-potvrdi {
     width: 100%;
   }
-} </style> 
+
+  .traka-sadrzaj {
+    padding: 0 15px;
+  }
+
+  .bocna-traka-sadrzaj {
+    padding: 15px;
+  }
+
+  .gumb-kalendar {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .dogadaj-oznaka {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .gumb-procitan,
+  .gumb-obrisi {
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+
+  .pokazi-vise {
+    margin-top: 15px;
+    padding-top: 15px;
+  }
+
+  .gumb-pokazi-vise {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+
+  .filter-select {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .nema-dogadaja,
+  .nema-komentara {
+    padding: 30px 15px;
+  }
+
+  .prazan-sadrzaj p {
+    font-size: 0.9rem;
+  }
+}
+</style>

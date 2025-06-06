@@ -1,15 +1,15 @@
 <template>
-  <div class="karte-container">
-    <div class="page-header">
-      <h2 class="naslov">Karta</h2>
+  <div class="karta">
+    <div class="naslov-sekcija">
+      <h2 class="glavni-naslov">Karta</h2>
     </div>
     
-    <div class="glavni-sadrzaj">
-      <div class="mapa-container">
-        <div class="mapa-header">
+    <div class="sadrzaj">
+      <div class="mapa-okvir">
+        <div class="mapa-zaglavlje">
           <h3>Karta evenata prikazana po lokacijama</h3>
-          <div class="mapa-kontrole">
-            <button @click="prikaziSveLokacije" class="btn-sve-lokacije">
+          <div class="mapa-gumbovi">
+            <button @click="prikaziSveLokacije" class="prikazuj-sve-gumb">
                Prikaži sve
             </button>
           </div>
@@ -17,17 +17,15 @@
         <div class="mapa-wrapper">
           <div id="mapa" class="mapa"></div>
           
-    
-          <div class="mapa-legenda">
-            <div class="legenda-item">
-              <div class="legenda-marker" style="background-color: #123458;">📍</div>
+          <div class="legenda">
+            <div class="legenda-stavka">
+              <div class="legenda-oznaka" style="background-color: #123458;">📍</div>
               <span>Event lokacije</span>
             </div>
           </div>
           
-   
-          <div v-if="mapaUcitava" class="mapa-loading">
-            <div class="loading-spinner"></div>
+          <div v-if="mapaUcitava" class="ucitavanje">
+            <div class="spinner"></div>
             <p>Učitavam mapu...</p>
           </div>
         </div>
@@ -37,8 +35,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 
 const prihodi = ref([]);
 const mapaUcitava = ref(true);
@@ -56,11 +53,11 @@ const ucitajPrihode = () => {
   }
 };
 
-const formatCurrency = (value) => {
+const formatirajValutu = (value) => {
   return `${parseFloat(value).toFixed(2)} EUR`;
 };
 
-const formatDatum = (dateString) => {
+const formatirajDatum = (dateString) => {
   const date = new Date(dateString);
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -68,24 +65,17 @@ const formatDatum = (dateString) => {
   return `${day}.${month}.${year}`;
 };
 
-const resetirajFiltre = () => {
-
-};
-
 const prikaziEventDetalje = (event) => {
   odabraniEvent.value = event;
 };
 
-const initMapa = async () => {
+const pokretniMapa = async () => {
   try {
     mapaUcitava.value = true;
     
-
     await nextTick();
     
-
     if (typeof L === 'undefined') {
-
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -108,7 +98,6 @@ const initMapa = async () => {
 
 const stvoriMapu = () => {
   try {
-  
     const pulaLat = 44.8719;
     const pulaLng = 13.8481;
     
@@ -119,7 +108,6 @@ const stvoriMapu = () => {
     }).addTo(mapa.value);
     
     mapaUcitava.value = false;
-  
     azurirajMarkere();
   } catch (error) {
     console.error('Greška pri stvaranju mape:', error);
@@ -127,7 +115,7 @@ const stvoriMapu = () => {
   }
 };
 
-const geokodirajLokaciju = async (lokacijaNaziv) => {
+const pronadjiKoordinate = async (lokacijaNaziv) => {
   try {
     console.log('Geokoding za:', lokacijaNaziv);
     const response = await fetch(
@@ -151,7 +139,6 @@ const geokodirajLokaciju = async (lokacijaNaziv) => {
 };
 
 const azurirajMarkere = async () => {
-
   markeri.value.forEach(marker => {
     mapa.value.removeLayer(marker);
   });
@@ -162,20 +149,16 @@ const azurirajMarkere = async () => {
   console.log('Ažuriram markere. Ukupno prihoda:', prihodi.value.length);
 
   const koordinateCache = new Map();
-
   const sviPrihodi = [...prihodi.value];
   
   console.log('Prikazujem sve prihode:', sviPrihodi.length);
-  
 
   for (const event of sviPrihodi) {
     const lokacijaNaziv = event.lokacija.trim();
-    
 
     if (!koordinateCache.has(lokacijaNaziv)) {
-      const koordinate = await geokodirajLokaciju(lokacijaNaziv);
+      const koordinate = await pronadjiKoordinate(lokacijaNaziv);
       koordinateCache.set(lokacijaNaziv, koordinate);
- 
       await new Promise(resolve => setTimeout(resolve, 200));
     }
     
@@ -190,7 +173,6 @@ const azurirajMarkere = async () => {
 
 const dodajEventMarker = (event, koordinate) => {
   if (!mapa.value || !koordinate) return;
-  
 
   const markerIcon = L.divIcon({
     className: 'custom-event-marker',
@@ -202,6 +184,7 @@ const dodajEventMarker = (event, koordinate) => {
     iconSize: [35, 35],
     iconAnchor: [17, 35]
   });
+  
   const offsetLat = (Math.random() - 0.5) * 0.002;
   const offsetLng = (Math.random() - 0.5) * 0.002;
   
@@ -211,29 +194,29 @@ const dodajEventMarker = (event, koordinate) => {
   
   const popupSadrzaj = `
     <div class="popup-sadrzaj">
-      <div class="popup-header">
+      <div class="popup-zaglavlje">
         <h4>${event.nazivEventa}</h4>
       </div>
-      <div class="popup-event-details">
-        <div class="popup-row">
-          <span class="popup-icon">👤</span>
+      <div class="popup-detalji">
+        <div class="popup-red">
+        
           <div class="popup-info">
-            <span class="popup-label">Klijent</span>
-            <span class="popup-value">${event.imeIPrezime}</span>
+            <span class="popup-naziv">Klijent</span>
+            <span class="popup-vrijednost">${event.imeIPrezime}</span>
           </div>
         </div>
-        <div class="popup-row">
-          <span class="popup-icon">📍</span>
+        <div class="popup-red">
+       
           <div class="popup-info">
-            <span class="popup-label">Lokacija</span>
-            <span class="popup-value">${event.lokacija}</span>
+            <span class="popup-naziv">Lokacija</span>
+            <span class="popup-vrijednost">${event.lokacija}</span>
           </div>
         </div>
-        <div class="popup-row">
-          <span class="popup-icon">📅</span>
+        <div class="popup-red">
+          
           <div class="popup-info">
-            <span class="popup-label">Datum</span>
-            <span class="popup-value">${formatDatum(event.datumSnimanja)}</span>
+            <span class="popup-naziv">Datum</span>
+            <span class="popup-vrijednost">${formatirajDatum(event.datumSnimanja)}</span>
           </div>
         </div>
       </div>
@@ -250,9 +233,6 @@ const dodajEventMarker = (event, koordinate) => {
   });
   
   markeri.value.push(marker);
-};
-
-const centrirajNaLokaciju = (lokacija) => {
 };
 
 const prikaziSveLokacije = () => {
@@ -274,7 +254,8 @@ onMounted(() => {
       }
     }
   });
-  initMapa();
+  
+  pokretniMapa();
   
   const interval = setInterval(() => {
     const trenutniPrihodi = localStorage.getItem('prihodi');
@@ -304,7 +285,7 @@ onUnmounted(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
-.karte-container {
+.karta {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
@@ -315,12 +296,12 @@ onUnmounted(() => {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
 }
 
-.page-header {
+.naslov-sekcija {
   text-align: center;
   margin-bottom: 30px;
 }
 
-.naslov {
+.glavni-naslov {
   color: #123458;
   margin-bottom: 10px;
   font-weight: 700;
@@ -329,7 +310,7 @@ onUnmounted(() => {
   display: inline-block;
 }
 
-.naslov::after {
+.glavni-naslov::after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -341,31 +322,26 @@ onUnmounted(() => {
   border-radius: 2px;
 }
 
-.glavni-sadrzaj {
+@media (max-width: 768px) {
+  .karta {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .glavni-naslov {
+    font-size: 1.5rem;
+  }
+  
+  .naslov-sekcija {
+    margin-bottom: 20px;
+  }
+}
+
+.sadrzaj {
   margin-bottom: 30px;
 }
 
-.statistike-panel {
-  display: none;
-}
-
-.stat-kartica {
-  display: none;
-}
-
-.stat-ikona {
-  display: none;
-}
-
-.stat-podaci h4 {
-  display: none;
-}
-
-.stat-podaci p {
-  display: none;
-}
-
-.mapa-container {
+.mapa-okvir {
   background-color: white;
   border-radius: 12px;
   padding: 20px;
@@ -373,38 +349,71 @@ onUnmounted(() => {
   border: 1px solid #D4C9BE;
 }
 
-.mapa-header {
+@media (max-width: 768px) {
+  .mapa-okvir {
+    padding: 15px;
+  }
+}
+
+.mapa-zaglavlje {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.mapa-header h3 {
+@media (max-width: 768px) {
+  .mapa-zaglavlje {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+.mapa-zaglavlje h3 {
   color: #123458;
   margin: 0;
   font-weight: 600;
   font-size: 1.1rem;
 }
 
-.mapa-kontrole {
+@media (max-width: 768px) {
+  .mapa-zaglavlje h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+}
+
+.mapa-gumbovi {
   display: flex;
   gap: 8px;
+  justify-content: center;
 }
 
-.btn-sve-lokacije {
-  padding: 6px 10px;
-  background-color: #5D8AA8;
+.prikazuj-sve-gumb {
+  padding: 8px 12px;
+  background-color: #123458;
   color: white;
   border: none;
-  border-radius: 5px;
-  font-size: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
+  font-weight: 500;
 }
 
-.btn-sve-lokacije:hover {
-  background-color: #4a7089;
+@media (max-width: 768px) {
+  .prikazuj-sve-gumb {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+}
+
+.prikazuj-sve-gumb:hover {
+  background-color: #1c4c80;
   transform: translateY(-1px);
 }
 
@@ -416,12 +425,30 @@ onUnmounted(() => {
   border: 1px solid #D4C9BE;
 }
 
+@media (max-width: 1024px) {
+  .mapa-wrapper {
+    height: 450px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mapa-wrapper {
+    height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mapa-wrapper {
+    height: 300px;
+  }
+}
+
 .mapa {
   width: 100%;
   height: 100%;
 }
 
-.mapa-loading {
+.ucitavanje {
   position: absolute;
   top: 0;
   left: 0;
@@ -435,14 +462,23 @@ onUnmounted(() => {
   z-index: 1000;
 }
 
-.loading-spinner {
+.spinner {
   width: 40px;
   height: 40px;
   border: 4px solid #D4C9BE;
   border-top: 4px solid #123458;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+    margin-bottom: 10px;
+  }
 }
 
 @keyframes spin {
@@ -450,285 +486,73 @@ onUnmounted(() => {
   100% { transform: rotate(360deg); }
 }
 
-.lokacije-lista {
-  background-color: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #D4C9BE;
-}
-
-.lista-naslov {
+.ucitavanje p {
   color: #123458;
-  margin: 0 0 20px 0;
-  font-weight: 600;
-  font-size: 1.2rem;
-  text-align: center;
-  position: relative;
+  font-weight: 500;
+  margin: 0;
+  font-size: 0.9rem;
 }
 
-.lista-naslov::after {
-  content: '';
+@media (max-width: 768px) {
+  .ucitavanje p {
+    font-size: 0.8rem;
+  }
+}
+
+.legenda {
   position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 2px;
-  background-color: #123458;
-  border-radius: 2px;
-}
-
-.prazna-lista {
-  text-align: center;
-  padding: 40px 20px;
-  color: #6c757d;
-}
-
-.prazna-lista .podnaslov {
-  font-size: 0.9rem;
-  margin-top: 10px;
-}
-
-.lokacije-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.lokacija-kartica {
+  bottom: 10px;
+  left: 10px;
   background-color: white;
-  border: 2px solid #D4C9BE;
-  border-radius: 10px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.lokacija-kartica:hover {
-  border-color: #123458;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(18, 52, 88, 0.15);
-}
-
-.kartica-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #D4C9BE;
-}
-
-.lokacija-naziv {
-  color: #123458;
-  margin: 0;
-  font-weight: 600;
-  font-size: 1.1rem;
-  flex: 1;
-  margin-right: 10px;
-}
-
-.event-broj {
-  background-color: #123458;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.lokacija-detalji {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.prihod-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: rgba(18, 52, 88, 0.05);
-  padding: 10px;
+  padding: 8px 10px;
   border-radius: 6px;
-}
-
-.ukupan-prihod {
-  font-weight: 600;
-  color: #123458;
-  font-size: 1rem;
-}
-
-.prosjecna-cijena {
-  font-size: 0.85rem;
-  color: #5D8AA8;
-}
-
-.eventi-lista h5 {
-  margin: 0 0 10px 0;
-  color: #123458;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.event-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  margin-bottom: 6px;
-  background-color: rgba(212, 201, 190, 0.1);
-  border-radius: 6px;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.event-item:hover {
-  background-color: rgba(212, 201, 190, 0.2);
-  transform: translateX(5px);
-}
-
-.event-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.event-naziv {
-  font-weight: 500;
-  color: #123458;
-  font-size: 0.9rem;
-}
-
-.event-datum {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
   font-size: 0.75rem;
-  color: #5D8AA8;
-  margin-top: 2px;
 }
 
-.event-cijena {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.placeno {
-  color: #10B981;
-}
-
-.neplaceno {
-  color: #E53935;
-}
-
-.vise-evenata {
-  text-align: center;
-  color: #5D8AA8;
-  font-style: italic;
-  font-size: 0.8rem;
-  padding: 8px;
-  background-color: rgba(93, 138, 168, 0.1);
-  border-radius: 6px;
-  margin-top: 8px;
-}
-
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal-sadrzaj {
-  background-color: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: fadeInUp 0.3s;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@media (max-width: 768px) {
+  .legenda {
+    bottom: 8px;
+    left: 8px;
+    padding: 6px 8px;
+    font-size: 0.7rem;
   }
 }
 
-.modal-header {
+.legenda-stavka {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20px 20px 15px;
-  border-bottom: 1px solid #D4C9BE;
+  margin-bottom: 4px;
 }
 
-.modal-header h4 {
-  color: #123458;
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+.legenda-stavka:last-child {
+  margin-bottom: 0;
 }
 
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #6c757d;
-  padding: 0;
-  width: 30px;
-  height: 30px;
+.legenda-oznaka {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  color: white;
+  font-size: 8px;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.modal-close:hover {
-  color: #e53935;
+@media (max-width: 768px) {
+  .legenda-oznaka {
+    width: 14px;
+    height: 14px;
+    font-size: 7px;
+    margin-right: 5px;
+  }
 }
 
-.modal-body {
-  padding: 20px;
-}
-
-.event-detalj {
-  margin-bottom: 15px;
-}
-
-.event-detalj label {
-  display: block;
-  font-weight: 600;
-  color: #123458;
-  margin-bottom: 5px;
-  font-size: 0.9rem;
-}
-
-.event-detalj p {
-  margin: 0;
-  padding: 10px;
-  background-color: #F1EFEC;
-  border-radius: 6px;
-  border: 1px solid #D4C9BE;
-}
-
-.cijena-display {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #123458;
-}
 :global(.custom-event-marker) {
   background: transparent;
   border: none;
@@ -750,6 +574,15 @@ onUnmounted(() => {
   position: relative;
 }
 
+@media (max-width: 768px) {
+  :global(.event-marker-pin) {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    border-width: 2px;
+  }
+}
+
 :global(.event-marker-pin::after) {
   content: '';
   position: absolute;
@@ -763,72 +596,107 @@ onUnmounted(() => {
   border-bottom: 2px solid white;
 }
 
+@media (max-width: 768px) {
+  :global(.event-marker-pin::after) {
+    bottom: -6px;
+    width: 6px;
+    height: 6px;
+  }
+}
+
 :global(.marker-ikona) {
   transform: rotate(45deg);
   font-size: 12px;
 }
+
+@media (max-width: 768px) {
+  :global(.marker-ikona) {
+    font-size: 10px;
+  }
+}
+
 :global(.popup-sadrzaj) {
   font-family: 'Roboto', sans-serif;
   min-width: 280px;
   max-width: 350px;
 }
 
-:global(.popup-header) {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+@media (max-width: 768px) {
+  :global(.popup-sadrzaj) {
+    min-width: 250px;
+    max-width: 300px;
+  }
+}
+
+:global(.popup-zaglavlje) {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 2px solid #123458;
 }
 
-:global(.popup-header h4) {
+@media (max-width: 768px) {
+  :global(.popup-zaglavlje) {
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+  }
+}
+
+:global(.popup-zaglavlje h4) {
   color: #123458;
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
   line-height: 1.3;
 }
 
-:global(.popup-status) {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
+@media (max-width: 768px) {
+  :global(.popup-zaglavlje h4) {
+    font-size: 1rem;
+  }
 }
 
-:global(.popup-status.placeno) {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: #10B981;
-  border: 1px solid #10B981;
-}
-
-:global(.popup-status.neplaceno) {
-  background-color: rgba(229, 57, 53, 0.15);
-  color: #E53935;
-  border: 1px solid #E53935;
-}
-
-:global(.popup-event-details) {
+:global(.popup-detalji) {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-:global(.popup-row) {
+@media (max-width: 768px) {
+  :global(.popup-detalji) {
+    gap: 8px;
+  }
+}
+
+:global(.popup-red) {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 8px;
+  gap: 8px;
+  padding: 6px;
   background-color: rgba(241, 239, 236, 0.5);
-  border-radius: 8px;
+  border-radius: 6px;
   border-left: 3px solid #123458;
 }
 
-:global(.popup-icon) {
-  font-size: 1rem;
-  width: 20px;
+@media (max-width: 768px) {
+  :global(.popup-red) {
+    padding: 5px;
+    gap: 6px;
+  }
+}
+
+:global(.popup-ikona) {
+  font-size: 0.9rem;
+  width: 18px;
   text-align: center;
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  :global(.popup-ikona) {
+    font-size: 0.8rem;
+    width: 16px;
+  }
 }
 
 :global(.popup-info) {
@@ -838,134 +706,30 @@ onUnmounted(() => {
   flex: 1;
 }
 
-:global(.popup-label) {
-  font-size: 0.75rem;
+:global(.popup-naziv) {
+  font-size: 0.7rem;
   color: #123458;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-:global(.popup-value) {
-  font-size: 0.9rem;
+@media (max-width: 768px) {
+  :global(.popup-naziv) {
+    font-size: 0.65rem;
+  }
+}
+
+:global(.popup-vrijednost) {
+  font-size: 0.85rem;
   color: #333;
   font-weight: 500;
   line-height: 1.3;
 }
 
-.mapa-legenda {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  background-color: white;
-  padding: 10px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  font-size: 0.8rem;
-}
-
-.legenda-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 5px;
-}
-
-.legenda-item:last-child {
-  margin-bottom: 0;
-}
-
-.legenda-marker {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  margin-right: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 10px;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-:global(.popup-sadrzaj) {
-  font-family: 'Roboto', sans-serif;
-  min-width: 200px;
-}
-
-:global(.popup-sadrzaj h4) {
-  color: #123458;
-  margin: 0 0 10px 0;
-  font-size: 1rem;
-  font-weight: 600;
-  border-bottom: 1px solid #D4C9BE;
-  padding-bottom: 5px;
-}
-
-:global(.popup-sadrzaj p) {
-  margin: 5px 0;
-  font-size: 0.85rem;
-  color: #333;
-}
-
-:global(.popup-eventi) {
-  margin-top: 10px;
-  border-top: 1px solid #D4C9BE;
-  padding-top: 8px;
-}
-
-:global(.popup-event) {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 0;
-  font-size: 0.8rem;
-}
-
-:global(.popup-event span) {
-  font-weight: 500;
-  color: #123458;
-}
-
-:global(.popup-event small) {
-  color: #5D8AA8;
-  font-size: 0.7rem;
-}
-
-@media (max-width: 1024px) {
-  .mapa-wrapper {
-    height: 450px;
-  }
-}
-
 @media (max-width: 768px) {
-  .karte-container {
-    padding: 15px;
-  }
-  
-  .mapa-wrapper {
-    height: 350px;
-  }
-  
-  .modal-sadrzaj {
-    width: 95%;
-    margin: 10px;
-  }
-  
-  .mapa-kontrole {
-    flex-wrap: wrap;
-    gap: 5px;
-  }
-  
-  .btn-sve-lokacije {
-    font-size: 0.7rem;
-    padding: 5px 8px;
+  :global(.popup-vrijednost) {
+    font-size: 0.8rem;
   }
 }
-
-@media (max-width: 480px) {
-  .mapa-wrapper {
-    height: 300px;
-  }
-} </style>
+</style>

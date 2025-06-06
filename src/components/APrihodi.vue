@@ -33,6 +33,7 @@
         </div>
       </div>
     </div>
+
     <div class="tablica-okvir">
       <table class="tablica">
         <thead>
@@ -68,11 +69,13 @@
         </tbody>
       </table>
     </div>
+
     <div class="dodaj-okvir">
       <button class="gumb-dodaj" @click="prikaziFormu = true">
         <span class="material-icons">add</span> Dodaj novi prihod
       </button>
     </div>
+
     <Transition name="fade">
       <div class="pozadina" v-if="detalji" @click="detalji = null">
         <div class="modal-detalji" @click.stop>
@@ -122,6 +125,7 @@
         </div>
       </div>
     </Transition>
+
     <Transition name="fade">
       <div class="pozadina" v-if="prikaziFormu" @click="prikaziFormu = false">
         <div class="modal-forma" @click.stop>
@@ -214,6 +218,7 @@
         </div>
       </div>
     </Transition>
+
     <Transition name="fade">
       <div class="pozadina" v-if="brisanjeIndeks !== null" @click="brisanjeIndeks = null">
         <div class="modal-potvrda" @click.stop>
@@ -985,20 +990,6 @@ input:checked + .klizac:before {
   opacity: 0;
 }
 
-@media (max-width: 768px) {
-  .kartice {
-    flex-direction: column;
-  }
-  
-  .prihodi {
-    padding: 15px;
-  }
-  
-  .modal-forma {
-    width: 95%;
-  }
-}
-
 .modal-forma {
   max-height: 90vh;
   overflow-y: auto;
@@ -1019,4 +1010,319 @@ input:checked + .klizac:before {
 
 .spinning {
   animation: spin 1s linear infinite;
+}
+
+@media (max-width: 1024px) {
+  .prihodi {
+    padding: 25px;
+  }
+
+  .kartice {
+    flex-direction: column;
+  }
+
+  .kartica {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .prihodi {
+    padding: 20px;
+  }
+
+  .naslov {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+  }
+
+  .kartice {
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+
+  .kartica {
+    padding: 20px;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .ikona {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .podaci .iznos {
+    font-size: 24px;
+  }
+
+  .tablica-okvir {
+    margin-bottom: 20px;
+  }
+
+  .tablica th,
+  .tablica td {
+    padding: 12px 8px;
+    font-size: 14px;
+  }
+
+  .gumb-plati {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .gumb-plati .material-icons {
+    font-size: 16px;
+  }
+
+  .gumb-brisi {
+    padding: 6px;
+  }
+
+  .gumb-brisi .material-icons {
+    font-size: 18px;
+  }
+
+  .modal-detalji, .modal-forma, .modal-potvrda {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .modal-zaglavlje {
+    padding: 12px 16px;
+  }
+
+  .modal-zaglavlje h2 {
+    font-size: 18px;
+  }
+
+  .modal-sadrzaj {
+    padding: 20px;
+  }
+
+  form {
+    padding: 20px;
+  }
+
+  .forma-grupa {
+    margin-bottom: 16px;
+  }
+
+  .forma-grupa input,
+  .forma-grupa textarea {
+    padding: 10px;
+    font-size: 16px;
+  }
+
+  .forma-gumbi {
+    padding: 12px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gumb-odustani,
+  .gumb-spremi {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .potvrda-sadrzaj {
+    padding: 20px;
+  }
+
+  .potvrda-sadrzaj .upozorenje {
+    font-size: 36px;
+  }
+
+  .potvrda-sadrzaj p {
+    font-size: 16px;
+  }
+
+  .potvrda-gumbi {
+    padding: 0 20px 20px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gumb-potvrdi {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .prihodi {
+    padding: 15px;
+  }
+
+  .naslov {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
+  }
+
+  .kartice {
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+
+  .kartica {
+    padding: 16px;
+  }
+
+  .podaci h3 {
+    font-size: 14px;
+  }
+
+  .podaci .iznos {
+    font-size: 20px;
+  }
+
+  .ikona .material-icons {
+    font-size: 28px;
+  }
+
+  .tablica th,
+  .tablica td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+
+  .gumb-plati {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .gumb-plati .material-icons {
+    font-size: 14px;
+  }
+
+  .gumb-brisi {
+    padding: 4px;
+  }
+
+  .gumb-brisi .material-icons {
+    font-size: 16px;
+  }
+
+  .gumb-dodaj {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  .modal-detalji, .modal-forma, .modal-potvrda {
+    width: 98%;
+    margin: 5px;
+  }
+
+  .modal-zaglavlje {
+    padding: 10px 12px;
+  }
+
+  .modal-zaglavlje h2 {
+    font-size: 16px;
+  }
+
+  .modal-sadrzaj {
+    padding: 16px;
+  }
+
+  form {
+    padding: 16px;
+  }
+
+  .forma-grupa {
+    margin-bottom: 14px;
+  }
+
+  .forma-grupa label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .forma-grupa input,
+  .forma-grupa textarea {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .forma-grupa textarea {
+    height: 80px;
+  }
+
+  .adresa-dropdown {
+    max-height: 200px;
+  }
+
+  .dropdown-item {
+    padding: 10px 12px;
+  }
+
+  .adresa-naziv {
+    font-size: 0.9rem;
+  }
+
+  .adresa-detalji {
+    font-size: 0.8rem;
+  }
+
+  .dropdown-loading {
+    padding: 12px;
+  }
+
+  .klizac {
+    width: 40px;
+    height: 22px;
+  }
+
+  .klizac:before {
+    height: 14px;
+    width: 14px;
+    left: 4px;
+    bottom: 4px;
+  }
+
+  input:checked + .klizac:before {
+    transform: translateX(18px);
+  }
+
+  .forma-gumbi {
+    padding: 10px;
+  }
+
+  .gumb-odustani,
+  .gumb-spremi {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .potvrda-sadrzaj {
+    padding: 16px;
+  }
+
+  .potvrda-sadrzaj .upozorenje {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  .potvrda-sadrzaj p {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .potvrda-gumbi {
+    padding: 0 16px 16px;
+  }
+
+  .podatak-red {
+    margin-bottom: 14px;
+  }
+
+  .podatak-red label {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .podatak-red p {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
 } </style>

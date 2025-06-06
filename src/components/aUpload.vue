@@ -1,21 +1,20 @@
 <template>
-  <div class="upload-container">
-    <div class="page-header">
-      <h2 class="naslov">Galerija fotografija</h2>
+  <div class="galerija">
+    <div class="naslov-sekcija">
+      <h2 class="glavni-naslov">Galerija fotografija</h2>
     </div>
     
     <div class="glavni-sadrzaj">
-      <div class="galerija-wrapper">
-        <div class="uploadane-datoteke" v-if="filteredMediji.length > 0">
-          <div class="datoteke-grid">
+      <div class="galerija-okvir">
+        <div class="mediji-lista" v-if="filtrirani.length > 0">
+          <div class="mediji-mreza">
             <div 
-              v-for="(medij, index) in filteredMediji" 
+              v-for="(medij, index) in filtrirani" 
               :key="medij.id || index" 
-              class="medij-item"
+              class="medij-kartica"
             >
-              <!-- Delete button overlay -->
-              <div class="delete-overlay">
-                <button @click.stop="potvrdiZaBrisanje(medij)" class="overlay-delete-btn" title="Obriši sliku">
+              <div class="brisanje-prekrivac">
+                <button @click.stop="potvrdiBrisanje(medij)" class="brisi-gumb" title="Obriši sliku">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -25,58 +24,58 @@
                 </button>
               </div>
 
-              <div class="medij-preview" @click="otvoriLightbox(medij)">
+              <div class="medij-prikaz" @click="otvoriPovecanu(medij)">
                 <template v-if="medij.fileCategory === 'image'">
                   <img 
                     :src="medij.publicUrl" 
                     :alt="medij.fileName" 
-                    @error="onImageError"
+                    @error="slikaGreska"
                   />
                 </template>
                 <template v-else-if="medij.fileCategory === 'video'">
                   <video 
                     :src="medij.publicUrl" 
-                    @error="onVideoError"
+                    @error="videoGreska"
                   ></video>
                 </template>
-                <div v-else class="placeholder-preview">
+                <div v-else class="ostalo-prikaz">
                   <span>{{ medij.fileCategory || 'Nepoznati tip' }}</span>
                 </div>
               </div>
-              <div class="medij-info">
-                <p class="medij-ime">{{ skratiNaziv(medij.fileName, 25) }}</p>
+              <div class="medij-podaci">
+                <p class="medij-naziv">{{ skratiNaziv(medij.fileName, 25) }}</p>
                 <div class="medij-detalji">
-                  <span class="medij-korisnik">{{ medij.userEmail }}</span>
-                  <span class="medij-datum">{{ formatDatum(medij.uploadedAt) }}</span>
+                  <span class="korisnik-email">{{ medij.userEmail }}</span>
+                  <span class="datum-upload">{{ formatirajDatum(medij.uploadedAt) }}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div v-else-if="!uploadUTijeku" class="prazno-stanje">
+        <div v-else-if="!uploadAktivan" class="prazno">
           <p v-if="odabraniEmail">Nema uploadanih medija za {{ odabraniEmail }}</p>
           <p v-else>Nema uploadanih medija</p>
-          <p class="prazno-podnaslov">Koristite panel sa strane za upload</p>
+          <p class="prazno-opis">Koristite panel sa strane za upload</p>
         </div>
       </div>
       
       <div class="upload-panel">
         <h3 class="panel-naslov">Dodaj nove slike</h3>
         
-        <div class="form-group">
+        <div class="grupa-polja">
           <label for="korisnik-dropdown">Korisnik:</label>
-          <div class="custom-dropdown">
-            <div class="dropdown-selected" @click="toggleDropdown">
+          <div class="padajuci-izbornik">
+            <div class="odabrani-korisnik" @click="prekidacPadajuci">
               {{ odabraniEmail || 'Odaberite korisnika' }}
-              <span class="dropdown-arrow">▼</span>
+              <span class="strelica">▼</span>
             </div>
-            <div class="dropdown-menu" v-if="prikaziDropdown">
+            <div class="izbornik-lista" v-if="prikaziPadajuci">
               <div 
                 v-for="korisnik in korisnici" 
                 :key="korisnik.id" 
-                class="dropdown-item"
-                @click="odaberiEmail(korisnik.email)"
-                :class="{ 'active': odabraniEmail === korisnik.email }"
+                class="izbornik-stavka"
+                @click="odaberiKorisnika(korisnik.email)"
+                :class="{ 'aktivna': odabraniEmail === korisnik.email }"
               >
                 {{ korisnik.email }}
               </div>
@@ -84,18 +83,18 @@
           </div>
         </div>
         
-        <div class="filter-controls">
+        <div class="filter-kontrole">
           <button 
-            class="btn-filter" 
-            @click="toggleFilter"
-            :class="{ 'active': prikaziSamoOdabranog }"
+            class="filter-gumb" 
+            @click="prekidacFilter"
+            :class="{ 'aktivan': prikaziSamoOdabranog }"
           >
             {{ prikaziSamoOdabranog ? 'Prikaži sve' : 'Prikaži samo odabranog' }}
           </button>
           <button 
-            class="btn-delete-all" 
-            @click="potvrdiZaBrisanjeSvihKorisnika"
-            :disabled="!odabraniEmail || filteredMediji.length === 0"
+            class="brisi-sve-gumb" 
+            @click="potvrdiBrisanjeSvihKorisnika"
+            :disabled="!odabraniEmail || filtrirani.length === 0"
             v-if="prikaziSamoOdabranog && odabraniEmail"
           >
             Obriši sve od {{ odabraniEmail }}
@@ -104,20 +103,19 @@
         
         <div 
           class="upload-zona" 
-          @click="pokreniUpload" 
-          @dragover.prevent="handleDragOver"
-          @dragleave.prevent="handleDragLeave"
-          @drop.prevent="handleDrop"
-          :class="{ 'drag-over': isDragOver, 'has-files': odabraneDatoteke.length > 0 }"
+          @click="pokreniOdabir" 
+          @dragover.prevent="povuciPreko"
+          @dragleave.prevent="povuciVan"
+          @drop.prevent="ispustiDatoteke"
+          :class="{ 'povlaci-preko': povlaciPreko, 'ima-datoteke': odabraneDatoteke.length > 0 }"
         >
           <input 
             type="file" 
             ref="fileInput" 
             style="display: none" 
-            @change="handleFileChange" 
+            @change="promjenaDatoteka" 
             accept="image/*,video/*"
             multiple
-            webkitdirectory
           />
           
           <div v-if="odabraneDatoteke.length === 0" class="upload-poruka">
@@ -128,14 +126,14 @@
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
             </div>
-            <p class="glavni-tekst">Povucite mapu ili kliknite za odabir</p>
-            <p class="upload-napomena">Podržava mape sa slikama (JPG, PNG, GIF) i videima (MP4, MOV)</p>
+            <p class="glavni-tekst">Povucite datoteke ili kliknite za odabir</p>
+            <p class="upload-napomena">Podržava slike (JPG, PNG, GIF) i videove (MP4, MOV)</p>
           </div>
           
-          <div v-else class="odabrane-datoteke">
-            <div class="datoteke-header">
+          <div v-else class="odabrane">
+            <div class="datoteke-naslov">
               <h4>Odabrane datoteke ({{ odabraneDatoteke.length }})</h4>
-              <button class="btn-ukloni-sve" @click.stop="ukloniSveDatoteke" title="Ukloni sve">
+              <button class="ukloni-sve-gumb" @click.stop="uklonoSveDatoteke" title="Ukloni sve">
                 ✕ Ukloni sve
               </button>
             </div>
@@ -143,21 +141,21 @@
               <div 
                 v-for="(datoteka, index) in odabraneDatoteke.slice(0, 5)" 
                 :key="index"
-                class="datoteka-item"
+                class="datoteka-stavka"
               >
-                <div class="datoteka-preview">
+                <div class="datoteka-prikaz">
                   <img 
                     v-if="datoteka.tip === 'image'" 
                     :src="datoteka.previewUrl" 
                     alt="Preview" 
                   />
-                  <div v-else-if="datoteka.tip === 'video'" class="video-placeholder">
+                  <div v-else-if="datoteka.tip === 'video'" class="video-prikaz">
                     🎬
                   </div>
                 </div>
-                <div class="datoteka-info">
-                  <span class="datoteka-ime">{{ skratiNaziv(datoteka.file.name, 20) }}</span>
-                  <span class="datoteka-velicina">{{ formatirajVelicinuDatoteke(datoteka.file.size) }}</span>
+                <div class="datoteka-podaci">
+                  <span class="datoteka-naziv">{{ skratiNaziv(datoteka.file.name, 20) }}</span>
+                  <span class="datoteka-velicina">{{ formatirajVelicinu(datoteka.file.size) }}</span>
                 </div>
               </div>
               <div v-if="odabraneDatoteke.length > 5" class="vise-datoteka">
@@ -165,72 +163,69 @@
               </div>
             </div>
             <div class="ukupna-velicina">
-              Ukupna veličina: {{ formatirajVelicinuDatoteke(ukupnaVelicina) }}
+              Ukupna veličina: {{ formatirajVelicinu(ukupnaVelicina) }}
             </div>
           </div>
         </div>
         
-        <div class="upload-actions">
+        <div class="upload-akcije">
           <button 
-            class="btn-upload" 
-            @click="uploadSveDatoteke" 
-            :disabled="odabraneDatoteke.length === 0 || !odabraniEmail || uploadUTijeku"
+            class="upload-gumb" 
+            @click="uploadajSveDatoteke" 
+            :disabled="odabraneDatoteke.length === 0 || !odabraniEmail || uploadAktivan"
           >
-            {{ uploadUTijeku ? `Upload ${trenutniUpload}/${odabraneDatoteke.length}` : `Upload ${odabraneDatoteke.length} datoteka` }}
+            {{ uploadAktivan ? `Upload ${trenutniUpload}/${odabraneDatoteke.length}` : `Upload ${odabraneDatoteke.length} datoteka` }}
           </button>
-          <div v-if="uploadUTijeku" class="progress-container">
-            <div class="progress-bar">
+          <div v-if="uploadAktivan" class="progress-okvir">
+            <div class="progress-traka">
               <div class="progress" :style="{ width: `${ukupniProgress}%` }"></div>
             </div>
-            <div class="progress-text">
+            <div class="progress-tekst">
               {{ trenutniUpload }}/{{ odabraneDatoteke.length }} - {{ Math.round(ukupniProgress) }}%
             </div>
           </div>
         </div>
         
-        <div v-if="statusPoruka" class="status-poruka" :class="{ 'success': !jeLiGreska, 'error': jeLiGreska }">
+        <div v-if="statusPoruka" class="status-poruka" :class="{ 'uspjeh': !jeGreska, 'greska': jeGreska }">
           {{ statusPoruka }}
         </div>
       </div>
     </div>
     
-    <!-- Lightbox -->
-    <div class="lightbox" v-if="aktivniMedij" @click="zatvoriLightbox">
-      <div class="lightbox-content" @click.stop>
-        <button class="lightbox-close" @click="zatvoriLightbox">✕</button>
-        <div class="lightbox-media">
+    <div class="povecani-prikaz" v-if="aktivniMedij" @click="zatvoriPovecanu">
+      <div class="povecani-sadrzaj" @click.stop>
+        <button class="zatvori-gumb" @click="zatvoriPovecanu">✕</button>
+        <div class="povecani-medij">
           <img v-if="aktivniMedij.fileCategory === 'image'" :src="aktivniMedij.publicUrl" alt="Preview u punoj veličini" />
           <video v-else-if="aktivniMedij.fileCategory === 'video'" :src="aktivniMedij.publicUrl" controls autoplay></video>
         </div>
       </div>
     </div>
     
-    <!-- Modal za brisanje -->
-    <div class="modal-backdrop" v-if="zaBrisanjeMedij" @click="zaBrisanjeMedij = null">
+    <div class="modal-pozadina" v-if="zaBrisanjeMedij" @click="zaBrisanjeMedij = null">
       <div class="modal-potvrda" @click.stop>
         <h4>Potvrda brisanja</h4>
         <p>Jeste li sigurni da želite trajno obrisati ovu datoteku?</p>
-        <p class="file-to-delete">{{ zaBrisanjeMedij ? zaBrisanjeMedij.fileName : '' }}</p>
-        <div class="modal-actions">
-          <button class="btn-odustani" @click="zaBrisanjeMedij = null">Odustani</button>
-          <button class="btn-potvrdi" @click="obrisiPojedinacnuDatoteku" :disabled="brisanjeUTijeku">
-            {{ brisanjeUTijeku ? 'Brišem...' : 'Obriši' }}
+        <p class="datoteka-za-brisanje">{{ zaBrisanjeMedij ? zaBrisanjeMedij.fileName : '' }}</p>
+        <div class="modal-akcije">
+          <button class="odustani-gumb" @click="zaBrisanjeMedij = null">Odustani</button>
+          <button class="potvrdi-gumb" @click="obrisiDatoteku" :disabled="brisanjeAktivno">
+            {{ brisanjeAktivno ? 'Brišem...' : 'Obriši' }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Modal za brisanje svih slika korisnika -->
-    <div class="modal-backdrop" v-if="zaBrisanjeSviKorisnik" @click="zaBrisanjeSviKorisnik = null">
+    <div class="modal-pozadina" v-if="zaBrisanjeSviKorisnik" @click="zaBrisanjeSviKorisnik = null">
       <div class="modal-potvrda" @click.stop>
         <h4>Potvrda brisanja svih slika</h4>
         <p>Jeste li sigurni da želite trajno obrisati SVE slike korisnika?</p>
-        <p class="user-to-delete">{{ zaBrisanjeSviKorisnik }}</p>
-        <p class="files-count">Ukupno {{ filteredMediji.length }} datoteka će biti obrisano!</p>
-        <div class="modal-actions">
-          <button class="btn-odustani" @click="zaBrisanjeSviKorisnik = null">Odustani</button>
-          <button class="btn-potvrdi" @click="obrisiSveKorisnika" :disabled="brisanjeUTijeku">
-            {{ brisanjeUTijeku ? 'Brišem...' : 'Obriši sve' }}
+        <p class="korisnik-za-brisanje">{{ zaBrisanjeSviKorisnik }}</p>
+        <p class="broj-datoteka">Ukupno {{ filtrirani.length }} datoteka će biti obrisano!</p>
+        <div class="modal-akcije">
+          <button class="odustani-gumb" @click="zaBrisanjeSviKorisnik = null">Odustani</button>
+          <button class="potvrdi-gumb" @click="obrisiSveKorisnika" :disabled="brisanjeAktivno">
+            {{ brisanjeAktivno ? 'Brišem...' : 'Obriši sve' }}
           </button>
         </div>
       </div>
@@ -255,132 +250,69 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 
-// Refs
 const korisnici = ref([]);
 const odabraniEmail = ref(localStorage.getItem('odabraniKorisnik') || null);
-const prikaziDropdown = ref(false);
+const prikaziPadajuci = ref(false);
 const fileInput = ref(null);
-const uploadUTijeku = ref(false);
+const uploadAktivan = ref(false);
 const statusPoruka = ref('');
-const jeLiGreska = ref(false);
+const jeGreska = ref(false);
 const uploadaniMediji = ref([]);
 const aktivniMedij = ref(null);
 const zaBrisanjeMedij = ref(null);
 const zaBrisanjeSviKorisnik = ref(null);
-const brisanjeUTijeku = ref(false);
+const brisanjeAktivno = ref(false);
 const prikaziSamoOdabranog = ref(localStorage.getItem('prikaziSamoOdabranog') === 'true');
 const odabraneDatoteke = ref([]);
-const isDragOver = ref(false);
+const povlaciPreko = ref(false);
 const trenutniUpload = ref(0);
 const ukupniProgress = ref(0);
 
 let unsubscribe = null;
 let unsubscribeUploads = null;
 
-// Computed properties
-const filteredMediji = computed(() => {
+const filtrirani = computed(() => {
   if (!prikaziSamoOdabranog.value || !odabraniEmail.value) {
     return uploadaniMediji.value;
   }
-  
-  return uploadaniMediji.value.filter(medij => 
-    medij.userEmail === odabraniEmail.value
-  );
+  return uploadaniMediji.value.filter(medij => medij.userEmail === odabraniEmail.value);
 });
 
 const ukupnaVelicina = computed(() => {
   return odabraneDatoteke.value.reduce((total, datoteka) => total + datoteka.file.size, 0);
 });
 
-// Drag & Drop handlers
-const handleDragOver = (event) => {
+const povuciPreko = (event) => {
   event.preventDefault();
-  isDragOver.value = true;
+  povlaciPreko.value = true;
 };
 
-const handleDragLeave = (event) => {
+const povuciVan = (event) => {
   event.preventDefault();
-  isDragOver.value = false;
+  povlaciPreko.value = false;
 };
 
-const handleDrop = async (event) => {
+const ispustiDatoteke = (event) => {
   event.preventDefault();
-  isDragOver.value = false;
+  povlaciPreko.value = false;
   
-  const items = event.dataTransfer.items;
-  const files = [];
-  
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    
-    if (item.kind === 'file') {
-      const entry = item.webkitGetAsEntry();
-      
-      if (entry) {
-        if (entry.isDirectory) {
-          const folderFiles = await readFolderRecursively(entry);
-          files.push(...folderFiles);
-        } else if (entry.isFile) {
-          const file = item.getAsFile();
-          if (isValidFile(file)) {
-            files.push(file);
-          }
-        }
-      }
-    }
-  }
-  
-  if (files.length > 0) {
-    await procesDatoteke(files);
-  } else {
-    statusPoruka.value = 'Nisu pronađene validne slike ili videi u povučenoj mapi';
-    jeLiGreska.value = true;
-  }
+  const datoteke = Array.from(event.dataTransfer.files);
+  procesuirajDatoteke(datoteke);
 };
 
-const readFolderRecursively = async (entry) => {
-  const files = [];
-  
-  if (entry.isFile) {
-    return new Promise((resolve) => {
-      entry.file((file) => {
-        if (isValidFile(file)) {
-          resolve([file]);
-        } else {
-          resolve([]);
-        }
-      });
-    });
-  } else if (entry.isDirectory) {
-    const reader = entry.createReader();
-    
-    return new Promise((resolve) => {
-      reader.readEntries(async (entries) => {
-        for (const childEntry of entries) {
-          const childFiles = await readFolderRecursively(childEntry);
-          files.push(...childFiles);
-        }
-        resolve(files);
-      });
-    });
-  }
-  
-  return files;
-};
-
-const isValidFile = (file) => {
-  const validTypes = [
+const valjanaDatoteka = (file) => {
+  const validniTipovi = [
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
     'video/mp4', 'video/mov', 'video/avi', 'video/webm'
   ];
-  return validTypes.includes(file.type);
+  return validniTipovi.includes(file.type);
 };
 
-const procesDatoteke = async (files) => {
+const procesuirajDatoteke = async (datoteke) => {
   const noveDatoteke = [];
   
-  for (const file of files) {
-    if (isValidFile(file)) {
+  for (const file of datoteke) {
+    if (valjanaDatoteka(file)) {
       const tip = file.type.startsWith('image/') ? 'image' : 'video';
       let previewUrl = null;
       
@@ -401,22 +333,22 @@ const procesDatoteke = async (files) => {
   
   if (noveDatoteke.length > 0) {
     statusPoruka.value = `Dodano ${noveDatoteke.length} datoteka za upload`;
-    jeLiGreska.value = false;
+    jeGreska.value = false;
   }
 };
 
-const handleFileChange = async (event) => {
-  const files = Array.from(event.target.files);
-  await procesDatoteke(files);
+const promjenaDatoteka = async (event) => {
+  const datoteke = Array.from(event.target.files);
+  await procesuirajDatoteke(datoteke);
 };
 
-const pokreniUpload = () => {
+const pokreniOdabir = () => {
   if (odabraneDatoteke.value.length === 0) {
     fileInput.value.click();
   }
 };
 
-const ukloniSveDatoteke = () => {
+const uklonoSveDatoteke = () => {
   odabraneDatoteke.value.forEach(datoteka => {
     if (datoteka.previewUrl) {
       URL.revokeObjectURL(datoteka.previewUrl);
@@ -427,19 +359,19 @@ const ukloniSveDatoteke = () => {
   resetirajStatus();
 };
 
-const uploadSveDatoteke = async () => {
+const uploadajSveDatoteke = async () => {
   if (odabraneDatoteke.value.length === 0 || !odabraniEmail.value) {
     statusPoruka.value = 'Molimo odaberite datoteke i korisnika';
-    jeLiGreska.value = true;
+    jeGreska.value = true;
     return;
   }
   
   try {
-    uploadUTijeku.value = true;
+    uploadAktivan.value = true;
     trenutniUpload.value = 0;
     ukupniProgress.value = 0;
     statusPoruka.value = 'Upload u tijeku...';
-    jeLiGreska.value = false;
+    jeGreska.value = false;
     
     const ukupnoDatoteka = odabraneDatoteke.value.length;
     
@@ -448,7 +380,7 @@ const uploadSveDatoteke = async () => {
       trenutniUpload.value = i + 1;
       
       try {
-        await uploadPojedinacnuDatoteku(datoteka);
+        await uploadajDatoteku(datoteka);
         ukupniProgress.value = ((i + 1) / ukupnoDatoteka) * 100;
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
@@ -457,24 +389,24 @@ const uploadSveDatoteke = async () => {
     }
     
     statusPoruka.value = `Uspješno uploadano ${ukupnoDatoteka} datoteka!`;
-    jeLiGreska.value = false;
+    jeGreska.value = false;
     
     setTimeout(() => {
-      ukloniSveDatoteke();
+      uklonoSveDatoteke();
     }, 2000);
     
   } catch (error) {
     console.error('Greška pri uploadu:', error);
     statusPoruka.value = `Greška pri uploadu: ${error.message}`;
-    jeLiGreska.value = true;
+    jeGreska.value = true;
   } finally {
-    uploadUTijeku.value = false;
+    uploadAktivan.value = false;
     trenutniUpload.value = 0;
     ukupniProgress.value = 0;
   }
 };
 
-const uploadPojedinacnuDatoteku = async (datoteka) => {
+const uploadajDatoteku = async (datoteka) => {
   const file = datoteka.file;
   const tip = datoteka.tip;
   
@@ -548,24 +480,22 @@ const uploadPojedinacnuDatoteku = async (datoteka) => {
   }
 };
 
-// Filter and dropdown functions
-const toggleFilter = () => {
+const prekidacFilter = () => {
   prikaziSamoOdabranog.value = !prikaziSamoOdabranog.value;
   localStorage.setItem('prikaziSamoOdabranog', prikaziSamoOdabranog.value.toString());
 };
 
-const toggleDropdown = () => {
-  prikaziDropdown.value = !prikaziDropdown.value;
+const prekidacPadajuci = () => {
+  prikaziPadajuci.value = !prikaziPadajuci.value;
 };
 
-const odaberiEmail = (email) => {
+const odaberiKorisnika = (email) => {
   odabraniEmail.value = email;
   localStorage.setItem('odabraniKorisnik', email);
-  prikaziDropdown.value = false;
+  prikaziPadajuci.value = false;
 };
 
-// Helper functions
-const formatirajVelicinuDatoteke = (bytes) => {
+const formatirajVelicinu = (bytes) => {
   if (!bytes) return '0 Bytes';
   
   const k = 1024;
@@ -575,7 +505,7 @@ const formatirajVelicinuDatoteke = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const formatDatum = (timestamp) => {
+const formatirajDatum = (timestamp) => {
   if (!timestamp) return 'Nepoznat datum';
   
   const date = timestamp instanceof Date ? timestamp : 
@@ -602,13 +532,26 @@ const skratiNaziv = (naziv, maxLength) => {
   return naziv.substring(0, maxLength - 3) + '...';
 };
 
-const onImageError = (event) => {
+const slikaGreska = (event) => {
   console.error('Greška učitavanja slike:', event.target.src);
-  event.target.src = 'https://via.placeholder.com/300x200?text=Nije+moguće+prikazati+sliku';
+  event.target.style.display = 'none';
   event.target.classList.add('error-image');
+  
+  const placeholder = document.createElement('div');
+  placeholder.className = 'slika-greska-placeholder';
+  placeholder.innerHTML = `
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <circle cx="9" cy="9" r="2"/>
+      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+    </svg>
+    <p>Slika se ne može prikazati</p>
+  `;
+  
+  event.target.parentNode.appendChild(placeholder);
 };
 
-const onVideoError = (event) => {
+const videoGreska = (event) => {
   console.error('Greška učitavanja videa:', event.target.src);
   event.target.classList.add('error-video');
   const parent = event.target.parentNode;
@@ -618,37 +561,35 @@ const onVideoError = (event) => {
   parent.replaceChild(errorMessage, event.target);
 };
 
-// Lightbox functions
-const otvoriLightbox = (medij) => {
+const otvoriPovecanu = (medij) => {
   aktivniMedij.value = medij;
   document.body.style.overflow = 'hidden'; 
 };
 
-const zatvoriLightbox = () => {
+const zatvoriPovecanu = () => {
   aktivniMedij.value = null;
   document.body.style.overflow = 'auto'; 
 };
 
-// Delete functions
-const potvrdiZaBrisanje = (medij) => {
+const potvrdiBrisanje = (medij) => {
   zaBrisanjeMedij.value = medij;
 };
 
-const potvrdiZaBrisanjeSvihKorisnika = () => {
-  if (odabraniEmail.value && filteredMediji.value.length > 0) {
+const potvrdiBrisanjeSvihKorisnika = () => {
+  if (odabraniEmail.value && filtrirani.value.length > 0) {
     zaBrisanjeSviKorisnik.value = odabraniEmail.value;
   }
 };
 
-const obrisiPojedinacnuDatoteku = async () => {
-  if (!zaBrisanjeMedij.value || brisanjeUTijeku.value) return;
+const obrisiDatoteku = async () => {
+  if (!zaBrisanjeMedij.value || brisanjeAktivno.value) return;
   
   try {
-    brisanjeUTijeku.value = true;
+    brisanjeAktivno.value = true;
     const medij = zaBrisanjeMedij.value;
     
     statusPoruka.value = 'Brisanje u tijeku...';
-    jeLiGreska.value = false;
+    jeGreska.value = false;
     
     try {
       const { error } = await supabase.storage
@@ -691,7 +632,7 @@ const obrisiPojedinacnuDatoteku = async () => {
     }
     
     statusPoruka.value = 'Datoteka je uspješno obrisana';
-    jeLiGreska.value = false;
+    jeGreska.value = false;
     zaBrisanjeMedij.value = null;
     
     setTimeout(() => {
@@ -703,22 +644,22 @@ const obrisiPojedinacnuDatoteku = async () => {
   } catch (error) {
     console.error('Greška pri brisanju datoteke:', error);
     statusPoruka.value = `Greška pri brisanju: ${error.message}`;
-    jeLiGreska.value = true;
+    jeGreska.value = true;
   } finally {
-    brisanjeUTijeku.value = false;
+    brisanjeAktivno.value = false;
   }
 };
 
 const obrisiSveKorisnika = async () => {
-  if (!zaBrisanjeSviKorisnik.value || brisanjeUTijeku.value) return;
+  if (!zaBrisanjeSviKorisnik.value || brisanjeAktivno.value) return;
   
   try {
-    brisanjeUTijeku.value = true;
+    brisanjeAktivno.value = true;
     const korisnikEmail = zaBrisanjeSviKorisnik.value;
-    const sviMediji = filteredMediji.value;
+    const sviMediji = filtrirani.value;
     
     statusPoruka.value = `Brišem ${sviMediji.length} datoteka...`;
-    jeLiGreska.value = false;
+    jeGreska.value = false;
     
     for (const medij of sviMediji) {
       try {
@@ -741,7 +682,7 @@ const obrisiSveKorisnika = async () => {
     uploadaniMediji.value = uploadaniMediji.value.filter(m => m.userEmail !== korisnikEmail);
     
     statusPoruka.value = `Uspješno obrisano ${sviMediji.length} datoteka korisnika ${korisnikEmail}`;
-    jeLiGreska.value = false;
+    jeGreska.value = false;
     zaBrisanjeSviKorisnik.value = null;
     
     setTimeout(() => {
@@ -751,29 +692,28 @@ const obrisiSveKorisnika = async () => {
   } catch (error) {
     console.error('Greška pri brisanju svih datoteka:', error);
     statusPoruka.value = `Greška pri brisanju: ${error.message}`;
-    jeLiGreska.value = true;
+    jeGreska.value = true;
   } finally {
-    brisanjeUTijeku.value = false;
+    brisanjeAktivno.value = false;
   }
 };
 
 const resetirajStatus = () => {
   statusPoruka.value = '';
-  jeLiGreska.value = false;
+  jeGreska.value = false;
 };
 
-// Lifecycle hooks
 onMounted(() => {
   document.addEventListener('click', (event) => {
-    const dropdownContainer = document.querySelector('.custom-dropdown');
+    const dropdownContainer = document.querySelector('.padajuci-izbornik');
     if (dropdownContainer && !dropdownContainer.contains(event.target)) {
-      prikaziDropdown.value = false;
+      prikaziPadajuci.value = false;
     }
   });
   
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && aktivniMedij.value) {
-      zatvoriLightbox();
+      zatvoriPovecanu();
     }
   });
   
@@ -837,7 +777,7 @@ onUnmounted(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
-.upload-container {
+.galerija {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -848,12 +788,12 @@ onUnmounted(() => {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
 }
 
-.page-header {
+.naslov-sekcija {
   text-align: center;
   margin-bottom: 30px;
 }
 
-.naslov {
+.glavni-naslov {
   color: #123458;
   margin-bottom: 10px;
   font-weight: 700;
@@ -862,7 +802,7 @@ onUnmounted(() => {
   display: inline-block;
 }
 
-.naslov::after {
+.glavni-naslov::after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -880,11 +820,31 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-.galerija-wrapper {
+@media (max-width: 768px) {
+  .galerija {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .glavni-naslov {
+    font-size: 1.5rem;
+  }
+  
+  .glavni-sadrzaj {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .upload-panel {
+    order: -1;
+  }
+}
+
+.galerija-okvir {
   min-height: 400px;
 }
 
-.uploadane-datoteke {
+.mediji-lista {
   background-color: white;
   border-radius: 12px;
   padding: 20px;
@@ -893,13 +853,33 @@ onUnmounted(() => {
   height: 100%;
 }
 
-.datoteke-grid {
+@media (max-width: 768px) {
+  .mediji-lista {
+    padding: 15px;
+  }
+}
+
+.mediji-mreza {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 20px;
 }
 
-.medij-item {
+@media (max-width: 768px) {
+  .mediji-mreza {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mediji-mreza {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+}
+
+.medij-kartica {
   background-color: white;
   border-radius: 12px;
   overflow: hidden;
@@ -909,32 +889,44 @@ onUnmounted(() => {
   position: relative;
 }
 
-.medij-item:hover {
+.medij-kartica:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 24px rgba(18, 52, 88, 0.15);
   border-color: #123458;
 }
 
-.delete-overlay {
+@media (max-width: 768px) {
+  .medij-kartica:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.brisanje-prekrivac {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   z-index: 2;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.medij-item:hover .delete-overlay {
+.medij-kartica:hover .brisanje-prekrivac {
   opacity: 1;
 }
 
-.overlay-delete-btn {
+@media (max-width: 768px) {
+  .brisanje-prekrivac {
+    opacity: 1;
+  }
+}
+
+.brisi-gumb {
   background-color: rgba(229, 57, 53, 0.9);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -943,12 +935,24 @@ onUnmounted(() => {
   backdrop-filter: blur(10px);
 }
 
-.overlay-delete-btn:hover {
+@media (max-width: 768px) {
+  .brisi-gumb {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .brisi-gumb svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.brisi-gumb:hover {
   background-color: rgba(229, 57, 53, 1);
   transform: scale(1.1);
 }
 
-.medij-preview {
+.medij-prikaz {
   width: 100%;
   height: 180px;
   overflow: hidden;
@@ -957,20 +961,32 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.medij-preview img,
-.medij-preview video {
+@media (max-width: 768px) {
+  .medij-prikaz {
+    height: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .medij-prikaz {
+    height: 120px;
+  }
+}
+
+.medij-prikaz img,
+.medij-prikaz video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
 }
 
-.medij-item:hover .medij-preview img,
-.medij-item:hover .medij-preview video {
+.medij-kartica:hover .medij-prikaz img,
+.medij-kartica:hover .medij-prikaz video {
   transform: scale(1.05);
 }
 
-.placeholder-preview {
+.ostalo-prikaz {
   width: 100%;
   height: 100%;
   display: flex;
@@ -981,43 +997,69 @@ onUnmounted(() => {
   font-size: 0.8rem;
 }
 
-.medij-info {
-  padding: 15px;
+.medij-podaci {
+  padding: 12px;
   background-color: #F1EFEC;
   border-top: 1px solid #123458;
 }
 
-.medij-ime {
+@media (max-width: 768px) {
+  .medij-podaci {
+    padding: 10px;
+  }
+}
+
+.medij-naziv {
   font-weight: 600;
   color: #123458;
-  font-size: 1rem;
-  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  margin: 0 0 6px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+@media (max-width: 768px) {
+  .medij-naziv {
+    font-size: 0.8rem;
+  }
+}
+
 .medij-detalji {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #5D8AA8;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.medij-korisnik {
+@media (max-width: 768px) {
+  .medij-detalji {
+    font-size: 0.65rem;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.korisnik-email {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 50%;
 }
 
-.medij-datum {
+@media (max-width: 768px) {
+  .korisnik-email {
+    max-width: 100%;
+  }
+}
+
+.datum-upload {
   color: #6c757d;
   font-weight: 500;
 }
 
-.prazno-stanje {
+.prazno {
   background-color: white;
   border-radius: 12px;
   padding: 40px 20px;
@@ -1031,16 +1073,28 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.prazno-stanje p {
+@media (max-width: 768px) {
+  .prazno {
+    padding: 30px 15px;
+  }
+}
+
+.prazno p {
   margin: 5px 0;
   color: #123458;
   font-weight: 500;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
-.prazno-podnaslov {
+@media (max-width: 768px) {
+  .prazno p {
+    font-size: 0.9rem;
+  }
+}
+
+.prazno-opis {
   color: #6c757d;
-  font-size: 0.9rem !important;
+  font-size: 0.85rem !important;
   font-weight: 400 !important;
   margin-top: 10px !important;
 }
@@ -1053,69 +1107,89 @@ onUnmounted(() => {
   border: 1px solid #D4C9BE;
 }
 
+@media (max-width: 768px) {
+  .upload-panel {
+    padding: 15px;
+  }
+}
+
 .panel-naslov {
   color: #123458;
-  margin: 0 0 20px 0;
+  margin: 0 0 15px 0;
   font-weight: 600;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   text-align: center;
   position: relative;
+}
+
+@media (max-width: 768px) {
+  .panel-naslov {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
 }
 
 .panel-naslov::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 60px;
+  width: 50px;
   height: 2px;
   background-color: #123458;
   border-radius: 2px;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.grupa-polja {
+  margin-bottom: 12px;
 }
 
-.form-group label {
+.grupa-polja label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 500;
   color: #123458;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
-.custom-dropdown {
+.padajuci-izbornik {
   position: relative;
   width: 100%;
 }
 
-.dropdown-selected {
+.odabrani-korisnik {
   background-color: white;
   border: 1px solid #D4C9BE;
   border-radius: 8px;
-  padding: 10px 15px;
+  padding: 10px 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   transition: all 0.2s ease;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
-.dropdown-selected:hover {
+@media (max-width: 768px) {
+  .odabrani-korisnik {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+.odabrani-korisnik:hover {
   border-color: #5D8AA8;
   box-shadow: 0 3px 8px rgba(93, 138, 168, 0.15);
 }
 
-.dropdown-arrow {
+.strelica {
   font-size: 0.7rem;
   color: #123458;
 }
 
-.dropdown-menu {
+.izbornik-lista {
   position: absolute;
   top: 100%;
   left: 0;
@@ -1130,70 +1204,91 @@ onUnmounted(() => {
   margin-top: 5px;
 }
 
-.dropdown-item {
-  padding: 10px 15px;
+.izbornik-stavka {
+  padding: 10px 12px;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
-.dropdown-item:hover {
+@media (max-width: 768px) {
+  .izbornik-stavka {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+.izbornik-stavka:hover {
   background-color: rgba(93, 138, 168, 0.08);
 }
 
-.dropdown-item.active {
+.izbornik-stavka.aktivna {
   background-color: #123458;
   color: white;
   font-weight: 500;
 }
 
-.filter-controls {
-  margin-bottom: 15px;
+.filter-kontrole {
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.btn-filter {
+.filter-gumb {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background-color: #123458;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.btn-filter:hover {
+@media (max-width: 768px) {
+  .filter-gumb {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+}
+
+.filter-gumb:hover {
   background-color: #1c4c80;
 }
 
-.btn-filter.active {
+.filter-gumb.aktivan {
   background-color: #1c4c80;
   box-shadow: 0 2px 8px rgba(18, 52, 88, 0.3);
 }
 
-.btn-delete-all {
+.brisi-sve-gumb {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background-color: #e53935;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.btn-delete-all:hover:not(:disabled) {
+@media (max-width: 768px) {
+  .brisi-sve-gumb {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+}
+
+.brisi-sve-gumb:hover:not(:disabled) {
   background-color: #c62828;
 }
 
-.btn-delete-all:disabled {
+.brisi-sve-gumb:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
   opacity: 0.7;
@@ -1202,116 +1297,161 @@ onUnmounted(() => {
 .upload-zona {
   border: 2px dashed #D4C9BE;
   border-radius: 10px;
-  padding: 20px;
+  padding: 15px;
   text-align: center;
   cursor: pointer;
-  margin: 15px 0;
+  margin: 12px 0;
   transition: all 0.3s ease;
   background-color: rgba(212, 201, 190, 0.1);
-  min-height: 200px;
+  min-height: 150px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
+@media (max-width: 768px) {
+  .upload-zona {
+    min-height: 120px;
+    padding: 12px;
+  }
+}
+
 .upload-zona:hover,
-.upload-zona.drag-over {
+.upload-zona.povlaci-preko {
   border-color: #5D8AA8;
   background-color: rgba(93, 138, 168, 0.1);
   transform: translateY(-2px);
 }
 
-.upload-zona.has-files {
-  padding: 15px;
+.upload-zona.ima-datoteke {
+  padding: 12px;
   min-height: auto;
 }
 
 .upload-ikona {
   color: #123458;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: center;
 }
 
+@media (max-width: 768px) {
+  .upload-ikona svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
 .glavni-tekst {
   color: #123458;
-  margin: 10px 0;
+  margin: 8px 0;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .glavni-tekst {
+    font-size: 0.85rem;
+  }
 }
 
 .upload-napomena {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #6c757d;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
-.odabrane-datoteke {
+@media (max-width: 768px) {
+  .upload-napomena {
+    font-size: 0.7rem;
+  }
+}
+
+.odabrane {
   background-color: rgba(93, 138, 168, 0.05);
   border-radius: 8px;
-  padding: 15px;
+  padding: 12px;
   border: 1px solid #5D8AA8;
 }
 
-.datoteke-header {
+.datoteke-naslov {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #D4C9BE;
 }
 
-.datoteke-header h4 {
+.datoteke-naslov h4 {
   margin: 0;
   color: #123458;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
-.btn-ukloni-sve {
+@media (max-width: 768px) {
+  .datoteke-naslov h4 {
+    font-size: 0.85rem;
+  }
+}
+
+.ukloni-sve-gumb {
   background-color: #e53935;
   color: white;
   border: none;
   border-radius: 5px;
-  padding: 6px 12px;
-  font-size: 0.8rem;
+  padding: 5px 10px;
+  font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.btn-ukloni-sve:hover {
+@media (max-width: 768px) {
+  .ukloni-sve-gumb {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+.ukloni-sve-gumb:hover {
   background-color: #c62828;
   transform: translateY(-1px);
 }
 
 .datoteke-lista {
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.datoteka-item {
+@media (max-width: 768px) {
+  .datoteke-lista {
+    max-height: 120px;
+  }
+}
+
+.datoteka-stavka {
   display: flex;
   align-items: center;
-  padding: 8px;
-  margin-bottom: 8px;
+  padding: 6px;
+  margin-bottom: 6px;
   background-color: white;
   border-radius: 6px;
   border: 1px solid #D4C9BE;
   transition: all 0.2s;
 }
 
-.datoteka-item:hover {
+.datoteka-stavka:hover {
   border-color: #5D8AA8;
   box-shadow: 0 2px 8px rgba(93, 138, 168, 0.1);
 }
 
-.datoteka-preview {
-  width: 40px;
-  height: 40px;
-  margin-right: 10px;
+.datoteka-prikaz {
+  width: 35px;
+  height: 35px;
+  margin-right: 8px;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -1323,74 +1463,111 @@ onUnmounted(() => {
   background-color: #F1EFEC;
 }
 
-.datoteka-preview img {
+@media (max-width: 768px) {
+  .datoteka-prikaz {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.datoteka-prikaz img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.video-placeholder {
-  font-size: 1.2rem;
+.video-prikaz {
+  font-size: 1rem;
   color: #5D8AA8;
 }
 
-.datoteka-info {
+@media (max-width: 768px) {
+  .video-prikaz {
+    font-size: 0.9rem;
+  }
+}
+
+.datoteka-podaci {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.datoteka-ime {
+.datoteka-naziv {
   font-weight: 500;
   color: #123458;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 2px;
 }
 
+@media (max-width: 768px) {
+  .datoteka-naziv {
+    font-size: 0.7rem;
+  }
+}
+
 .datoteka-velicina {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #5D8AA8;
   background-color: rgba(93, 138, 168, 0.1);
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 2px 5px;
+  border-radius: 8px;
   display: inline-block;
   width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .datoteka-velicina {
+    font-size: 0.6rem;
+  }
 }
 
 .vise-datoteka {
   text-align: center;
   color: #5D8AA8;
   font-style: italic;
-  font-size: 0.85rem;
-  padding: 10px;
+  font-size: 0.75rem;
+  padding: 8px;
   background-color: rgba(93, 138, 168, 0.05);
   border-radius: 6px;
   border: 1px dashed #5D8AA8;
+}
+
+@media (max-width: 768px) {
+  .vise-datoteka {
+    font-size: 0.7rem;
+  }
 }
 
 .ukupna-velicina {
   text-align: center;
   font-weight: 600;
   color: #123458;
-  font-size: 0.9rem;
-  padding: 8px;
+  font-size: 0.8rem;
+  padding: 6px;
   background-color: white;
   border-radius: 6px;
   border: 1px solid #D4C9BE;
 }
 
-.upload-actions {
-  margin: 15px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+@media (max-width: 768px) {
+  .ukupna-velicina {
+    font-size: 0.75rem;
+  }
 }
 
-.btn-upload {
+.upload-akcije {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-gumb {
   background-color: #123458;
   color: white;
   border: none;
@@ -1400,17 +1577,24 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 3px 6px rgba(18, 52, 88, 0.2);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   width: 100%;
 }
 
-.btn-upload:hover:not(:disabled) {
+@media (max-width: 768px) {
+  .upload-gumb {
+    padding: 14px;
+    font-size: 0.9rem;
+  }
+}
+
+.upload-gumb:hover:not(:disabled) {
   background-color: #1c4c80;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(18, 52, 88, 0.3);
 }
 
-.btn-upload:disabled {
+.upload-gumb:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
   opacity: 0.7;
@@ -1418,56 +1602,68 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
-.progress-container {
+.progress-okvir {
   width: 100%;
 }
 
-.progress-bar {
+.progress-traka {
   width: 100%;
-  height: 10px;
+  height: 8px;
   background-color: #D4C9BE;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .progress {
   height: 100%;
   background: linear-gradient(90deg, #123458, #5D8AA8);
-  border-radius: 10px;
+  border-radius: 8px;
   transition: width 0.3s ease;
 }
 
-.progress-text {
+.progress-tekst {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #123458;
   font-weight: 500;
 }
 
+@media (max-width: 768px) {
+  .progress-tekst {
+    font-size: 0.7rem;
+  }
+}
+
 .status-poruka {
-  margin: 12px 0;
-  padding: 10px;
+  margin: 10px 0;
+  padding: 8px;
   border-radius: 6px;
   font-weight: 500;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
-.status-poruka.success {
+@media (max-width: 768px) {
+  .status-poruka {
+    font-size: 0.75rem;
+  }
+}
+
+.status-poruka.uspjeh {
   background-color: rgba(16, 185, 129, 0.1);
   color: #10B981;
   border: 1px solid #10B981;
 }
 
-.status-poruka.error {
+.status-poruka.greska {
   background-color: rgba(229, 57, 53, 0.1);
   color: #E53935;
   border: 1px solid #E53935;
 }
 
-.lightbox {
+.povecani-prikaz {
   position: fixed;
   top: 0;
   left: 0;
@@ -1478,10 +1674,16 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0;
+  padding: 20px;
 }
 
-.lightbox-content {
+@media (max-width: 768px) {
+  .povecani-prikaz {
+    padding: 10px;
+  }
+}
+
+.povecani-sadrzaj {
   position: relative;
   max-width: 90%;
   max-height: 90%;
@@ -1490,15 +1692,13 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.lightbox-close {
+.zatvori-gumb {
   position: absolute;
-  top: -40px;
+  top: -35px;
   right: 0;
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
   border: none;
-  width: 30px;
-  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1509,18 +1709,27 @@ onUnmounted(() => {
   z-index: 10;
 }
 
-.lightbox-close:hover {
+@media (max-width: 768px) {
+  .zatvori-gumb {
+    top: -30px;
+    width: 25px;
+    height: 25px;
+    font-size: 0.9rem;
+  }
+}
+
+.zatvori-gumb:hover {
   background-color: rgba(255, 255, 255, 0.4);
 }
 
-.lightbox-media {
+.povecani-medij {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.lightbox-media img,
-.lightbox-media video {
+.povecani-medij img,
+.povecani-medij video {
   max-width: 100%;
   max-height: 90vh;
   object-fit: contain;
@@ -1528,7 +1737,14 @@ onUnmounted(() => {
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
 }
 
-.modal-backdrop {
+@media (max-width: 768px) {
+  .povecani-medij img,
+  .povecani-medij video {
+    max-height: 85vh;
+  }
+}
+
+.modal-pozadina {
   position: fixed;
   top: 0;
   left: 0;
@@ -1539,16 +1755,30 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .modal-pozadina {
+    padding: 15px;
+  }
 }
 
 .modal-potvrda {
   background-color: white;
   border-radius: 10px;
   padding: 20px;
-  width: 90%;
+  width: 100%;
   max-width: 400px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   animation: fadeInUp 0.3s;
+}
+
+@media (max-width: 768px) {
+  .modal-potvrda {
+    padding: 15px;
+    max-width: 350px;
+  }
 }
 
 @keyframes fadeInUp {
@@ -1564,59 +1794,100 @@ onUnmounted(() => {
 
 .modal-potvrda h4 {
   color: #123458;
-  margin: 0 0 15px 0;
-  font-size: 1.2rem;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
   border-bottom: 1px solid #D4C9BE;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .modal-potvrda h4 {
+    font-size: 1rem;
+  }
 }
 
 .modal-potvrda p {
-  margin: 10px 0;
+  margin: 8px 0;
   color: #333;
-  font-size: 1rem;
+  font-size: 0.9rem;
   text-align: center;
 }
 
-.file-to-delete {
+@media (max-width: 768px) {
+  .modal-potvrda p {
+    font-size: 0.85rem;
+  }
+}
+
+.datoteka-za-brisanje {
   font-weight: 500;
   color: #e53935;
   background-color: rgba(229, 57, 53, 0.1);
-  padding: 8px;
+  padding: 6px;
   border-radius: 5px;
-  margin: 15px 0;
+  margin: 10px 0;
   word-break: break-all;
+  font-size: 0.8rem;
 }
 
-.user-to-delete {
+@media (max-width: 768px) {
+  .datoteka-za-brisanje {
+    font-size: 0.75rem;
+  }
+}
+
+.korisnik-za-brisanje {
   font-weight: 600;
   color: #123458;
   background-color: rgba(18, 52, 88, 0.1);
-  padding: 8px;
+  padding: 6px;
   border-radius: 5px;
-  margin: 15px 0;
+  margin: 10px 0;
   text-align: center;
+  font-size: 0.8rem;
 }
 
-.files-count {
+@media (max-width: 768px) {
+  .korisnik-za-brisanje {
+    font-size: 0.75rem;
+  }
+}
+
+.broj-datoteka {
   font-weight: 500;
   color: #e53935;
   background-color: rgba(229, 57, 53, 0.1);
-  padding: 8px;
+  padding: 6px;
   border-radius: 5px;
-  margin: 15px 0;
+  margin: 10px 0;
   text-align: center;
+  font-size: 0.8rem;
 }
 
-.modal-actions {
+@media (max-width: 768px) {
+  .broj-datoteka {
+    font-size: 0.75rem;
+  }
+}
+
+.modal-akcije {
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
+  margin-top: 15px;
+  gap: 10px;
 }
 
-.btn-odustani {
-  padding: 8px 20px;
+@media (max-width: 768px) {
+  .modal-akcije {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.odustani-gumb {
+  padding: 10px 15px;
   background-color: #6c757d;
   color: white;
   border: none;
@@ -1625,15 +1896,22 @@ onUnmounted(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   flex: 1;
-  margin-right: 10px;
+  font-size: 0.85rem;
 }
 
-.btn-odustani:hover {
+@media (max-width: 768px) {
+  .odustani-gumb {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+.odustani-gumb:hover {
   background-color: #5a6268;
 }
 
-.btn-potvrdi {
-  padding: 8px 20px;
+.potvrdi-gumb {
+  padding: 10px 15px;
   background-color: #e53935;
   color: white;
   border: none;
@@ -1642,14 +1920,21 @@ onUnmounted(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   flex: 1;
-  margin-left: 10px;
+  font-size: 0.85rem;
 }
 
-.btn-potvrdi:hover:not(:disabled) {
+@media (max-width: 768px) {
+  .potvrdi-gumb {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+.potvrdi-gumb:hover:not(:disabled) {
   background-color: #c62828;
 }
 
-.btn-potvrdi:disabled {
+.potvrdi-gumb:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
   opacity: 0.7;
@@ -1659,6 +1944,44 @@ onUnmounted(() => {
 .error-video {
   opacity: 0.7;
   border: 2px solid #E53935;
+}
+
+.slika-greska-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(229, 57, 53, 0.1);
+  color: #E53935;
+  padding: 15px;
+  text-align: center;
+  border: 2px dashed #E53935;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .slika-greska-placeholder {
+    padding: 10px;
+  }
+  
+  .slika-greska-placeholder svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.slika-greska-placeholder p {
+  margin: 8px 0 0 0;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .slika-greska-placeholder p {
+    font-size: 0.75rem;
+  }
 }
 
 .video-error-message {
@@ -1672,6 +1995,12 @@ onUnmounted(() => {
   padding: 10px;
   text-align: center;
   font-weight: 500;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .video-error-message {
+    font-size: 0.7rem;
+  }
 }
 </style>

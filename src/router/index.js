@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import LoginPage from '../components/LoginPage.vue';
 import Dashboard from '../korisnik/Dashboard.vue';
 import AdminDashboard from '../components/ADashboard.vue';
-import PrihodiView from '../components/APrihodiView.vue';
+import PrihodiView from '../components/APrihodi.vue';
 import OpremaView from '../components/AOprema.vue';
 import CjenovnikView from '../components/ACjenovnik.vue';
 import aUpload from '../components/aUpload.vue';

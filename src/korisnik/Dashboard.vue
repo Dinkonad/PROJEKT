@@ -114,7 +114,7 @@
           </div>
           
           <div v-else class="prazno-stanje">
-            <div class="prazno-ikona">📷</div>
+         
             <p>Nemate uploadanih fotografija</p>
           </div>
         </div>

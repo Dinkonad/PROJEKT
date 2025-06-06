@@ -38,18 +38,21 @@
       <table class="tablica-korisnici">
         <thead>
           <tr>
-            <th>Status</th>
+            <th>Trenutni status</th>
             <th>Ime</th>
             <th>Email</th>
             <th>Zadnja aktivnost</th>
             <th>Broj preuzimanja</th>
-            <th>Uloga</th>
+            <th>Akcije</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="korisnik in filtrirani" :key="korisnik.id" class="red-korisnik">
             <td>
-              <div class="indikator-status" :class="{ 'online': korisnik.status === 'online' }"></div>
+              <div class="trenutni-status" :class="jeAktivan(korisnik.lastActive) ? 'online' : 'offline'">
+                <div class="indikator-status-mali" :class="{ 'online': jeAktivan(korisnik.lastActive) }"></div>
+                <span>{{ jeAktivan(korisnik.lastActive) ? 'Aktivan' : 'Neaktivan' }}</span>
+              </div>
             </td>
             <td>{{ korisnik.name || korisnik.email.split('@')[0] }}</td>
             <td>{{ korisnik.email }}</td>
@@ -60,11 +63,56 @@
                 <span class="oznaka-preuzimanja">preuzimanja</span>
               </div>
             </td>
-            <td>{{ korisnik.email === 'naddinko@gmail.com' ? 'Admin' : 'Korisnik' }}</td>
+            <td>
+              <button 
+                class="gumb-brisi"
+                @click="potvrdiBrisanje(korisnik)"
+                :disabled="brisanjeUTijeku"
+                title="Obriši korisnika"
+              >
+                <span class="material-icons">delete</span>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <Transition name="fade">
+      <div v-if="prikaziModal" class="pozadina" @click="zatvoriModal">
+        <div class="modal-potvrda" @click.stop>
+          <div class="modal-zaglavlje">
+            <h2>Potvrda brisanja</h2>
+          </div>
+          <div class="potvrda-sadrzaj">
+            <span class="material-icons upozorenje">warning</span>
+            <p>Jeste li sigurni da želite obrisati korisnika:</p>
+            <div class="korisnik-info">
+              <strong>{{ korisnikZaBrisanje?.name || korisnikZaBrisanje?.email?.split('@')[0] }}</strong>
+              <br>
+              <span class="email-korisnika">{{ korisnikZaBrisanje?.email }}</span>
+            </div>
+            <p class="upozorenje-tekst">Ova akcija se ne može poništiti!</p>
+          </div>
+          <div class="potvrda-gumbi">
+            <button class="gumb-odustani" @click="zatvoriModal">Odustani</button>
+            <button 
+              class="gumb-potvrdi" 
+              @click="obrisiKorisnika"
+              :disabled="brisanjeUTijeku"
+            >
+              {{ brisanjeUTijeku ? 'Brisanje...' : 'Potvrdi' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="toastPoruka" class="toast" :class="toastTip">
+        {{ toastPoruka }}
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -75,14 +123,20 @@ import {
   collection, 
   query, 
   onSnapshot, 
-  Timestamp,
-  orderBy
+  orderBy,
+  doc,
+  deleteDoc
 } from 'firebase/firestore';
 
 const listaKorisnika = ref([]);
 const ucitavanje = ref(true);
 const odabraniFilter = ref('svi');
 const statistikePreuzimanja = ref({});
+const prikaziModal = ref(false);
+const korisnikZaBrisanje = ref(null);
+const brisanjeUTijeku = ref(false);
+const toastPoruka = ref('');
+const toastTip = ref('');
 let prekiniPracenje = null;
 
 const ucitajStatistike = () => {
@@ -103,16 +157,30 @@ const dohvatiBrojPreuzimanja = (emailKorisnika) => {
   return statistikePreuzimanja.value[emailKorisnika] || 0;
 };
 
+const korisniciFiltriraniPoAdminu = computed(() => {
+  return listaKorisnika.value.filter(korisnik => korisnik.email !== 'naddinko@gmail.com');
+});
+
 const filtrirani = computed(() => {
   if (odabraniFilter.value === 'svi') {
-    return listaKorisnika.value;
+    return korisniciFiltriraniPoAdminu.value;
   } else if (odabraniFilter.value === 'online') {
-    return listaKorisnika.value.filter(korisnik => korisnik.status === 'online');
+    return korisniciFiltriraniPoAdminu.value.filter(korisnik => jeAktivan(korisnik.lastActive));
   } else if (odabraniFilter.value === 'offline') {
-    return listaKorisnika.value.filter(korisnik => korisnik.status === 'offline' || !korisnik.status);
+    return korisniciFiltriraniPoAdminu.value.filter(korisnik => !jeAktivan(korisnik.lastActive));
   }
-  return listaKorisnika.value;
+  return korisniciFiltriraniPoAdminu.value;
 });
+
+const jeAktivan = (vremenskiZig) => {
+  if (!vremenskiZig || !vremenskiZig.toDate) return false;
+  
+  const datum = vremenskiZig.toDate();
+  const sada = new Date();
+  const razlikaMinute = Math.floor((sada - datum) / (1000 * 60));
+  
+  return razlikaMinute < 2;
+};
 
 const formatirajZadnjuAktivnost = (vremenskiZig) => {
   if (!vremenskiZig || !vremenskiZig.toDate) return 'Nepoznato';
@@ -135,6 +203,47 @@ const formatirajZadnjuAktivnost = (vremenskiZig) => {
     hour: '2-digit',
     minute: '2-digit'
   }).format(datum);
+};
+
+const potvrdiBrisanje = (korisnik) => {
+  korisnikZaBrisanje.value = korisnik;
+  prikaziModal.value = true;
+};
+
+const zatvoriModal = () => {
+  prikaziModal.value = false;
+  korisnikZaBrisanje.value = null;
+};
+
+const obrisiKorisnika = async () => {
+  if (!korisnikZaBrisanje.value) return;
+  
+  brisanjeUTijeku.value = true;
+  
+  try {
+    await deleteDoc(doc(db, 'users', korisnikZaBrisanje.value.id));
+    
+    const novaStatistika = { ...statistikePreuzimanja.value };
+    delete novaStatistika[korisnikZaBrisanje.value.email];
+    statistikePreuzimanja.value = novaStatistika;
+    localStorage.setItem('download_stats', JSON.stringify(novaStatistika));
+    zatvoriModal();
+  } catch (greska) {
+    console.error('Greška pri brisanju korisnika:', greska);
+    prikaziToast('Greška pri brisanju korisnika. Pokušajte ponovno.', 'greska');
+  } finally {
+    brisanjeUTijeku.value = false;
+  }
+};
+
+const prikaziToast = (poruka, tip) => {
+  toastPoruka.value = poruka;
+  toastTip.value = tip;
+  
+  setTimeout(() => {
+    toastPoruka.value = '';
+    toastTip.value = '';
+  }, 4000);
 };
 
 const rukujPromjenom = (dogadaj) => {
@@ -183,6 +292,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
 .pregled-korisnika {
   max-width: 1200px;
   margin: 0 auto;
@@ -303,18 +414,34 @@ onUnmounted(() => {
   border-radius: 0 0 8px 0;
 }
 
-.indikator-status {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: #adb5bd;
-  display: inline-block;
-  margin: 0 auto;
+.trenutni-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
 }
 
-.indikator-status.online {
+.trenutni-status.online {
+  color: #4CAF50;
+}
+
+.trenutni-status.offline {
+  color: #6c757d;
+}
+
+.indikator-status-mali {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #adb5bd;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.indikator-status-mali.online {
   background-color: #4CAF50;
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+  box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+  animation: pulziraj 2s infinite;
 }
 
 .statistike-preuzimanja {
@@ -328,6 +455,11 @@ onUnmounted(() => {
   font-size: 1.3rem;
   font-weight: 700;
   color: #123458;
+  transition: color 0.3s ease;
+}
+
+.red-korisnik:hover .broj-preuzimanja {
+  color: #007bff;
 }
 
 .oznaka-preuzimanja {
@@ -346,6 +478,194 @@ onUnmounted(() => {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-size: 1.1rem;
+}
+
+.gumb-brisi {
+  background-color: #E53935;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gumb-brisi:hover:not(:disabled) {
+  background-color: #C62828;
+}
+
+.gumb-brisi:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pozadina {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(3, 3, 3, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-potvrda {
+  background-color: #F1EFEC;
+  border-radius: 12px;
+  padding: 0;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.modal-zaglavlje {
+  background-color: #123458;
+  color: #F1EFEC;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-zaglavlje h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.potvrda-sadrzaj {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.upozorenje {
+  font-size: 48px;
+  color: #E53935;
+  margin-bottom: 16px;
+}
+
+.potvrda-sadrzaj p {
+  margin: 0 0 16px 0;
+  color: #495057;
+}
+
+.korisnik-info {
+  background-color: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid #123458;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.email-korisnika {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.upozorenje-tekst {
+  color: #E53935;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 16px !important;
+}
+
+.potvrda-gumbi {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px 24px;
+}
+
+.gumb-odustani {
+  background-color: #9CA3AF;
+  color: #F1EFEC;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 500;
+}
+
+.gumb-odustani:hover {
+  background-color: #6B7280;
+}
+
+.gumb-potvrdi {
+  background-color: #E53935;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 500;
+}
+
+.gumb-potvrdi:hover:not(:disabled) {
+  background-color: #C62828;
+}
+
+.gumb-potvrdi:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 16px 24px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 1100;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast.uspjeh {
+  background-color: #28a745;
+}
+
+.toast.greska {
+  background-color: #dc3545;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes pulziraj {
+  0% {
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+  }
 }
 
 @media (max-width: 768px) {
@@ -373,6 +693,17 @@ onUnmounted(() => {
   
   .oznaka-preuzimanja {
     font-size: 0.7rem;
+  }
+
+  .modal-potvrda {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .toast {
+    right: 10px;
+    left: 10px;
+    max-width: none;
   }
 }
 
@@ -411,38 +742,15 @@ onUnmounted(() => {
   .naslov {
     font-size: 1.5rem;
   }
+
+  .gumb-brisi {
+    padding: 6px;
+    font-size: 0.8rem;
+  }
 }
 
 .red-korisnik {
   transition: all 0.3s ease;
-}
-
-.indikator-status {
-  transition: all 0.3s ease;
-}
-
-.indikator-status.online {
-  animation: pulziraj 2s infinite;
-}
-
-@keyframes pulziraj {
-  0% {
-    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.9);
-  }
-  100% {
-    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
-  }
-}
-
-.broj-preuzimanja {
-  transition: color 0.3s ease;
-}
-
-.red-korisnik:hover .broj-preuzimanja {
-  color: #007bff;
 }
 
 .gumb-filter:focus {

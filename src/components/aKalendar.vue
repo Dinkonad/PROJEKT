@@ -5,7 +5,7 @@
     <div class="zaglavlje-kalendara">
       <div class="akcije-zaglavlja">
         <button @click="prikaziEmailPostavke = true" class="gumb-postavke">
-          📧 Email postavke
+          Email postavke
         </button>
         <button @click="prikaziModalDodajDogadaj = true" class="gumb-dodaj-dogadaj">
           + Dodaj događaj
@@ -45,16 +45,16 @@
           <div v-if="emailPostavke.omoguceno" class="grupa-polja">
             <label>Vrijeme slanja:</label>
             <select v-model="emailPostavke.vrijemeSlanja" @change="spremiEmailPostavke">
-              <option value="06:00">06:00 (6 ujutro)</option>
-              <option value="07:00">07:00 (7 ujutro)</option>
-              <option value="08:00">08:00 (8 ujutro)</option>
-              <option value="09:00">09:00 (9 ujutro)</option>
-              <option value="10:00">10:00 (10 ujutro)</option>
-              <option value="12:00">12:00 (podne)</option>
-              <option value="14:00">14:00 (2 popodne)</option>
-              <option value="16:00">16:00 (4 popodne)</option>
-              <option value="18:00">18:00 (6 navečer)</option>
-              <option value="20:00">20:00 (8 navečer)</option>
+              <option value="06:00">06:00 </option>
+              <option value="07:00">07:00 </option>
+              <option value="08:00">08:00 </option>
+              <option value="09:00">09:00 </option>
+              <option value="10:00">10:00 </option>
+              <option value="12:00">12:00 </option>
+              <option value="14:00">14:00 </option>
+              <option value="16:00">16:00 </option>
+              <option value="18:00">18:00 </option>
+              <option value="20:00">20:00 </option>
             </select>
           </div>
 
@@ -142,10 +142,10 @@
             <div class="opis-dogadaja">{{ dogadaj.opis }}</div>
             <div v-if="emailPostavke.omoguceno && imaNotifikaciju(dogadaj.id)" class="indikator-emaila">
               <span v-if="jeHitnaNotifikacija(dogadaj.id)">
-                📧 Email poslan odmah (hitno)
+                 Email poslan odmah (hitno)
               </span>
               <span v-else>
-                📧 Email podsjetnik aktiviran
+                Email podsjetnik aktiviran
               </span>
             </div>
           </div>
@@ -517,12 +517,12 @@ export default {
       console.log(`Postavka podsjetnika: ${this.emailPostavke.danaaPrijeDogadaja} dana prije`);
       
       if (danaDoDogadaja <= this.emailPostavke.danaaPrijeDogadaja) {
-        console.log(`🚨 HITNO: Šalje se email odmah! (${danaDoDogadaja} <= ${this.emailPostavke.danaaPrijeDogadaja})`);
+        console.log(`HITNO: Šalje se email odmah! (${danaDoDogadaja} <= ${this.emailPostavke.danaaPrijeDogadaja})`);
         this.posaljiHitnuNotifikaciju(dogadaj, danaDoDogadaja);
         return;
       }
       
-      console.log(`⏰ Zakazujem email za kasnije`);
+      console.log(`Zakazujem email za kasnije`);
       const datumNotifikacije = new Date(datumDogadaja);
       datumNotifikacije.setDate(datumDogadaja.getDate() - this.emailPostavke.danaaPrijeDogadaja);
       
@@ -550,7 +550,7 @@ export default {
     },
 
     async posaljiHitnuNotifikaciju(dogadaj, danaOstalo) {
-      console.log(`📧 Šalje se hitni email za: ${dogadaj.klijent} (${danaOstalo} dana)`);
+      console.log(`Šalje se hitni email za: ${dogadaj.klijent} (${danaOstalo} dana)`);
       
       const formatiranDatumDogadaja = new Date(dogadaj.pocetniDatum).toLocaleDateString('hr-HR', {
         weekday: 'long',
@@ -570,7 +570,7 @@ export default {
         immediate: true
       };
 
-      console.log('📤 Šalje se email s parametrima:', parametriPredloska);
+      console.log('Šalje se email s parametrima:', parametriPredloska);
 
       try {
         const odgovor = await emailjs.send(
@@ -579,7 +579,7 @@ export default {
           parametriPredloska
         );
 
-        console.log('📧 EmailJS Odgovor:', odgovor);
+        console.log('EmailJS Odgovor:', odgovor);
 
         if (odgovor.status === 200) {
           const notifikacija = {
@@ -600,16 +600,16 @@ export default {
   
           this.prikaziRezultatHitnogEmaila = {
             uspjeh: true,
-            poruka: `✅ Email poslan odmah! Događaj "${dogadaj.klijent}" je ${danaOstalo === 0 ? 'DANAS' : danaOstalo === 1 ? 'SUTRA' : `za ${danaOstalo} dana`}.`
+            poruka: `Email poslan odmah! Događaj "${dogadaj.klijent}" je ${danaOstalo === 0 ? 'DANAS' : danaOstalo === 1 ? 'SUTRA' : `za ${danaOstalo} dana`}.`
           };
           
-          console.log(`✅ Hitna email notifikacija uspješno poslana za: ${dogadaj.klijent}`);
+          console.log(`Hitna email notifikacija uspješno poslana za: ${dogadaj.klijent}`);
         }
       } catch (greska) {
-        console.error('❌ Greška pri slanju emaila:', greska);
+        console.error('Greška pri slanju emaila:', greska);
         this.prikaziRezultatHitnogEmaila = {
           uspjeh: false,
-          poruka: `❌ Greška pri slanju hitnog emaila: ${greska.message || greska.text || 'Nepoznata greška'}`
+          poruka: `Greška pri slanju hitnog emaila: ${greska.message || greska.text || 'Nepoznata greška'}`
         };
       }
 

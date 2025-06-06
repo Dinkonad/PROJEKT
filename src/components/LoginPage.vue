@@ -55,9 +55,9 @@
 
         <div class="crna-strana">
           <div class="dobrodošlica">
-            <h1>Neki naslov će biti</h1>
+            <h1>NAGY_PHOTO</h1>
             <p class="tekst-dobrodošlica">
-              nešto će pisati kratko 
+              Prijavi se da bi pregledao cijeli sadrzaj
             </p>
           </div>
         </div>
@@ -65,9 +65,9 @@
       <div class="registracija-strana">
         <div class="crna-strana">
           <div class="dobrodošlica">
-            <h1>nešto kratko</h1>
+            <h1>NAGY_PHOTO</h1>
             <p class="tekst-dobrodošlica">
-              nešto nepisati ovdje zanimljivo
+              Ako si prvi puta ovdje prijavi se na stranicu 
             </p>
           </div>
         </div>
