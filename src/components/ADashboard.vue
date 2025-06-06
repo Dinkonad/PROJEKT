@@ -30,92 +30,38 @@
         </div>
 
         <nav class="bocna-navigacija">
-          <div class="nav-grupa">
+       
             <router-link to="/admin" class="nav-stavka" exact-active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="9"></rect>
-                <rect x="14" y="3" width="7" height="5"></rect>
-                <rect x="14" y="12" width="7" height="9"></rect>
-                <rect x="3" y="16" width="7" height="5"></rect>
-              </svg>
               Dashboard
             </router-link>
             <router-link to="/admin/prihodi" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-              </svg>
               Prihodi
             </router-link>
             <router-link to="/admin/oprema" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21,15 16,10 5,21"></polyline>
-              </svg>
               Oprema
             </router-link>
-          </div>
-
-          <div class="nav-grupa">
             <router-link to="/admin/cjenovnik" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14,2 14,8 20,8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10,9 9,9 8,9"></polyline>
-              </svg>
               Cjenovnik
             </router-link>
             <router-link to="/admin/upload" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
               Upload
             </router-link>
             <router-link to="/admin/karte" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
               Karta
             </router-link>
-          </div>
-
-          <div class="nav-grupa">
             <router-link to="/admin/kalendar" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
               Kalendar
             </router-link>
             <router-link to="/admin/aktivnosti" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
               Aktivnost
             </router-link>
             <router-link to="/admin/korisni-linkovi" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-              </svg>
               Linkovi
             </router-link>
             <router-link to="/admin/kreativna-zona" class="nav-stavka" active-class="aktivna">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-              </svg>
               Kreativna zona
             </router-link>
-          </div>
+         
         </nav>
       </div>
     </div>
@@ -455,9 +401,9 @@ onMounted(() => {
 
 .bocna-traka {
   position: fixed;
-  left: -300px;
+  left: -250px;
   top: 0;
-  width: 300px;
+  width: 250px;
   height: 100vh;
   background-color: #123458;
   color: white;
@@ -561,16 +507,13 @@ onMounted(() => {
 
 .bocna-navigacija {
   flex: 1;
-  margin-bottom: 20px;
-}
-
-.nav-grupa {
-  margin-bottom: 25px;
+  margin-bottom: 10px;
 }
 
 .nav-stavka {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   padding: 12px 15px;
   border-radius: 8px;
@@ -579,6 +522,7 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.8);
   transition: all 0.2s;
   cursor: pointer;
+  text-align: center;
 }
 
 .nav-stavka:hover,
@@ -628,6 +572,10 @@ onMounted(() => {
   flex: 1;
   transition: margin-left 0.3s ease;
   overflow-y: auto;
+}
+
+.glavni-sadrzaj.pomjeren {
+  margin-left: 250px;
 }
 
 .glavni-sadrzaj.pomjeren {
