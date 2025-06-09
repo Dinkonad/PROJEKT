@@ -2,7 +2,12 @@
   <div class="prihodi">
     <h1 class="naslov">Prikaz svih prihoda</h1>
     
-    <div class="kartice">
+    <div v-if="ucitava" class="loading-container">
+      <span class="material-icons spinning">sync</span>
+      <p>Učitavanje prihoda...</p>
+    </div>
+    
+    <div v-else class="kartice">
       <div class="kartica placeno">
         <div class="ikona">
           <span class="material-icons">check_circle</span>
@@ -34,7 +39,7 @@
       </div>
     </div>
 
-    <div class="tablica-okvir">
+    <div v-if="!ucitava" class="tablica-okvir">
       <table class="tablica">
         <thead>
           <tr>
@@ -47,7 +52,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(prihod, index) in sortiraniPrihodi" :key="index" @click="prikaziDetalje(prihod)" class="red">
+          <tr v-for="prihod in sortiraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
             <td>{{ prihod.nazivEventa }}</td>
             <td>{{ prihod.imeIPrezime }}</td>
             <td>{{ formatDatum(prihod.datumSnimanja) }}</td>
@@ -56,12 +61,12 @@
               <div v-if="prihod.placeno" class="status placeno">
                 <span class="material-icons">check_circle</span> Plaćeno
               </div>
-              <button v-else class="gumb-plati" @click.stop="oznaciKaoPlaceno(index)">
+              <button v-else class="gumb-plati" @click.stop="oznaciKaoPlaceno(prihod.id)" :disabled="sprema">
                 <span class="material-icons">payments</span> Označi kao plaćeno
               </button>
             </td>
             <td>
-              <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(index)">
+              <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
                 <span class="material-icons">delete</span>
               </button>
             </td>
@@ -70,8 +75,8 @@
       </table>
     </div>
 
-    <div class="dodaj-okvir">
-      <button class="gumb-dodaj" @click="prikaziFormu = true">
+    <div v-if="!ucitava" class="dodaj-okvir">
+      <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
         <span class="material-icons">add</span> Dodaj novi prihod
       </button>
     </div>
@@ -212,7 +217,7 @@
             
             <div class="forma-gumbi">
               <button type="button" class="gumb-odustani" @click="prikaziFormu = false">Odustani</button>
-              <button type="submit" class="gumb-spremi">Spremi</button>
+              <button type="submit" class="gumb-spremi" :disabled="sprema">Spremi</button>
             </div>
           </form>
         </div>
@@ -231,7 +236,7 @@
           </div>
           <div class="potvrda-gumbi">
             <button class="gumb-odustani" @click="brisanjeIndeks = null">Odustani</button>
-            <button class="gumb-potvrdi" @click="obrisiPrihod">Potvrdi</button>
+            <button class="gumb-potvrdi" @click="obrisiPrihod" :disabled="sprema">Potvrdi</button>
           </div>
         </div>
       </div>
@@ -241,7 +246,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { db } from './firebase.js'; 
+import { db } from '@/services/firebase.js'; 
 import { 
   collection, 
   addDoc, 
@@ -508,6 +513,8 @@ const dodajNoviPrihod = async () => {
     };
     
     await dodajPrihodUFirestore(prihodData);
+    
+
     noviPrihod.value = {
       nazivEventa: '',
       imeIPrezime: '',
@@ -529,9 +536,25 @@ const dodajNoviPrihod = async () => {
   }
 };
 </script>
+
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+.loading-container {
+  text-align: center;
+  padding: 50px;
+  color: #123458;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 .prihodi {
   max-width: 1200px;
@@ -1074,15 +1097,6 @@ input:checked + .klizac:before {
   background-color: #F1EFEC;
   padding: 15px;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
 }
 
 @media (max-width: 1024px) {

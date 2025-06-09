@@ -1,7 +1,14 @@
+
 <template>
   <div class="oprema">
     <h1 class="naslov">Evidencija opreme</h1>
-    <div class="kartice-container">
+    
+    <div v-if="ucitava" class="loading-container">
+      <span class="material-icons spinning">sync</span>
+      <p>Učitavanje opreme...</p>
+    </div>
+    
+    <div v-else class="kartice-container">
       <div class="kartice-red">
         <div class="kartica sveukupno">
           <div class="ikona">
@@ -67,7 +74,7 @@
       </div>
     </div>
     
-    <div class="tablica-okvir">
+    <div v-if="!ucitava" class="tablica-okvir">
       <table class="tablica">
         <thead>
           <tr>
@@ -80,24 +87,24 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(oprema, index) in sortiranaOprema" :key="index" 
-              @click="prikaziDetalje(oprema)" 
+          <tr v-for="opremaItem in sortiranaOprema" :key="opremaItem.id" 
+              @click="prikaziDetalje(opremaItem)" 
               class="red" 
-              :class="{ 'prodano-red': oprema.prodano }">
-            <td>{{ oprema.naziv }}</td>
-            <td>{{ formatCurrency(oprema.cijena) }}</td>
-            <td>{{ vlasnistvo(oprema.tip) }}</td>
-            <td>{{ formatDatum(oprema.datumKupnje) }}</td>
+              :class="{ 'prodano-red': opremaItem.prodano }">
+            <td>{{ opremaItem.naziv }}</td>
+            <td>{{ formatCurrency(opremaItem.cijena) }}</td>
+            <td>{{ vlasnistvo(opremaItem.tip) }}</td>
+            <td>{{ formatDatum(opremaItem.datumKupnje) }}</td>
             <td>
-              <div v-if="oprema.prodano" class="status prodano">
+              <div v-if="opremaItem.prodano" class="status prodano">
                 <span class="material-icons">sell</span> Prodano
               </div>
-              <button v-else class="gumb-prodaj" @click.stop="prikaziProdajuFormu(index)">
+              <button v-else class="gumb-prodaj" @click.stop="prikaziProdajuFormu(opremaItem)" :disabled="sprema">
                 <span class="material-icons">sell</span> Označi kao prodano
               </button>
             </td>
             <td>
-              <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(index)">
+              <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(opremaItem)" :disabled="sprema">
                 <span class="material-icons">delete</span>
               </button>
             </td>
@@ -106,8 +113,8 @@
       </table>
     </div>
     
-    <div class="dodaj-okvir">
-      <button class="gumb-dodaj" @click="prikaziFormu = true">
+    <div v-if="!ucitava" class="dodaj-okvir">
+      <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
         <span class="material-icons">add</span> Dodaj novu opremu
       </button>
     </div>
@@ -203,7 +210,7 @@
             
             <div class="forma-gumbi">
               <button type="button" class="gumb-odustani" @click="prikaziFormu = false">Odustani</button>
-              <button type="submit" class="gumb-spremi">Spremi</button>
+              <button type="submit" class="gumb-spremi" :disabled="sprema">Spremi</button>
             </div>
           </form>
         </div>
@@ -232,7 +239,7 @@
             
             <div class="forma-gumbi">
               <button type="button" class="gumb-odustani" @click="prodajaIndex = null">Odustani</button>
-              <button type="submit" class="gumb-spremi">Spremi</button>
+              <button type="submit" class="gumb-spremi" :disabled="sprema">Spremi</button>
             </div>
           </form>
         </div>
@@ -251,7 +258,7 @@
           </div>
           <div class="potvrda-gumbi">
             <button class="gumb-odustani" @click="brisanjeIndeks = null">Odustani</button>
-            <button class="gumb-potvrdi" @click="obrisiOpremu">Potvrdi</button>
+            <button class="gumb-potvrdi" @click="obrisiOpremu" :disabled="sprema">Potvrdi</button>
           </div>
         </div>
       </div>
@@ -261,12 +268,25 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { db } from '@/services/firebase.js';
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  deleteDoc,
+  query,
+  orderBy 
+} from 'firebase/firestore';
 
-const oprema = ref(JSON.parse(localStorage.getItem('oprema')) || []);
+const oprema = ref([]);
 const detalji = ref(null);
 const prikaziFormu = ref(false);
 const brisanjeIndeks = ref(null);
 const prodajaIndex = ref(null);
+const ucitava = ref(true);
+const sprema = ref(false);
 
 const novaOprema = ref({
   naziv: '',
@@ -281,6 +301,78 @@ const prodajaPodaci = ref({
   prodajnaCijena: 0,
   datumProdaje: new Date().toISOString().split('T')[0]
 });
+
+const ucitajOpremuIzFirestore = async () => {
+  try {
+    ucitava.value = true;
+    const q = query(collection(db, 'oprema'), orderBy('datumKupnje', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    oprema.value = [];
+    querySnapshot.forEach((doc) => {
+      oprema.value.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+  } catch (error) {
+    console.error('Greška pri učitavanju opreme:', error);
+  } finally {
+    ucitava.value = false;
+  }
+};
+
+const dodajOpremuUFirestore = async (opremaData) => {
+  try {
+    sprema.value = true;
+    const docRef = await addDoc(collection(db, 'oprema'), opremaData);
+    
+    oprema.value.push({
+      id: docRef.id,
+      ...opremaData
+    });
+  } catch (error) {
+    console.error('Greška pri dodavanju opreme:', error);
+    throw error;
+  } finally {
+    sprema.value = false;
+  }
+};
+
+const azurirajOpremuUFirestore = async (id, updateData) => {
+  try {
+    sprema.value = true;
+    const opremaRef = doc(db, 'oprema', id);
+    await updateDoc(opremaRef, updateData);
+    
+    const index = oprema.value.findIndex(o => o.id === id);
+    if (index !== -1) {
+      oprema.value[index] = { ...oprema.value[index], ...updateData };
+    }
+  } catch (error) {
+    console.error('Greška pri ažuriranju opreme:', error);
+    throw error;
+  } finally {
+    sprema.value = false;
+  }
+};
+
+const obrisiOpremuIzFirestore = async (id) => {
+  try {
+    sprema.value = true;
+    await deleteDoc(doc(db, 'oprema', id));
+    
+    const index = oprema.value.findIndex(o => o.id === id);
+    if (index !== -1) {
+      oprema.value.splice(index, 1);
+    }
+  } catch (error) {
+    console.error('Greška pri brisanju opreme:', error);
+    throw error;
+  } finally {
+    sprema.value = false;
+  }
+};
 
 const ukupnaVrijednost = computed(() => {
   return oprema.value
@@ -333,14 +425,8 @@ const sortiranaOprema = computed(() => {
 });
 
 onMounted(() => {
-  if (!localStorage.getItem('oprema')) {
-    spremiULocalStorage();
-  }
+  ucitajOpremuIzFirestore();
 });
-
-const spremiULocalStorage = () => {
-  localStorage.setItem('oprema', JSON.stringify(oprema.value));
-};
 
 const formatCurrency = (value) => {
   return `${parseFloat(value).toFixed(2)} EUR`;
@@ -367,73 +453,75 @@ const prikaziDetalje = (item) => {
   detalji.value = { ...item };
 };
 
-const prikaziProdajuFormu = (index) => {
-  prodajaIndex.value = sortiranaOprema.value[index];
-  prodajaPodaci.value.prodajnaCijena = prodajaIndex.value.cijena; 
+const prikaziProdajuFormu = (opremaItem) => {
+  prodajaIndex.value = opremaItem;
+  prodajaPodaci.value.prodajnaCijena = opremaItem.cijena; 
   prodajaPodaci.value.datumProdaje = new Date().toISOString().split('T')[0]; 
 };
 
-const oznaciKaoProdano = () => {
+const oznaciKaoProdano = async () => {
   if (prodajaIndex.value) {
-    const realIndex = oprema.value.findIndex(item => 
-      item.naziv === prodajaIndex.value.naziv && 
-      item.datumKupnje === prodajaIndex.value.datumKupnje &&
-      item.cijena === prodajaIndex.value.cijena
-    );
-    
-    if (realIndex !== -1) {
-      oprema.value[realIndex].prodano = true;
-      oprema.value[realIndex].prodajnaCijena = parseFloat(prodajaPodaci.value.prodajnaCijena);
-      oprema.value[realIndex].datumProdaje = prodajaPodaci.value.datumProdaje;
-      spremiULocalStorage();
+    try {
+      const updateData = {
+        prodano: true,
+        prodajnaCijena: parseFloat(prodajaPodaci.value.prodajnaCijena),
+        datumProdaje: prodajaPodaci.value.datumProdaje
+      };
+      
+      await azurirajOpremuUFirestore(prodajaIndex.value.id, updateData);
+      prodajaIndex.value = null;
+    } catch (error) {
+      console.error('Greška pri označavanju kao prodano:', error);
     }
-    prodajaIndex.value = null;
   }
 };
 
-const potvrdiZaBrisanje = (index) => {
-  brisanjeIndeks.value = sortiranaOprema.value[index];
+const potvrdiZaBrisanje = (opremaItem) => {
+  brisanjeIndeks.value = opremaItem;
 };
 
-const obrisiOpremu = () => {
+const obrisiOpremu = async () => {
   if (brisanjeIndeks.value) {
-    const realIndex = oprema.value.findIndex(item => 
-      item.naziv === brisanjeIndeks.value.naziv && 
-      item.datumKupnje === brisanjeIndeks.value.datumKupnje &&
-      item.cijena === brisanjeIndeks.value.cijena
-    );
-    
-    if (realIndex !== -1) {
-      oprema.value.splice(realIndex, 1);
-      spremiULocalStorage();
+    try {
+      await obrisiOpremuIzFirestore(brisanjeIndeks.value.id);
+      brisanjeIndeks.value = null;
+    } catch (error) {
+      console.error('Greška pri brisanju opreme:', error);
     }
-    brisanjeIndeks.value = null;
   }
 };
 
-const dodajNovuOpremu = () => {
-  oprema.value.push({
-    naziv: novaOprema.value.naziv,
-    cijena: parseFloat(novaOprema.value.cijena),
-    tip: novaOprema.value.tip,
-    datumKupnje: novaOprema.value.datumKupnje,
-    opis: novaOprema.value.opis,
-    prodano: false
-  });
+const dodajNovuOpremu = async () => {
+  try {
+    const opremaData = {
+      naziv: novaOprema.value.naziv,
+      cijena: parseFloat(novaOprema.value.cijena),
+      tip: novaOprema.value.tip,
+      datumKupnje: novaOprema.value.datumKupnje,
+      opis: novaOprema.value.opis,
+      prodano: false,
+      created: new Date()
+    };
+    
+    await dodajOpremuUFirestore(opremaData);
+    
   
-  spremiULocalStorage();
-  
-  novaOprema.value = {
-    naziv: '',
-    cijena: 0,
-    tip: 'ja',
-    datumKupnje: '',
-    opis: ''
-  };
-  
-  prikaziFormu.value = false;
+    novaOprema.value = {
+      naziv: '',
+      cijena: 0,
+      tip: 'ja',
+      datumKupnje: '',
+      opis: ''
+    };
+    
+    prikaziFormu.value = false;
+  } catch (error) {
+    console.error('Greška pri dodavanju nove opreme:', error);
+  }
 };
 </script>
+
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
