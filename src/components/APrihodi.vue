@@ -241,8 +241,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { db } from './firebase.js'; 
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  deleteDoc,
+  query,
+  orderBy 
+} from 'firebase/firestore';
 
-const prihodi = ref(JSON.parse(localStorage.getItem('prihodi')) || []);
+const prihodi = ref([]);
 const detalji = ref(null);
 const prikaziFormu = ref(false);
 const brisanjeIndeks = ref(null);
@@ -251,6 +262,8 @@ const prijedloziVisible = ref(false);
 const pretragaUTijeku = ref(false);
 const selectedIndex = ref(-1);
 const pretragaTimeout = ref(null);
+const ucitava = ref(true); 
+const sprema = ref(false); 
 
 const noviPrihod = ref({
   nazivEventa: '',
@@ -286,15 +299,81 @@ const sortiraniPrihodi = computed(() => {
   });
 });
 
-onMounted(() => {
-  if (!localStorage.getItem('prihodi')) {
-    spremiULocalStorage();
+const ucitajPrihodeiFirestore = async () => {
+  try {
+    ucitava.value = true;
+    const q = query(collection(db, 'prihodi'), orderBy('datumSnimanja', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    prihodi.value = [];
+    querySnapshot.forEach((doc) => {
+      prihodi.value.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+  } catch (error) {
+    console.error('Greška pri učitavanju prihoda:', error);
+  } finally {
+    ucitava.value = false;
   }
-});
-
-const spremiULocalStorage = () => {
-  localStorage.setItem('prihodi', JSON.stringify(prihodi.value));
 };
+
+const dodajPrihodUFirestore = async (prihodData) => {
+  try {
+    sprema.value = true;
+    const docRef = await addDoc(collection(db, 'prihodi'), prihodData);
+    
+    prihodi.value.push({
+      id: docRef.id,
+      ...prihodData
+    });
+  } catch (error) {
+    console.error('Greška pri dodavanju prihoda:', error);
+    throw error;
+  } finally {
+    sprema.value = false;
+  }
+};
+
+const azurirajPrihodUFirestore = async (id, updateData) => {
+  try {
+    sprema.value = true;
+    const prihodRef = doc(db, 'prihodi', id);
+    await updateDoc(prihodRef, updateData);
+    
+    const index = prihodi.value.findIndex(p => p.id === id);
+    if (index !== -1) {
+      prihodi.value[index] = { ...prihodi.value[index], ...updateData };
+    }
+  } catch (error) {
+    console.error('Greška pri ažuriranju prihoda:', error);
+    throw error;
+  } finally {
+    sprema.value = false;
+  }
+};
+
+const obrisiPrihodIzFirestore = async (id) => {
+  try {
+    sprema.value = true;
+    await deleteDoc(doc(db, 'prihodi', id));
+    
+    const index = prihodi.value.findIndex(p => p.id === id);
+    if (index !== -1) {
+      prihodi.value.splice(index, 1);
+    }
+  } catch (error) {
+    console.error('Greška pri brisanju prihoda:', error);
+    throw error;
+  } finally {
+    sprema.value = false;
+  }
+};
+
+onMounted(() => {
+  ucitajPrihodeiFirestore();
+});
 
 const formatCurrency = (value) => {
   return `${parseFloat(value).toFixed(2)} EUR`;
@@ -391,71 +470,65 @@ const prikaziDetalje = (prihod) => {
   detalji.value = { ...prihod };
 };
 
-const oznaciKaoPlaceno = (index) => {
-  const realIndex = prihodi.value.findIndex(p => 
-    p.nazivEventa === sortiraniPrihodi.value[index].nazivEventa && 
-    p.datumSnimanja === sortiraniPrihodi.value[index].datumSnimanja &&
-    p.imeIPrezime === sortiraniPrihodi.value[index].imeIPrezime
-  );
-  
-  if (realIndex !== -1) {
-    prihodi.value[realIndex].placeno = true;
-    spremiULocalStorage();
+const oznaciKaoPlaceno = async (id) => {
+  try {
+    await azurirajPrihodUFirestore(id, { placeno: true });
+  } catch (error) {
+    console.error('Greška pri označavanju kao plaćeno:', error);
   }
 };
 
-const potvrdiZaBrisanje = (index) => {
-  brisanjeIndeks.value = sortiraniPrihodi.value[index];
+const potvrdiZaBrisanje = (prihod) => {
+  brisanjeIndeks.value = prihod;
 };
 
-const obrisiPrihod = () => {
+const obrisiPrihod = async () => {
   if (brisanjeIndeks.value) {
-    const realIndex = prihodi.value.findIndex(p => 
-      p.nazivEventa === brisanjeIndeks.value.nazivEventa && 
-      p.datumSnimanja === brisanjeIndeks.value.datumSnimanja &&
-      p.imeIPrezime === brisanjeIndeks.value.imeIPrezime
-    );
-    
-    if (realIndex !== -1) {
-      prihodi.value.splice(realIndex, 1);
-      spremiULocalStorage();
+    try {
+      await obrisiPrihodIzFirestore(brisanjeIndeks.value.id);
+      brisanjeIndeks.value = null;
+    } catch (error) {
+      console.error('Greška pri brisanju prihoda:', error);
     }
-    brisanjeIndeks.value = null;
   }
 };
 
-const dodajNoviPrihod = () => {
-  prihodi.value.push({
-    nazivEventa: noviPrihod.value.nazivEventa,
-    imeIPrezime: noviPrihod.value.imeIPrezime,
-    lokacija: noviPrihod.value.lokacija,
-    datumSnimanja: noviPrihod.value.datumSnimanja,
-    cijena: parseFloat(noviPrihod.value.cijena),
-    putniTrosak: parseFloat(noviPrihod.value.putniTrosak) || 0,
-    placeno: noviPrihod.value.placeno,
-    opisSnimanja: noviPrihod.value.opisSnimanja
-  });
-  
-  spremiULocalStorage();
-  
-  noviPrihod.value = {
-    nazivEventa: '',
-    imeIPrezime: '',
-    lokacija: '',
-    datumSnimanja: '',
-    cijena: 0,
-    putniTrosak: 0,
-    placeno: false,
-    opisSnimanja: ''
-  };
-  
-  prijedloziAdresa.value = [];
-  prijedloziVisible.value = false;
-  selectedIndex.value = -1;
-  prikaziFormu.value = false;
+const dodajNoviPrihod = async () => {
+  try {
+    const prihodData = {
+      nazivEventa: noviPrihod.value.nazivEventa,
+      imeIPrezime: noviPrihod.value.imeIPrezime,
+      lokacija: noviPrihod.value.lokacija,
+      datumSnimanja: noviPrihod.value.datumSnimanja,
+      cijena: parseFloat(noviPrihod.value.cijena),
+      putniTrosak: parseFloat(noviPrihod.value.putniTrosak) || 0,
+      placeno: noviPrihod.value.placeno,
+      opisSnimanja: noviPrihod.value.opisSnimanja,
+      created: new Date() 
+    };
+    
+    await dodajPrihodUFirestore(prihodData);
+    noviPrihod.value = {
+      nazivEventa: '',
+      imeIPrezime: '',
+      lokacija: '',
+      datumSnimanja: '',
+      cijena: 0,
+      putniTrosak: 0,
+      placeno: false,
+      opisSnimanja: ''
+    };
+    
+    prijedloziAdresa.value = [];
+    prijedloziVisible.value = false;
+    selectedIndex.value = -1;
+    prikaziFormu.value = false;
+    
+  } catch (error) {
+    console.error('Greška pri dodavanju novog prihoda:', error);
+  }
 };
 </script>
-
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
