@@ -20,7 +20,7 @@
           <div class="legenda">
             <div class="legenda-stavka">
               <div class="legenda-oznaka" style="background-color: #123458;">📍</div>
-              <span>Event lokacije</span>
+              <span>Event lokacije ({{ prihodi.length }})</span>
             </div>
           </div>
           
@@ -36,43 +36,74 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 const prihodi = ref([]);
 const mapaUcitava = ref(true);
 const mapa = ref(null);
 const markeri = ref([]);
-const odabraniEvent = ref(null);
+let unsubscribe = null;
 
-const ucitajPrihode = () => {
-  const pohranjeniPrihodi = localStorage.getItem('prihodi');
-  if (pohranjeniPrihodi) {
-    prihodi.value = JSON.parse(pohranjeniPrihodi);
-    console.log('Učitao prihode:', prihodi.value.length);
-  } else {
-    console.log('Nema prihoda u localStorage');
+const ucitajPrihode = async () => {
+  try {
+    prihodi.value = [];
+    const prihodiCollection = collection(db, 'prihodi');
+    const snapshot = await getDocs(prihodiCollection);
+    
+    const firestoreData = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    prihodi.value = firestoreData;
+    return firestoreData;
+  } catch (error) {
+    console.error('Greška pri učitavanju prihoda:', error);
+    return [];
   }
 };
 
-const formatirajValutu = (value) => {
-  return `${parseFloat(value).toFixed(2)} EUR`;
+const postaviRealtimeListener = () => {
+  try {
+    const prihodiCollection = collection(db, 'prihodi');
+    
+    unsubscribe = onSnapshot(prihodiCollection, (snapshot) => {
+      prihodi.value = [];
+      
+      const noviPodaci = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      prihodi.value = noviPodaci;
+      
+      if (mapa.value) {
+        azurirajMarkere();
+      }
+    });
+  } catch (error) {
+    console.error('Greška pri postavljanju listenera:', error);
+  }
 };
 
 const formatirajDatum = (dateString) => {
-  const date = new Date(dateString);
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
-};
-
-const prikaziEventDetalje = (event) => {
-  odabraniEvent.value = event;
+  if (!dateString) return 'Nepoznat datum';
+  
+  try {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  } catch (error) {
+    return 'Neispravnan datum';
+  }
 };
 
 const pokretniMapa = async () => {
   try {
     mapaUcitava.value = true;
-    
     await nextTick();
     
     if (typeof L === 'undefined') {
@@ -96,7 +127,7 @@ const pokretniMapa = async () => {
   }
 };
 
-const stvoriMapu = () => {
+const stvoriMapu = async () => {
   try {
     const pulaLat = 44.8719;
     const pulaLng = 13.8481;
@@ -108,7 +139,10 @@ const stvoriMapu = () => {
     }).addTo(mapa.value);
     
     mapaUcitava.value = false;
-    azurirajMarkere();
+    
+    if (prihodi.value.length > 0) {
+      await azurirajMarkere();
+    }
   } catch (error) {
     console.error('Greška pri stvaranju mape:', error);
     mapaUcitava.value = false;
@@ -117,20 +151,16 @@ const stvoriMapu = () => {
 
 const pronadjiKoordinate = async (lokacijaNaziv) => {
   try {
-    console.log('Geokoding za:', lokacijaNaziv);
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(lokacijaNaziv)}&countrycodes=hr&limit=1`
     );
     const data = await response.json();
     
     if (data && data.length > 0) {
-      console.log('Pronašao koordinate:', data[0].lat, data[0].lon);
       return {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon)
       };
-    } else {
-      console.log('Nema rezultata za:', lokacijaNaziv);
     }
   } catch (error) {
     console.error('Greška pri geokodiranju:', error);
@@ -140,22 +170,30 @@ const pronadjiKoordinate = async (lokacijaNaziv) => {
 
 const azurirajMarkere = async () => {
   markeri.value.forEach(marker => {
-    mapa.value.removeLayer(marker);
+    if (mapa.value) {
+      mapa.value.removeLayer(marker);
+    }
   });
   markeri.value = [];
   
   if (!mapa.value) return;
+
+  const eventiPoLokaciji = new Map();
   
-  console.log('Ažuriram markere. Ukupno prihoda:', prihodi.value.length);
+  prihodi.value.forEach(event => {
+    const lokacijaNaziv = event.lokacija?.trim();
+    
+    if (!lokacijaNaziv) return;
+
+    if (!eventiPoLokaciji.has(lokacijaNaziv)) {
+      eventiPoLokaciji.set(lokacijaNaziv, []);
+    }
+    eventiPoLokaciji.get(lokacijaNaziv).push(event);
+  });
 
   const koordinateCache = new Map();
-  const sviPrihodi = [...prihodi.value];
   
-  console.log('Prikazujem sve prihode:', sviPrihodi.length);
-
-  for (const event of sviPrihodi) {
-    const lokacijaNaziv = event.lokacija.trim();
-
+  for (const [lokacijaNaziv, eventi] of eventiPoLokaciji) {
     if (!koordinateCache.has(lokacijaNaziv)) {
       const koordinate = await pronadjiKoordinate(lokacijaNaziv);
       koordinateCache.set(lokacijaNaziv, koordinate);
@@ -164,72 +202,64 @@ const azurirajMarkere = async () => {
     
     const koordinate = koordinateCache.get(lokacijaNaziv);
     if (koordinate) {
-      dodajEventMarker(event, koordinate);
+      dodajGrupiraniMarker(lokacijaNaziv, eventi, koordinate);
     }
   }
-  
-  console.log('Dodano markera:', markeri.value.length);
 };
 
-const dodajEventMarker = (event, koordinate) => {
+const dodajGrupiraniMarker = (lokacijaNaziv, eventi, koordinate) => {
   if (!mapa.value || !koordinate) return;
+
+  const brojEventova = eventi.length;
+  const markerColor = brojEventova > 1 ? '#d9534f' : '#123458';
 
   const markerIcon = L.divIcon({
     className: 'custom-event-marker',
     html: `
-      <div class="event-marker-pin" style="background-color: #123458;">
-        <span class="marker-ikona">📍</span>
+      <div class="event-marker-pin" style="background-color: ${markerColor};">
+        <span class="marker-ikona">${brojEventova > 1 ? brojEventova : '📍'}</span>
       </div>
     `,
     iconSize: [35, 35],
     iconAnchor: [17, 35]
   });
   
-  const offsetLat = (Math.random() - 0.5) * 0.002;
-  const offsetLng = (Math.random() - 0.5) * 0.002;
-  
-  const marker = L.marker([koordinate.lat + offsetLat, koordinate.lng + offsetLng], {
+  const marker = L.marker([koordinate.lat, koordinate.lng], {
     icon: markerIcon
   }).addTo(mapa.value);
   
-  const popupSadrzaj = `
+  let popupSadrzaj = `
     <div class="popup-sadrzaj">
       <div class="popup-zaglavlje">
-        <h4>${event.nazivEventa}</h4>
+        <h4>${lokacijaNaziv}</h4>
+        <span class="event-brojac">${brojEventova} event${brojEventova > 1 ? 'a' : ''}</span>
       </div>
       <div class="popup-detalji">
-        <div class="popup-red">
-        
-          <div class="popup-info">
-            <span class="popup-naziv">Klijent</span>
-            <span class="popup-vrijednost">${event.imeIPrezime}</span>
-          </div>
-        </div>
-        <div class="popup-red">
-       
-          <div class="popup-info">
-            <span class="popup-naziv">Lokacija</span>
-            <span class="popup-vrijednost">${event.lokacija}</span>
-          </div>
-        </div>
-        <div class="popup-red">
-          
-          <div class="popup-info">
-            <span class="popup-naziv">Datum</span>
-            <span class="popup-vrijednost">${formatirajDatum(event.datumSnimanja)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
   `;
   
-  marker.bindPopup(popupSadrzaj);
+  eventi.forEach((event, index) => {
+    popupSadrzaj += `
+      <div class="event-kartica">
+        <div class="event-naslov">${event.nazivEventa || 'Nepoznat event'}</div>
+        <div class="event-info">
+          <span class="info-label">Klijent:</span>
+          <span class="info-value">${event.imeIPrezime || 'Nepoznat klijent'}</span>
+        </div>
+        <div class="event-info">
+          <span class="info-label">Datum:</span>
+          <span class="info-value">${formatirajDatum(event.datumSnimanja)}</span>
+        </div>
+      </div>
+      ${index < eventi.length - 1 ? '<hr class="event-separator">' : ''}
+    `;
+  });
   
-  marker.on('click', () => {
-    prikaziEventDetalje({
-      ...event,
-      id: `${event.nazivEventa}_${event.datumSnimanja}_${event.imeIPrezime}`
-    });
+  popupSadrzaj += '</div></div>';
+  
+  marker.bindPopup(popupSadrzaj, {
+    maxWidth: 400,
+    maxHeight: 300,
+    className: 'custom-popup'
   });
   
   markeri.value.push(marker);
@@ -242,39 +272,16 @@ const prikaziSveLokacije = () => {
   }
 };
 
-onMounted(() => {
-  ucitajPrihode();
-
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'prihodi') {
-      console.log('localStorage promijenjen, ponovno učitavam...');
-      ucitajPrihode();
-      if (mapa.value) {
-        azurirajMarkere();
-      }
-    }
-  });
-  
-  pokretniMapa();
-  
-  const interval = setInterval(() => {
-    const trenutniPrihodi = localStorage.getItem('prihodi');
-    if (trenutniPrihodi && JSON.parse(trenutniPrihodi).length !== prihodi.value.length) {
-      console.log('Detektirana promjena prihoda...');
-      ucitajPrihode();
-      if (mapa.value) {
-        azurirajMarkere();
-      }
-    }
-  }, 2000);
-  
-  onUnmounted(() => {
-    clearInterval(interval);
-  });
+onMounted(async () => {
+  await ucitajPrihode();
+  postaviRealtimeListener();
+  await pokretniMapa();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('storage', ucitajPrihode);
+  if (unsubscribe) {
+    unsubscribe();
+  }
   
   if (mapa.value) {
     mapa.value.remove();
@@ -667,69 +674,51 @@ onUnmounted(() => {
   }
 }
 
-:global(.popup-red) {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px;
-  background-color: rgba(241, 239, 236, 0.5);
-  border-radius: 6px;
-  border-left: 3px solid #123458;
-}
-
-@media (max-width: 768px) {
-  :global(.popup-red) {
-    padding: 5px;
-    gap: 6px;
-  }
-}
-
-:global(.popup-ikona) {
-  font-size: 0.9rem;
-  width: 18px;
-  text-align: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-@media (max-width: 768px) {
-  :global(.popup-ikona) {
-    font-size: 0.8rem;
-    width: 16px;
-  }
-}
-
-:global(.popup-info) {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-:global(.popup-naziv) {
-  font-size: 0.7rem;
-  color: #123458;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-@media (max-width: 768px) {
-  :global(.popup-naziv) {
-    font-size: 0.65rem;
-  }
-}
-
-:global(.popup-vrijednost) {
-  font-size: 0.85rem;
-  color: #333;
+:global(.event-brojac) {
+  background-color: #123458;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.6rem;
   font-weight: 500;
-  line-height: 1.3;
 }
 
-@media (max-width: 768px) {
-  :global(.popup-vrijednost) {
-    font-size: 0.8rem;
-  }
+:global(.event-kartica) {
+  margin-bottom: 8px;
+}
+
+:global(.event-naslov) {
+  font-weight: 600;
+  color: #123458;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+:global(.event-info) {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+}
+
+:global(.info-label) {
+  color: #666;
+  font-weight: 500;
+}
+
+:global(.info-value) {
+  color: #333;
+  font-weight: 400;
+}
+
+:global(.event-separator) {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 8px 0;
+}
+
+:global(.custom-popup .leaflet-popup-content-wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>

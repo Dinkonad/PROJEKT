@@ -85,7 +85,12 @@
       <button @click="sljedeciMjesec" class="gumb-navigacije">&gt;</button>
     </div>
 
-    <div class="mreza-kalendara">
+    <div v-if="ucitava" class="ucitavanje-indikator">
+      <div class="spinner"></div>
+      <p>Učitavam događaje...</p>
+    </div>
+
+    <div v-else class="mreza-kalendara">
       <div class="zaglavlje-dana" v-for="dan in daniTjedna" :key="dan">
         {{ dan }}
       </div>
@@ -150,23 +155,17 @@
             </div>
           </div>
           <div class="akcije-dogadaja">
-            <button 
-              @click="urediDogadaj(dogadaj)" 
-              class="gumb-urediti"
-            >
+            <button @click="urediDogadaj(dogadaj)" class="gumb-urediti">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
               Uredi
             </button>
-            <button 
-              @click="obrisiDogadaj(dogadaj.id)" 
-              class="gumb-obrisati"
-            >
+            <button @click="obrisiDogadaj(dogadaj.id)" class="gumb-obrisati">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"></path>
                 <line x1="10" y1="11" x2="10" y2="17"></line>
                 <line x1="14" y1="11" x2="14" y2="17"></line>
               </svg>
@@ -308,6 +307,8 @@
 
 <script>
 import emailjs from '@emailjs/browser';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 export default {
   name: 'HrvatskiKalendar',
@@ -318,7 +319,8 @@ export default {
       prikaziModalDodajDogadaj: false,
       prikaziEmailPostavke: false,
       uredujeDogadaj: null,
-      prikaziRezultatHitnogEmaila: null, 
+      prikaziRezultatHitnogEmaila: null,
+      ucitava: true,
       daniTjedna: ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'],
       opcijeBoja: [
         { vrijednost: 'zuta', oznaka: 'Žuta' },
@@ -330,13 +332,13 @@ export default {
         { vrijednost: 'tirkizna', oznaka: 'Tirkizna' },
         { vrijednost: 'ruzicasta', oznaka: 'Ružičasta' }
       ],
-      dogadaji: JSON.parse(localStorage.getItem('kalendar-dogadaji')) || [],
-      emailNotifikacije: JSON.parse(localStorage.getItem('email-notifikacije')) || [],
+      dogadaji: [],
+      emailNotifikacije: [],
       emailPostavke: {
-        omoguceno: JSON.parse(localStorage.getItem('email-postavke-omoguceno')) || false,
+        omoguceno: false,
         emailPrimatelja: 'naddinko@gmail.com',
-        danaaPrijeDogadaja: parseInt(localStorage.getItem('email-dana-prije')) || 3,
-        vrijemeSlanja: localStorage.getItem('email-vrijeme-slanja') || '08:00'
+        danaaPrijeDogadaja: 3,
+        vrijemeSlanja: '08:00'
       },
       dogadajZaBrisanje: null,
       formaDogadaja: {
@@ -346,7 +348,10 @@ export default {
         boja: 'plava',
         opis: '',
         emailNotifikacija: true
-      }
+      },
+      unsubscribeDogadaji: null,
+      unsubscribeNotifikacije: null,
+      unsubscribePostavke: null
     };
   },
 
@@ -395,17 +400,116 @@ export default {
     }
   },
 
-  mounted() {
+  async mounted() {
     emailjs.init('032xWrX5Q1Y5iEczS');
 
-    setInterval(() => {
+    try {
+      this.ucitava = true;
+      
+      await this.ucitajDogadaje();
+      await this.ucitajEmailNotifikacije();
+      await this.ucitajEmailPostavke();
+
+      this.postaviRealtimeListeners();
+
+      setInterval(() => {
+        this.provjeriIPosaljiNotifikacije();
+      }, 5 * 60 * 1000);
+      
       this.provjeriIPosaljiNotifikacije();
-    }, 5 * 60 * 1000);
-    
-    this.provjeriIPosaljiNotifikacije();
+      
+    } catch (error) {
+      console.error('Greška pri pokretanju kalendara:', error);
+    } finally {
+      this.ucitava = false;
+    }
+  },
+
+  beforeUnmount() {
+    if (this.unsubscribeDogadaji) this.unsubscribeDogadaji();
+    if (this.unsubscribeNotifikacije) this.unsubscribeNotifikacije();
+    if (this.unsubscribePostavke) this.unsubscribePostavke();
   },
 
   methods: {
+    async ucitajDogadaje() {
+      try {
+        const snapshot = await getDocs(collection(db, 'kalendar-dogadaji'));
+        this.dogadaji = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Greška pri učitavanju događaja:', error);
+      }
+    },
+
+    async ucitajEmailNotifikacije() {
+      try {
+        const snapshot = await getDocs(collection(db, 'email-notifikacije'));
+        this.emailNotifikacije = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Greška pri učitavanju notifikacija:', error);
+      }
+    },
+
+    async ucitajEmailPostavke() {
+      try {
+        const snapshot = await getDocs(collection(db, 'email-postavke'));
+        if (!snapshot.empty) {
+          const postavke = snapshot.docs[0].data();
+          this.emailPostavke = { ...this.emailPostavke, ...postavke };
+        }
+      } catch (error) {
+        console.error('Greška pri učitavanju postavki:', error);
+      }
+    },
+
+    postaviRealtimeListeners() {
+      this.unsubscribeDogadaji = onSnapshot(collection(db, 'kalendar-dogadaji'), (snapshot) => {
+        this.dogadaji = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        if (this.odabraniDan) {
+          this.odabraniDan.dogadaji = this.dohvatiDogadajeZaDatum(this.odabraniDan.datum);
+        }
+      });
+
+      this.unsubscribeNotifikacije = onSnapshot(collection(db, 'email-notifikacije'), (snapshot) => {
+        this.emailNotifikacije = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      });
+
+      this.unsubscribePostavke = onSnapshot(collection(db, 'email-postavke'), (snapshot) => {
+        if (!snapshot.empty) {
+          const postavke = snapshot.docs[0].data();
+          this.emailPostavke = { ...this.emailPostavke, ...postavke };
+        }
+      });
+    },
+
+    async spremiEmailPostavke() {
+      try {
+        const snapshot = await getDocs(collection(db, 'email-postavke'));
+        
+        if (snapshot.empty) {
+          await addDoc(collection(db, 'email-postavke'), this.emailPostavke);
+        } else {
+          const docRef = doc(db, 'email-postavke', snapshot.docs[0].id);
+          await updateDoc(docRef, this.emailPostavke);
+        }
+      } catch (error) {
+        console.error('Greška pri spremanju postavki:', error);
+      }
+    },
+
     dohvatiDogadajeZaDatum(datumString) {
       return this.dogadaji.filter(dogadaj => {
         const pocetakDogadaja = new Date(dogadaj.pocetniDatum);
@@ -467,36 +571,45 @@ export default {
       };
     },
 
-    spremiDogadaj() {
+    async spremiDogadaj() {
       if (new Date(this.formaDogadaja.zavrsniDatum) < new Date(this.formaDogadaja.pocetniDatum)) {
         alert('Završni datum ne može biti prije početnog datuma!');
         return;
       }
 
-      if (this.uredujeDogadaj) {
-        const indeks = this.dogadaji.findIndex(d => d.id === this.uredujeDogadaj.id);
-        if (indeks !== -1) {
-          this.dogadaji[indeks] = { ...this.formaDogadaja, id: this.uredujeDogadaj.id };
-          this.azurirajEmailNotifikaciju(this.dogadaji[indeks]);
+      try {
+        if (this.uredujeDogadaj) {
+          const docRef = doc(db, 'kalendar-dogadaji', this.uredujeDogadaj.id);
+          await updateDoc(docRef, {
+            klijent: this.formaDogadaja.klijent,
+            pocetniDatum: this.formaDogadaja.pocetniDatum,
+            zavrsniDatum: this.formaDogadaja.zavrsniDatum,
+            boja: this.formaDogadaja.boja,
+            opis: this.formaDogadaja.opis
+          });
+          
+          const azuriraniDogadaj = { ...this.formaDogadaja, id: this.uredujeDogadaj.id };
+          this.azurirajEmailNotifikaciju(azuriraniDogadaj);
+        } else {
+          const docRef = await addDoc(collection(db, 'kalendar-dogadaji'), {
+            klijent: this.formaDogadaja.klijent,
+            pocetniDatum: this.formaDogadaja.pocetniDatum,
+            zavrsniDatum: this.formaDogadaja.zavrsniDatum,
+            boja: this.formaDogadaja.boja,
+            opis: this.formaDogadaja.opis
+          });
+          
+          const noviDogadaj = { ...this.formaDogadaja, id: docRef.id };
+          this.stvoriEmailNotifikaciju(noviDogadaj);
         }
-      } else {
-        const noviDogadaj = {
-          ...this.formaDogadaja,
-          id: Date.now()
-        };
-        this.dogadaji.push(noviDogadaj);
-        this.stvoriEmailNotifikaciju(noviDogadaj);
-      }
-      
-      this.spremiULocalStorage();
-      this.zatvoriModal();
-      
-      if (this.odabraniDan) {
-        this.odabraniDan.dogadaji = this.dohvatiDogadajeZaDatum(this.odabraniDan.datum);
+        
+        this.zatvoriModal();
+      } catch (error) {
+        console.error('Greška pri spremanju događaja:', error);
       }
     },
 
-    stvoriEmailNotifikaciju(dogadaj) {
+    async stvoriEmailNotifikaciju(dogadaj) {
       if (!this.emailPostavke.omoguceno || !this.formaDogadaja.emailNotifikacija) {
         return;
       }
@@ -510,48 +623,38 @@ export default {
       const razlikaVremena = datumDogadaja - danas;
       const danaDoDogadaja = Math.floor(razlikaVremena / (1000 * 60 * 60 * 24));
       
-      console.log(`Događaj: ${dogadaj.klijent}`);
-      console.log(`Datum događaja: ${dogadaj.pocetniDatum}`);
-      console.log(`Danas: ${danas.toISOString().split('T')[0]}`);
-      console.log(`Dana do događaja: ${danaDoDogadaja}`);
-      console.log(`Postavka podsjetnika: ${this.emailPostavke.danaaPrijeDogadaja} dana prije`);
-      
       if (danaDoDogadaja <= this.emailPostavke.danaaPrijeDogadaja) {
-        console.log(`HITNO: Šalje se email odmah! (${danaDoDogadaja} <= ${this.emailPostavke.danaaPrijeDogadaja})`);
         this.posaljiHitnuNotifikaciju(dogadaj, danaDoDogadaja);
         return;
       }
       
-      console.log(`Zakazujem email za kasnije`);
       const datumNotifikacije = new Date(datumDogadaja);
       datumNotifikacije.setDate(datumDogadaja.getDate() - this.emailPostavke.danaaPrijeDogadaja);
       
       const [sati, minute] = this.emailPostavke.vrijemeSlanja.split(':');
       datumNotifikacije.setHours(parseInt(sati), parseInt(minute), 0, 0);
       const sada = new Date();
+      
       if (datumNotifikacije > sada) {
-        const notifikacija = {
-          id: `notifikacija_${dogadaj.id}`,
-          idDogadaja: dogadaj.id,
-          naslovDogadaja: dogadaj.klijent,
-          datumDogadaja: dogadaj.pocetniDatum,
-          opisDogadaja: dogadaj.opis,
-          datumNotifikacije: datumNotifikacije.toISOString(),
-          poslan: false,
-          emailPrimatelja: this.emailPostavke.emailPrimatelja,
-          zakazanoVrijeme: this.emailPostavke.vrijemeSlanja,
-          hitno: false
-        };
-
-        this.emailNotifikacije.push(notifikacija);
-        this.spremiEmailNotifikacije();
-        console.log(`Email notifikacija zakazana za: ${datumNotifikacije.toLocaleString('hr-HR')}`);
+        try {
+          await addDoc(collection(db, 'email-notifikacije'), {
+            idDogadaja: dogadaj.id,
+            naslovDogadaja: dogadaj.klijent,
+            datumDogadaja: dogadaj.pocetniDatum,
+            opisDogadaja: dogadaj.opis,
+            datumNotifikacije: datumNotifikacije.toISOString(),
+            poslan: false,
+            emailPrimatelja: this.emailPostavke.emailPrimatelja,
+            zakazanoVrijeme: this.emailPostavke.vrijemeSlanja,
+            hitno: false
+          });
+        } catch (error) {
+          console.error('Greška pri kreiranju notifikacije:', error);
+        }
       }
     },
 
     async posaljiHitnuNotifikaciju(dogadaj, danaOstalo) {
-      console.log(`Šalje se hitni email za: ${dogadaj.klijent} (${danaOstalo} dana)`);
-      
       const formatiranDatumDogadaja = new Date(dogadaj.pocetniDatum).toLocaleDateString('hr-HR', {
         weekday: 'long',
         year: 'numeric',
@@ -570,8 +673,6 @@ export default {
         immediate: true
       };
 
-      console.log('Šalje se email s parametrima:', parametriPredloska);
-
       try {
         const odgovor = await emailjs.send(
           'service_a3qcvtx',
@@ -579,11 +680,8 @@ export default {
           parametriPredloska
         );
 
-        console.log('EmailJS Odgovor:', odgovor);
-
         if (odgovor.status === 200) {
-          const notifikacija = {
-            id: `notifikacija_${dogadaj.id}`,
+          await addDoc(collection(db, 'email-notifikacije'), {
             idDogadaja: dogadaj.id,
             naslovDogadaja: dogadaj.klijent,
             datumDogadaja: dogadaj.pocetniDatum,
@@ -593,17 +691,12 @@ export default {
             emailPrimatelja: this.emailPostavke.emailPrimatelja,
             zakazanoVrijeme: 'ODMAH',
             hitno: true
-          };
+          });
 
-          this.emailNotifikacije.push(notifikacija);
-          this.spremiEmailNotifikacije();
-  
           this.prikaziRezultatHitnogEmaila = {
             uspjeh: true,
             poruka: `Email poslan odmah! Događaj "${dogadaj.klijent}" je ${danaOstalo === 0 ? 'DANAS' : danaOstalo === 1 ? 'SUTRA' : `za ${danaOstalo} dana`}.`
           };
-          
-          console.log(`Hitna email notifikacija uspješno poslana za: ${dogadaj.klijent}`);
         }
       } catch (greska) {
         console.error('Greška pri slanju emaila:', greska);
@@ -618,14 +711,36 @@ export default {
       }, 8000);
     },
 
-    azurirajEmailNotifikaciju(dogadaj) {
-      this.emailNotifikacije = this.emailNotifikacije.filter(n => n.idDogadaja !== dogadaj.id);
-      this.stvoriEmailNotifikaciju(dogadaj);
+    async azurirajEmailNotifikaciju(dogadaj) {
+      try {
+        const snapshot = await getDocs(collection(db, 'email-notifikacije'));
+        const notifikacijeZaBrisanje = snapshot.docs.filter(doc => 
+          doc.data().idDogadaja === dogadaj.id
+        );
+        
+        for (const doc of notifikacijeZaBrisanje) {
+          await deleteDoc(doc.ref);
+        }
+        
+        this.stvoriEmailNotifikaciju(dogadaj);
+      } catch (error) {
+        console.error('Greška pri ažuriranju notifikacije:', error);
+      }
     },
 
-    obrisiEmailNotifikaciju(idDogadaja) {
-      this.emailNotifikacije = this.emailNotifikacije.filter(n => n.idDogadaja !== idDogadaja);
-      this.spremiEmailNotifikacije();
+    async obrisiEmailNotifikaciju(idDogadaja) {
+      try {
+        const snapshot = await getDocs(collection(db, 'email-notifikacije'));
+        const notifikacijeZaBrisanje = snapshot.docs.filter(doc => 
+          doc.data().idDogadaja === idDogadaja
+        );
+        
+        for (const doc of notifikacijeZaBrisanje) {
+          await deleteDoc(doc.ref);
+        }
+      } catch (error) {
+        console.error('Greška pri brisanju notifikacije:', error);
+      }
     },
 
     imaNotifikaciju(idDogadaja) {
@@ -675,9 +790,8 @@ export default {
         );
 
         if (odgovor.status === 200) {
-          notifikacija.poslan = true;
-          this.spremiEmailNotifikacije();
-          console.log(`Email notifikacija poslana za događaj: ${notifikacija.naslovDogadaja}`);
+          const docRef = doc(db, 'email-notifikacije', notifikacija.id);
+          await updateDoc(docRef, { poslan: true });
         }
       } catch (greska) {
         console.error('Greška pri slanju email notifikacije:', greska);
@@ -688,36 +802,25 @@ export default {
       this.dogadajZaBrisanje = idDogadaja;
     },
 
-    potvrdiBrisanje() {
+    async potvrdiBrisanje() {
       if (this.dogadajZaBrisanje) {
-        this.dogadaji = this.dogadaji.filter(dogadaj => dogadaj.id !== this.dogadajZaBrisanje);
-        this.obrisiEmailNotifikaciju(this.dogadajZaBrisanje);
-        this.spremiULocalStorage();
-        
-        if (this.odabraniDan) {
-          this.odabraniDan.dogadaji = this.dohvatiDogadajeZaDatum(this.odabraniDan.datum);
+        try {
+          await deleteDoc(doc(db, 'kalendar-dogadaji', this.dogadajZaBrisanje));
+          await this.obrisiEmailNotifikaciju(this.dogadajZaBrisanje);
+          
+          if (this.odabraniDan) {
+            this.odabraniDan.dogadaji = this.dohvatiDogadajeZaDatum(this.odabraniDan.datum);
+          }
+          
+          this.dogadajZaBrisanje = null;
+        } catch (error) {
+          console.error('Greška pri brisanju događaja:', error);
         }
-        
-        this.dogadajZaBrisanje = null;
       }
     },
 
     otkaziOstanak() {
       this.dogadajZaBrisanje = null;
-    },
-
-    spremiULocalStorage() {
-      localStorage.setItem('kalendar-dogadaji', JSON.stringify(this.dogadaji));
-    },
-
-    spremiEmailNotifikacije() {
-      localStorage.setItem('email-notifikacije', JSON.stringify(this.emailNotifikacije));
-    },
-
-    spremiEmailPostavke() {
-      localStorage.setItem('email-postavke-omoguceno', JSON.stringify(this.emailPostavke.omoguceno));
-      localStorage.setItem('email-dana-prije', this.emailPostavke.danaaPrijeDogadaja.toString());
-      localStorage.setItem('email-vrijeme-slanja', this.emailPostavke.vrijemeSlanja);
     },
 
     formatirajDatum(datumString) {
@@ -1448,6 +1551,39 @@ export default {
 
 .gumb-spremiti:hover {
   background: #1c4c80;
+}
+
+.ucitavanje-indikator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+.ucitavanje-indikator .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #D4C9BE;
+  border-top: 4px solid #123458;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+.ucitavanje-indikator p {
+  color: #123458;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .pozadina {
