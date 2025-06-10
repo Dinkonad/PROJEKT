@@ -36,17 +36,22 @@
             <button @click="otvoriFileDialog" class="gumb-file">
               Učitaj TXT
             </button>
-            <button @click="spremi" class="gumb-spremi" :disabled="!mozeSpremi">
-              Spremi ideju
+            <button @click="spremi" class="gumb-spremi" :disabled="!mozeSpremi || ucitava">
+              {{ ucitava ? 'Sprema...' : 'Spremi ideju' }}
             </button>
           </div>
         </div>
       </div>
 
       <div class="lista">
-        <div v-if="ideje.length === 0" class="prazno">
+        <div v-if="ucitavaIdeje" class="ucitavanje">
           <div class="poruka">
-            
+            <p>Učitavaju se ideje...</p>
+          </div>
+        </div>
+
+        <div v-else-if="ideje.length === 0" class="prazno">
+          <div class="poruka">
             <p>Nema kreativnih ideja</p>
             <small>Dodajte svoju prvu ideju ili učitajte TXT fajl</small>
           </div>
@@ -80,6 +85,7 @@
                   class="gumb-realizovana" 
                   :class="{ 'aktivna': ideja.realizovana }"
                   :title="ideja.realizovana ? 'Označi kao nerealizovana' : 'Označi kao realizovana'"
+                  :disabled="ucitava"
                 >
                   {{ ideja.realizovana ? '✅' : '⭕' }}
                 </button>
@@ -145,7 +151,9 @@
           </div>
           <div class="modal-gumbovi">
             <button class="gumb-odustani" @click="uredba = null">Odustani</button>
-            <button class="gumb-potvrdi" @click="spremiUredbe">Spremi</button>
+            <button class="gumb-potvrdi" @click="spremiUredbe" :disabled="ucitava">
+              {{ ucitava ? 'Sprema...' : 'Spremi' }}
+            </button>
           </div>
         </div>
       </div>
@@ -164,7 +172,9 @@
           </div>
           <div class="modal-gumbovi">
             <button class="gumb-odustani" @click="brisanje = null">Odustani</button>
-            <button class="gumb-potvrdi" @click="obrisi">Potvrdi</button>
+            <button class="gumb-potvrdi" @click="obrisi" :disabled="ucitava">
+              {{ ucitava ? 'Briše...' : 'Potvrdi' }}
+            </button>
           </div>
         </div>
       </div>
@@ -174,6 +184,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { db } from '@/services/firebase.js';
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy, 
+  query,
+  serverTimestamp 
+} from 'firebase/firestore';
 
 const ideje = ref([]);
 const brisanje = ref(null);
@@ -182,6 +204,8 @@ const prosirenaIdeja = ref(null);
 const lightboxIdeja = ref(null);
 const fileInput = ref(null);
 const sadrzajTextarea = ref(null);
+const ucitava = ref(false);
+const ucitavaIdeje = ref(true);
 
 const novaIdeja = ref({
   naslov: '',
@@ -199,7 +223,6 @@ const kategorije = {
   'blog': 'Blog post',
   'ostalo': 'Ostalo'
 };
-
 
 const filteredIdeje = computed(() => {
   return ideje.value;
@@ -232,25 +255,40 @@ const ucitajFajl = (event) => {
   event.target.value = '';
 };
 
-const spremi = () => {
-  if (!mozeSpremi.value) return;
+const spremi = async () => {
+  if (!mozeSpremi.value || ucitava.value) return;
 
-  const ideja = {
-    id: Date.now(),
-    naslov: novaIdeja.value.naslov.trim(),
-    sadrzaj: novaIdeja.value.sadrzaj.trim(),
-    realizovana: false,
-    datum: new Date(),
-    datumRealizacije: null
-  };
+  ucitava.value = true;
 
-  ideje.value.unshift(ideja);
-  spremiUMemoriju();
-  
-  novaIdeja.value = {
-    naslov: '',
-    sadrzaj: ''
-  };
+  try {
+    const ideja = {
+      naslov: novaIdeja.value.naslov.trim(),
+      sadrzaj: novaIdeja.value.sadrzaj.trim(),
+      realizovana: false,
+      datum: serverTimestamp(),
+      datumRealizacije: null
+    };
+
+    const docRef = await addDoc(collection(db, 'ideje'), ideja);
+    
+    const novaIdejaLocal = {
+      id: docRef.id,
+      ...ideja,
+      datum: new Date()
+    };
+
+    ideje.value.unshift(novaIdejaLocal);
+    
+    novaIdeja.value = {
+      naslov: '',
+      sadrzaj: ''
+    };
+  } catch (greska) {
+    console.error('Greška pri spremanju:', greska);
+    alert('Greška pri spremanju ideje. Pokušajte ponovno.');
+  } finally {
+    ucitava.value = false;
+  }
 };
 
 const otvoriLightbox = (ideja) => {
@@ -265,12 +303,32 @@ const toggleProsireno = (id) => {
   prosirenaIdeja.value = prosirenaIdeja.value === id ? null : id;
 };
 
-const toggleRealizovana = (ideja) => {
-  const index = ideje.value.findIndex(i => i.id === ideja.id);
-  if (index > -1) {
-    ideje.value[index].realizovana = !ideje.value[index].realizovana;
-    ideje.value[index].datumRealizacije = ideje.value[index].realizovana ? new Date() : null;
-    spremiUMemoriju();
+const toggleRealizovana = async (ideja) => {
+  if (ucitava.value) return;
+
+  ucitava.value = true;
+
+  try {
+    const novoStanje = !ideja.realizovana;
+    const idejaRef = doc(db, 'ideje', ideja.id);
+    
+    const updateData = {
+      realizovana: novoStanje,
+      datumRealizacije: novoStanje ? serverTimestamp() : null
+    };
+
+    await updateDoc(idejaRef, updateData);
+
+    const index = ideje.value.findIndex(i => i.id === ideja.id);
+    if (index > -1) {
+      ideje.value[index].realizovana = novoStanje;
+      ideje.value[index].datumRealizacije = novoStanje ? new Date() : null;
+    }
+  } catch (greska) {
+    console.error('Greška pri ažuriranju statusa:', greska);
+    alert('Greška pri ažuriranju statusa. Pokušajte ponovno.');
+  } finally {
+    ucitava.value = false;
   }
 };
 
@@ -280,16 +338,33 @@ const urediIdeju = (ideja) => {
   uredivaniSadrzaj.value = ideja.sadrzaj;
 };
 
-const spremiUredbe = () => {
-  if (uredba.value && uredivanaNaslov.value.trim() && uredivaniSadrzaj.value.trim()) {
+const spremiUredbe = async () => {
+  if (!uredba.value || !uredivanaNaslov.value.trim() || !uredivaniSadrzaj.value.trim() || ucitava.value) {
+    return;
+  }
+
+  ucitava.value = true;
+
+  try {
+    const idejaRef = doc(db, 'ideje', uredba.value.id);
+    await updateDoc(idejaRef, {
+      naslov: uredivanaNaslov.value.trim(),
+      sadrzaj: uredivaniSadrzaj.value.trim()
+    });
+
     const index = ideje.value.findIndex(i => i.id === uredba.value.id);
     if (index > -1) {
       ideje.value[index].naslov = uredivanaNaslov.value.trim();
       ideje.value[index].sadrzaj = uredivaniSadrzaj.value.trim();
-      spremiUMemoriju();
     }
+
+    uredba.value = null;
+  } catch (greska) {
+    console.error('Greška pri ažuriranju:', greska);
+    alert('Greška pri ažuriranju ideje. Pokušajte ponovno.');
+  } finally {
+    ucitava.value = false;
   }
-  uredba.value = null;
 };
 
 const eksportirajIdeju = (ideja) => {
@@ -308,11 +383,22 @@ const pripremiZaBrisanje = (ideja) => {
   brisanje.value = ideja;
 };
 
-const obrisi = () => {
-  if (brisanje.value) {
+const obrisi = async () => {
+  if (!brisanje.value || ucitava.value) {
+    return;
+  }
+
+  ucitava.value = true;
+
+  try {
+    await deleteDoc(doc(db, 'ideje', brisanje.value.id));
     ideje.value = ideje.value.filter(ideja => ideja.id !== brisanje.value.id);
-    spremiUMemoriju();
     brisanje.value = null;
+  } catch (greska) {
+    console.error('Greška pri brisanju:', greska);
+    alert('Greška pri brisanju ideje. Pokušajte ponovno.');
+  } finally {
+    ucitava.value = false;
   }
 };
 
@@ -322,7 +408,9 @@ const skratiTekst = (tekst, maxDuzina) => {
 };
 
 const formatirajDatum = (datum) => {
-  return new Date(datum).toLocaleDateString('hr-HR', {
+  if (!datum) return '';
+  const date = datum.toDate ? datum.toDate() : new Date(datum);
+  return date.toLocaleDateString('hr-HR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -330,7 +418,9 @@ const formatirajDatum = (datum) => {
 };
 
 const formatirajDatumVrijeme = (datum) => {
-  return new Date(datum).toLocaleString('hr-HR', {
+  if (!datum) return '';
+  const date = datum.toDate ? datum.toDate() : new Date(datum);
+  return date.toLocaleString('hr-HR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -339,31 +429,29 @@ const formatirajDatumVrijeme = (datum) => {
   });
 };
 
-const spremiUMemoriju = () => {
+const ucitajIdeje = async () => {
+  ucitavaIdeje.value = true;
+  
   try {
-    localStorage.setItem('kreativne_ideje', JSON.stringify(ideje.value));
+    const q = query(collection(db, 'ideje'), orderBy('datum', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    ideje.value = [];
+    querySnapshot.forEach((doc) => {
+      ideje.value.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
   } catch (greska) {
-    console.error('Greška pri spremanju:', greska);
-  }
-};
-
-const ucitajIzMemorije = () => {
-  try {
-    const spremljeno = localStorage.getItem('kreativne_ideje');
-    if (spremljeno) {
-      ideje.value = JSON.parse(spremljeno).map(ideja => ({
-        ...ideja,
-        datum: new Date(ideja.datum),
-        datumRealizacije: ideja.datumRealizacije ? new Date(ideja.datumRealizacije) : null
-      }));
-    }
-  } catch (greska) {
-    console.error('Greška pri učitavanju:', greska);
+    console.error('Greška pri učitavanju ideja:', greska);
+  } finally {
+    ucitavaIdeje.value = false;
   }
 };
 
 onMounted(() => {
-  ucitajIzMemorije();
+  ucitajIdeje();
 });
 </script>
 
@@ -541,6 +629,14 @@ onMounted(() => {
 
 .lista {
   margin-bottom: 30px;
+}
+
+.ucitavanje {
+  background-color: white;
+  border-radius: 12px;
+  padding: 60px 30px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .prazno,
@@ -771,13 +867,18 @@ onMounted(() => {
   color: white;
 }
 
-.gumb-realizovana:hover {
+.gumb-realizovana:hover:not(:disabled) {
   background-color: #123458;
   color: white;
 }
 
-.gumb-realizovana.aktivna:hover {
+.gumb-realizovana.aktivna:hover:not(:disabled) {
   background-color: #218838;
+}
+
+.gumb-realizovana:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .gumb-uredi {
@@ -958,8 +1059,13 @@ onMounted(() => {
   color: #F1EFEC;
 }
 
-.gumb-potvrdi:hover {
+.gumb-potvrdi:hover:not(:disabled) {
   background-color: #C62828;
+}
+
+.gumb-potvrdi:disabled {
+  background-color: #D4C9BE;
+  cursor: not-allowed;
 }
 
 .fade-enter-active,

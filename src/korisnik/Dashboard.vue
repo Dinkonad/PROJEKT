@@ -1,3 +1,4 @@
+
 <template>
   <div class="nadzorna-ploca">
     <div class="gornja-traka">
@@ -70,7 +71,9 @@
                       <div v-if="uredujemo === komentar.id" class="uredi-komentar-forma">
                         <textarea v-model="tekstZaUredbu" class="uredi-komentar-unos" rows="2"></textarea>
                         <div class="uredi-komentar-akcije">
-                          <button @click="spremiUredbu(komentar)" class="spremi-uredbu-gumb">Spremi</button>
+                          <button @click="spremiUredbu(komentar)" class="spremi-uredbu-gumb" :disabled="ucitava">
+                            {{ ucitava ? 'Sprema...' : 'Spremi' }}
+                          </button>
                           <button @click="odustaniUredbu" class="otkazi-uredbu-gumb">Otkazi</button>
                         </div>
                       </div>
@@ -88,10 +91,10 @@
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                               </svg>
                             </button>
-                            <button @click="ukloniKomentar(komentar.id)" class="ukloni-komentar-gumb" title="Obriši">
+                            <button @click="ukloniKomentar(komentar.id)" class="ukloni-komentar-gumb" title="Obriši" :disabled="ucitava">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"></path>
                               </svg>
                             </button>
                           </div>
@@ -105,7 +108,9 @@
                 <div v-if="otvorenaForma === slika.fileName" class="dodaj-komentar-forma">
                   <textarea :value="noviKomentari[slika.fileName] || ''" @input="azurirajKomentar(slika.fileName, $event.target.value)" placeholder="Dodajte komentar..." class="komentar-unos" rows="2" @keydown.enter.ctrl="dodajKomentar(slika, $event)" ref="komentarUnos"></textarea>
                   <div class="komentar-forma-akcije">
-                    <button @click="dodajKomentar(slika)" class="dodaj-komentar-gumb" :disabled="!noviKomentari[slika.fileName] || noviKomentari[slika.fileName].trim() === ''">Dodaj</button>
+                    <button @click="dodajKomentar(slika)" class="dodaj-komentar-gumb" :disabled="!noviKomentari[slika.fileName] || noviKomentari[slika.fileName].trim() === '' || ucitava">
+                      {{ ucitava ? 'Sprema...' : 'Dodaj' }}
+                    </button>
                     <button @click="odustaniKomentar(slika.fileName)" class="otkazi-komentar-gumb">Otkazi</button>
                   </div>
                 </div>
@@ -114,7 +119,6 @@
           </div>
           
           <div v-else class="prazno-stanje">
-         
             <p>Nemate uploadanih fotografija</p>
           </div>
         </div>
@@ -141,6 +145,20 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../store/auth'
+import { db } from '@/services/firebase.js'
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy, 
+  query,
+  where,
+  onSnapshot,
+  serverTimestamp
+} from 'firebase/firestore'
 
 const router = useRouter()
 const { state: authStanje, logout: authOdjava } = useAuth()
@@ -155,6 +173,9 @@ const noviKomentari = ref({})
 const otvorenaForma = ref(null) 
 const uredujemo = ref(null) 
 const tekstZaUredbu = ref('') 
+const ucitava = ref(false)
+
+let unsubscribeKomentari = null
 
 const emailKorisnika = computed(() => {
   return authStanje.currentUser?.email || 'Nepoznat korisnik'
@@ -164,7 +185,7 @@ const prijavljen = computed(() => {
   return authStanje.isLoggedIn
 })
 
-const ucitava = computed(() => {
+const ucitavaLoading = computed(() => {
   return authStanje.loading
 })
 
@@ -236,67 +257,89 @@ const odustaniUredbu = () => {
   tekstZaUredbu.value = ''
 }
 
-const spremiUredbu = (komentar) => {
-  if (!tekstZaUredbu.value || tekstZaUredbu.value.trim() === '') return
+const spremiUredbu = async (komentar) => {
+  if (!tekstZaUredbu.value || tekstZaUredbu.value.trim() === '' || ucitava.value) return
   
-  komentar.text = tekstZaUredbu.value.trim()
-  komentar.editedAt = new Date()
-  spremiKomentare()
-  uredujemo.value = null
-  tekstZaUredbu.value = ''
-}
+  ucitava.value = true
 
-const ukloniKomentar = (id) => {
-  const index = komentari.value.findIndex(k => k.id === id)
-  if (index > -1) {
-    komentari.value.splice(index, 1)
-    spremiKomentare()
+  try {
+    const komentarRef = doc(db, 'komentari', komentar.id)
+    await updateDoc(komentarRef, {
+      text: tekstZaUredbu.value.trim(),
+      editedAt: serverTimestamp()
+    })
+
+    uredujemo.value = null
+    tekstZaUredbu.value = ''
+  } catch (greska) {
+    console.error('Greška pri ažuriranju komentara:', greska)
+    alert('Greška pri ažuriranju komentara. Pokušajte ponovno.')
+  } finally {
+    ucitava.value = false
   }
 }
 
-const dodajKomentar = (slika, event = null) => {
+const ukloniKomentar = async (id) => {
+  if (ucitava.value) return
+
+  ucitava.value = true
+
+  try {
+    await deleteDoc(doc(db, 'komentari', id))
+  } catch (greska) {
+    console.error('Greška pri brisanju komentara:', greska)
+    alert('Greška pri brisanju komentara. Pokušajte ponovno.')
+  } finally {
+    ucitava.value = false
+  }
+}
+
+const dodajKomentar = async (slika, event = null) => {
   if (event) {
     event.preventDefault()
   }
   
   const tekst = noviKomentari.value[slika.fileName]
-  if (!tekst || tekst.trim() === '') return
+  if (!tekst || tekst.trim() === '' || ucitava.value) return
   
-  const komentar = {
-    id: Date.now() + Math.random(),
-    imageFileName: slika.fileName,
-    text: tekst.trim(),
-    authorEmail: emailKorisnika.value,
-    timestamp: new Date(),
-    imageOwnerEmail: slika.userEmail
+  ucitava.value = true
+
+  try {
+    const komentar = {
+      imageFileName: slika.fileName,
+      text: tekst.trim(),
+      authorEmail: emailKorisnika.value,
+      timestamp: serverTimestamp(),
+      imageOwnerEmail: slika.userEmail,
+      procitan: false
+    }
+    
+    await addDoc(collection(db, 'komentari'), komentar)
+    
+    noviKomentari.value[slika.fileName] = ''
+    otvorenaForma.value = null 
+  } catch (greska) {
+    console.error('Greška pri dodavanju komentara:', greska)
+    alert('Greška pri dodavanju komentara. Pokušajte ponovno.')
+  } finally {
+    ucitava.value = false
   }
-  
-  komentari.value.push(komentar)
-  spremiKomentare()
-  noviKomentari.value[slika.fileName] = ''
-  otvorenaForma.value = null 
 }
 
 const ucitajKomentare = () => {
   try {
-    const podaci = localStorage.getItem('image_comments')
-    if (podaci) {
-      komentari.value = JSON.parse(podaci).map(komentar => ({
-        ...komentar,
-        timestamp: new Date(komentar.timestamp)
+    const q = query(collection(db, 'komentari'), orderBy('timestamp', 'desc'))
+    unsubscribeKomentari = onSnapshot(q, (snapshot) => {
+      komentari.value = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       }))
-    }
+    }, (error) => {
+      console.error('Greška pri učitavanju komentara:', error)
+    })
   } catch (greska) {
-    console.error('Greška pri učitavanju komentara:', greska)
+    console.error('Greška pri postavljanju listenera za komentare:', greska)
     komentari.value = []
-  }
-}
-
-const spremiKomentare = () => {
-  try {
-    localStorage.setItem('image_comments', JSON.stringify(komentari.value))
-  } catch (greska) {
-    console.error('Greška pri spremanju komentara:', greska)
   }
 }
 
@@ -505,6 +548,7 @@ const formatirajDatum = (datum) => {
   try {
     const d = datum instanceof Date ? datum : 
                 datum.seconds ? new Date(datum.seconds * 1000) : 
+                datum.toDate ? datum.toDate() :
                 new Date(datum)
                 
     return d.toLocaleDateString('hr-HR', {
@@ -553,6 +597,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', klikIzvan)
   document.body.style.overflow = 'auto'
+  
+  if (unsubscribeKomentari) {
+    unsubscribeKomentari()
+  }
 })
 </script>
 

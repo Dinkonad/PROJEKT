@@ -87,7 +87,11 @@
               </router-link>
             </div>
 
-            <div class="dogadaji-lista">
+            <div v-if="ucitavaDogadaje" class="ucitavanje">
+              <p>Učitavaju se događaji...</p>
+            </div>
+
+            <div v-else class="dogadaji-lista">
               <div 
                 v-for="dogadaj in nadolazeciDogadaji" 
                 :key="dogadaj.id"
@@ -115,7 +119,7 @@
               </div>
             </div>
 
-            <div v-if="nadolazeciDogadaji.length === 0" class="nema-dogadaja">
+            <div v-if="!ucitavaDogadaje && nadolazeciDogadaji.length === 0" class="nema-dogadaja">
               <div class="prazan-sadrzaj">
                 <p>Nema nadolazećih događaja</p>
               </div>
@@ -134,7 +138,11 @@
               </div>
             </div>
 
-            <div class="komentari-lista">
+            <div v-if="ucitavaKomentare" class="ucitavanje">
+              <p>Učitavaju se komentari...</p>
+            </div>
+
+            <div v-else class="komentari-lista">
               <div 
                 v-for="komentar in prikazaniKomentari" 
                 :key="komentar.id"
@@ -153,6 +161,7 @@
                       class="gumb-procitan"
                       :class="{ 'procitan': komentar.procitan }"
                       :title="komentar.procitan ? 'Označi kao neprocitan' : 'Označi kao procitan'"
+                      :disabled="ucitava"
                     >
                       {{ komentar.procitan ? '✓' : '○' }}
                     </button>
@@ -160,6 +169,7 @@
                       @click="pokreniObrisiKomentar(komentar)"
                       class="gumb-obrisi"
                       title="Obriši komentar"
+                      :disabled="ucitava"
                     >
                       ✕
                     </button>
@@ -171,7 +181,7 @@
               </div>
             </div>
 
-            <div v-if="prikazaniKomentari.length === 0" class="nema-komentara">
+            <div v-if="!ucitavaKomentare && prikazaniKomentari.length === 0" class="nema-komentara">
               <div class="prazan-sadrzaj">
                 <p>{{ sviKomentari.length === 0 ? 'Nema komentara za prikaz' : 'Nema komentara koji odgovaraju filteru' }}</p>
               </div>
@@ -193,7 +203,9 @@
         <p>Jeste li sigurni da želite obrisati ovaj komentar?</p>
         <div class="potvrda-gumbovi">
           <button @click="otkaziPotvrdBrisanja" class="gumb-otkazi">Otkaži</button>
-          <button @click="potvrdiBrisanjeKomentara" class="gumb-potvrdi">Obriši</button>
+          <button @click="potvrdiBrisanjeKomentara" class="gumb-potvrdi" :disabled="ucitava">
+            {{ ucitava ? 'Briše...' : 'Obriši' }}
+          </button>
         </div>
       </div>
     </div>
@@ -201,9 +213,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
+import { db } from '@/services/firebase.js';
+import { 
+  collection, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy, 
+  query,
+  onSnapshot,
+  serverTimestamp,
+  where
+} from 'firebase/firestore';
 
 const router = useRouter();
 const { logout: authLogout } = useAuth();
@@ -215,6 +240,12 @@ const prikaziPotvrdBrisanja = ref(false);
 const komentarZaBrisanje = ref(null);
 const prikaziSveKomentare = ref(false);
 const kalendar = ref([]);
+const ucitava = ref(false);
+const ucitavaKomentare = ref(true);
+const ucitavaDogadaje = ref(true);
+
+let unsubscribeKomentari = null;
+let unsubscribeDogadaji = null;
 
 const korisnikEmail = computed(() => 'naddinko@gmail.com');
 const korisnikInicijali = computed(() => korisnikEmail.value.charAt(0).toUpperCase());
@@ -227,7 +258,11 @@ const filtriraniKomentari = computed(() => {
   } else if (statusFiltera.value === 'procitan') {
     filtrirani = filtrirani.filter(k => k.procitan);
   }
-  return filtrirani.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  return filtrirani.sort((a, b) => {
+    const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+    const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+    return dateB - dateA;
+  });
 });
 
 const prikazaniKomentari = computed(() => {
@@ -264,57 +299,63 @@ const odjaviKorisnika = async () => {
 };
 
 const ucitajKomentare = () => {
+  ucitavaKomentare.value = true;
+  
   try {
-    const spremljeniKomentari = localStorage.getItem('image_comments');
-    if (spremljeniKomentari) {
-      sviKomentari.value = JSON.parse(spremljeniKomentari).map(komentar => ({
-        ...komentar,
-        timestamp: new Date(komentar.timestamp),
-        procitan: komentar.procitan || false
+    const q = query(collection(db, 'komentari'), orderBy('timestamp', 'desc'));
+    unsubscribeKomentari = onSnapshot(q, (snapshot) => {
+      sviKomentari.value = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       }));
-    }
+      ucitavaKomentare.value = false;
+    }, (error) => {
+      console.error('Greška pri učitavanju komentara:', error);
+      ucitavaKomentare.value = false;
+    });
   } catch (error) {
-    console.error('Greška pri učitavanju komentara:', error);
-    sviKomentari.value = [];
+    console.error('Greška pri postavljanju listenera za komentare:', error);
+    ucitavaKomentare.value = false;
   }
 };
 
 const ucitajKalendar = () => {
+  ucitavaDogadaje.value = true;
+  
   try {
-    let spremljeniDogadaji = localStorage.getItem('kalendar-dogadaji');
-    if (!spremljeniDogadaji) {
-      spremljeniDogadaji = localStorage.getItem('calendar-events');
-    }
-    
-    if (spremljeniDogadaji) {
-      const dogadaji = JSON.parse(spremljeniDogadaji);
-
-      kalendar.value = dogadaji.map(dogadaj => ({
-        id: dogadaj.id,
-        klijent: dogadaj.klijent || dogadaj.client,
-        pocetniDatum: dogadaj.pocetniDatum || dogadaj.startDate,
-        zavrsniDatum: dogadaj.zavrsniDatum || dogadaj.endDate,
-        opis: dogadaj.opis || dogadaj.description,
-        boja: dogadaj.boja || dogadaj.color
+    const q = query(collection(db, 'kalendar-dogadaji'), orderBy('pocetniDatum', 'asc'));
+    unsubscribeDogadaji = onSnapshot(q, (snapshot) => {
+      kalendar.value = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       }));
-    }
+      ucitavaDogadaje.value = false;
+    }, (error) => {
+      console.error('Greška pri učitavanju događaja:', error);
+      ucitavaDogadaje.value = false;
+    });
   } catch (error) {
-    console.error('Greška pri učitavanju kalendara:', error);
-    kalendar.value = [];
+    console.error('Greška pri postavljanju listenera za događaje:', error);
+    ucitavaDogadaje.value = false;
   }
 };
 
-const spremiKomentare = () => {
+const promijeniStatusProcitano = async (komentar) => {
+  if (ucitava.value) return;
+
+  ucitava.value = true;
+
   try {
-    localStorage.setItem('image_comments', JSON.stringify(sviKomentari.value));
+    const komentarRef = doc(db, 'komentari', komentar.id);
+    await updateDoc(komentarRef, {
+      procitan: !komentar.procitan
+    });
   } catch (error) {
-    console.error('Greška pri spremanju komentara:', error);
+    console.error('Greška pri ažuriranju statusa komentara:', error);
+    alert('Greška pri ažuriranju statusa. Pokušajte ponovno.');
+  } finally {
+    ucitava.value = false;
   }
-};
-
-const promijeniStatusProcitano = (komentar) => {
-  komentar.procitan = !komentar.procitan;
-  spremiKomentare();
 };
 
 const pokreniObrisiKomentar = (komentar) => {
@@ -322,15 +363,22 @@ const pokreniObrisiKomentar = (komentar) => {
   prikaziPotvrdBrisanja.value = true;
 };
 
-const potvrdiBrisanjeKomentara = () => {
-  if (komentarZaBrisanje.value) {
-    const indeks = sviKomentari.value.findIndex(k => k.id === komentarZaBrisanje.value.id);
-    if (indeks > -1) {
-      sviKomentari.value.splice(indeks, 1);
-      spremiKomentare();
-    }
+const potvrdiBrisanjeKomentara = async () => {
+  if (!komentarZaBrisanje.value || ucitava.value) {
+    return;
   }
-  otkaziPotvrdBrisanja();
+
+  ucitava.value = true;
+
+  try {
+    await deleteDoc(doc(db, 'komentari', komentarZaBrisanje.value.id));
+    otkaziPotvrdBrisanja();
+  } catch (error) {
+    console.error('Greška pri brisanju komentara:', error);
+    alert('Greška pri brisanju komentara. Pokušajte ponovno.');
+  } finally {
+    ucitava.value = false;
+  }
 };
 
 const otkaziPotvrdBrisanja = () => {
@@ -346,7 +394,7 @@ const formatirajDatum = (timestamp) => {
   if (!timestamp) return 'Nepoznat datum';
   
   try {
-    const datum = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    const datum = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return datum.toLocaleDateString('hr-HR', {
       day: '2-digit',
       month: '2-digit', 
@@ -382,11 +430,15 @@ const izracunajDanaDoDogadaja = (datumString) => {
 onMounted(() => {
   ucitajKomentare();
   ucitajKalendar();
-  
-  setInterval(() => {
-    ucitajKomentare();
-    ucitajKalendar();
-  }, 30000);
+});
+
+onBeforeUnmount(() => {
+  if (unsubscribeKomentari) {
+    unsubscribeKomentari();
+  }
+  if (unsubscribeDogadaji) {
+    unsubscribeDogadaji();
+  }
 });
 </script>
 
@@ -603,6 +655,13 @@ onMounted(() => {
   border: 1px solid #D4C9BE;
 }
 
+.ucitavanje {
+  padding: 40px 20px;
+  text-align: center;
+  color: #5D8AA8;
+  font-size: 1.1rem;
+}
+
 .dogadaji-zaglavlje,
 .komentari-zaglavlje {
   display: flex;
@@ -808,7 +867,7 @@ onMounted(() => {
   justify-content: center;
 }
 
-.gumb-procitan:hover {
+.gumb-procitan:hover:not(:disabled) {
   background-color: #123458;
   color: white;
 }
@@ -819,8 +878,13 @@ onMounted(() => {
   color: white;
 }
 
-.gumb-procitan.procitan:hover {
+.gumb-procitan.procitan:hover:not(:disabled) {
   background-color: #218838;
+}
+
+.gumb-procitan:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .gumb-obrisi {
@@ -838,8 +902,13 @@ onMounted(() => {
   justify-content: center;
 }
 
-.gumb-obrisi:hover {
+.gumb-obrisi:hover:not(:disabled) {
   background-color: #c62828;
+}
+
+.gumb-obrisi:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .komentar-sadrzaj {
@@ -986,8 +1055,13 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 
-.gumb-potvrdi:hover {
+.gumb-potvrdi:hover:not(:disabled) {
   background-color: #c62828;
+}
+
+.gumb-potvrdi:disabled {
+  background-color: #D4C9BE;
+  cursor: not-allowed;
 }
 
 @media (max-width: 1024px) {
