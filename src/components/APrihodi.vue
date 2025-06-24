@@ -39,6 +39,11 @@
       </div>
     </div>
 
+ <div v-if="!ucitava" class="dodaj-okvir">
+      <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
+        <span class="material-icons">add</span> Dodaj novi prihod
+      </button>
+    </div>
     <div v-if="!ucitava" class="tablica-okvir">
       <table class="tablica">
         <thead>
@@ -73,12 +78,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <div v-if="!ucitava" class="dodaj-okvir">
-      <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
-        <span class="material-icons">add</span> Dodaj novi prihod
-      </button>
     </div>
 
     <Transition name="fade">
