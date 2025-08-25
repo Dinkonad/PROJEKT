@@ -305,7 +305,7 @@
   </div>
 </template>
 
-<script >
+<script>
 import emailjs from '@emailjs/browser';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/services/firebase';

@@ -39,12 +39,78 @@
       </div>
     </div>
 
- <div v-if="!ucitava" class="dodaj-okvir">
+    <!-- Filteri za sortiranje -->
+    <div v-if="!ucitava" class="filteri-okvir">
+      <div class="filter-grupa">
+        <label for="godina-filter">Godina:</label>
+        <select id="godina-filter" v-model="odabranaGodina" @change="resetirajMjesec">
+          <option value="">Sve godine</option>
+          <option v-for="godina in dostupneGodine" :key="godina" :value="godina">{{ godina }}</option>
+        </select>
+      </div>
+      
+      <div class="filter-grupa" v-if="odabranaGodina">
+        <label for="mjesec-filter">Mjesec:</label>
+        <select id="mjesec-filter" v-model="odabraniMjesec">
+          <option value="">Svi mjeseci</option>
+          <option v-for="(nazivMjeseca, mjesec) in dostupniMjeseci" :key="mjesec" :value="mjesec">{{ nazivMjeseca }}</option>
+        </select>
+      </div>
+      
+      <button class="gumb-reset" @click="resetirajFiltere" v-if="odabranaGodina || odabraniMjesec">
+        <span class="material-icons">clear</span> Resetuj filtere
+      </button>
+    </div>
+
+    <!-- Mjesečni pregled ako je odabrana godina -->
+    <div v-if="!ucitava && odabranaGodina && !odabraniMjesec" class="mjesecni-pregled">
+      <h2>Pregled po mjesecima - {{ odabranaGodina }}</h2>
+      <div class="mjesecni-kartice">
+        <div v-for="(podaci, mjesec) in mjesecniPodaci" :key="mjesec" 
+             class="mjesecna-kartica" 
+             @click="odaberiMjesec(mjesec)">
+          <div class="mjesec-zaglavlje">
+            <h3>{{ nazviMjeseci[mjesec] }}</h3>
+            <span class="broj-prihoda">{{ podaci.brojPrihoda }} prihoda</span>
+          </div>
+          <div class="mjesec-podaci">
+            <div class="podatak-red">
+              <span class="label">Plaćeno:</span>
+              <span class="vrijednost placeno">{{ formatCurrency(podaci.placeno) }}</span>
+            </div>
+            <div class="podatak-red">
+              <span class="label">Neplaćeno:</span>
+              <span class="vrijednost neplaceno">{{ formatCurrency(podaci.neplaceno) }}</span>
+            </div>
+            <div class="podatak-red">
+              <span class="label">Put. troškovi:</span>
+              <span class="vrijednost trosak">{{ formatCurrency(podaci.putniTroskovi) }}</span>
+            </div>
+            <div class="podatak-red ukupno">
+              <span class="label">Ukupno:</span>
+              <span class="vrijednost">{{ formatCurrency(podaci.ukupno) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!ucitava" class="dodaj-okvir">
       <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
         <span class="material-icons">add</span> Dodaj novi prihod
       </button>
     </div>
+    
     <div v-if="!ucitava" class="tablica-okvir">
+      <div class="filter-info" v-if="odabranaGodina || odabraniMjesec">
+        <span class="material-icons">filter_list</span>
+        <span>Prikaz za: 
+          <strong v-if="odabranaGodina && odabraniMjesec">{{ nazviMjeseci[odabraniMjesec] }} {{ odabranaGodina }}</strong>
+          <strong v-else-if="odabranaGodina">{{ odabranaGodina }}</strong>
+        </span>
+        <span class="rezultati-broj">({{ filtriraniPrihodi.length }} rezultata)</span>
+      </div>
+      
       <table class="tablica">
         <thead>
           <tr>
@@ -57,7 +123,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="prihod in sortiraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
+          <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
             <td>{{ prihod.nazivEventa }}</td>
             <td>{{ prihod.imeIPrezime }}</td>
             <td>{{ formatDatum(prihod.datumSnimanja) }}</td>
@@ -74,6 +140,12 @@
               <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
                 <span class="material-icons">delete</span>
               </button>
+            </td>
+          </tr>
+          <tr v-if="filtriraniPrihodi.length === 0">
+            <td colspan="6" class="nema-rezultata">
+              <span class="material-icons">search_off</span>
+              <p>Nema prihoda za odabrane kriterije</p>
             </td>
           </tr>
         </tbody>
@@ -269,6 +341,25 @@ const pretragaTimeout = ref(null);
 const ucitava = ref(true); 
 const sprema = ref(false); 
 
+// Novi podaci za filtriranje
+const odabranaGodina = ref('');
+const odabraniMjesec = ref('');
+
+const nazviMjeseci = {
+  '01': 'Siječanj',
+  '02': 'Veljača', 
+  '03': 'Ožujak',
+  '04': 'Travanj',
+  '05': 'Svibanj',
+  '06': 'Lipanj',
+  '07': 'Srpanj',
+  '08': 'Kolovoz',
+  '09': 'Rujan',
+  '10': 'Listopad',
+  '11': 'Studeni',
+  '12': 'Prosinac'
+};
+
 const noviPrihod = ref({
   nazivEventa: '',
   imeIPrezime: '',
@@ -280,27 +371,123 @@ const noviPrihod = ref({
   opisSnimanja: ''
 });
 
+// Computed svojstva za filtrirane podatke
+const filtriraniPrihodi = computed(() => {
+  let filtrirani = [...prihodi.value];
+  
+  if (odabranaGodina.value) {
+    filtrirani = filtrirani.filter(prihod => {
+      const godina = new Date(prihod.datumSnimanja).getFullYear().toString();
+      return godina === odabranaGodina.value;
+    });
+  }
+  
+  if (odabraniMjesec.value) {
+    filtrirani = filtrirani.filter(prihod => {
+      const mjesec = (new Date(prihod.datumSnimanja).getMonth() + 1).toString().padStart(2, '0');
+      return mjesec === odabraniMjesec.value;
+    });
+  }
+  
+  return filtrirani.sort((a, b) => new Date(b.datumSnimanja) - new Date(a.datumSnimanja));
+});
+
+const dostupneGodine = computed(() => {
+  const godine = new Set();
+  prihodi.value.forEach(prihod => {
+    const godina = new Date(prihod.datumSnimanja).getFullYear();
+    godine.add(godina.toString());
+  });
+  return Array.from(godine).sort((a, b) => b - a);
+});
+
+const dostupniMjeseci = computed(() => {
+  if (!odabranaGodina.value) return {};
+  
+  const mjeseci = new Set();
+  prihodi.value.forEach(prihod => {
+    const datum = new Date(prihod.datumSnimanja);
+    const godina = datum.getFullYear().toString();
+    const mjesec = (datum.getMonth() + 1).toString().padStart(2, '0');
+    
+    if (godina === odabranaGodina.value) {
+      mjeseci.add(mjesec);
+    }
+  });
+  
+  const rezultat = {};
+  Array.from(mjeseci).sort().forEach(mjesec => {
+    rezultat[mjesec] = nazviMjeseci[mjesec];
+  });
+  
+  return rezultat;
+});
+
+const mjesecniPodaci = computed(() => {
+  if (!odabranaGodina.value) return {};
+  
+  const podaci = {};
+  
+  // Inicijaliziraj sve mjesece za odabranu godinu
+  Object.keys(nazviMjeseci).forEach(mjesec => {
+    podaci[mjesec] = {
+      placeno: 0,
+      neplaceno: 0,
+      putniTroskovi: 0,
+      ukupno: 0,
+      brojPrihoda: 0
+    };
+  });
+  
+  // Dodaj podatke iz prihoda
+  prihodi.value.forEach(prihod => {
+    const datum = new Date(prihod.datumSnimanja);
+    const godina = datum.getFullYear().toString();
+    const mjesec = (datum.getMonth() + 1).toString().padStart(2, '0');
+    
+    if (godina === odabranaGodina.value) {
+      const cijena = parseFloat(prihod.cijena) || 0;
+      const putniTrosak = parseFloat(prihod.putniTrosak) || 0;
+      
+      podaci[mjesec].brojPrihoda++;
+      podaci[mjesec].putniTroskovi += putniTrosak;
+      
+      if (prihod.placeno) {
+        podaci[mjesec].placeno += cijena;
+      } else {
+        podaci[mjesec].neplaceno += cijena;
+      }
+      
+      podaci[mjesec].ukupno = podaci[mjesec].placeno + podaci[mjesec].neplaceno;
+    }
+  });
+  
+  // Vrati samo mjesece koji imaju prihode
+  const rezultat = {};
+  Object.keys(podaci).forEach(mjesec => {
+    if (podaci[mjesec].brojPrihoda > 0) {
+      rezultat[mjesec] = podaci[mjesec];
+    }
+  });
+  
+  return rezultat;
+});
+
 const ukupnoPlaceno = computed(() => {
-  return prihodi.value
+  return filtriraniPrihodi.value
     .filter(prihod => prihod.placeno)
     .reduce((sum, prihod) => sum + parseFloat(prihod.cijena), 0);
 });
 
 const ukupnoNePlaceno = computed(() => {
-  return prihodi.value
+  return filtriraniPrihodi.value
     .filter(prihod => !prihod.placeno)
     .reduce((sum, prihod) => sum + parseFloat(prihod.cijena), 0);
 });
 
 const ukupnoPutniTroskovi = computed(() => {
-  return prihodi.value
+  return filtriraniPrihodi.value
     .reduce((sum, prihod) => sum + parseFloat(prihod.putniTrosak || 0), 0);
-});
-
-const sortiraniPrihodi = computed(() => {
-  return [...prihodi.value].sort((a, b) => {
-    return new Date(b.datumSnimanja) - new Date(a.datumSnimanja);
-  });
 });
 
 const ucitajPrihodeiFirestore = async () => {
@@ -373,6 +560,20 @@ const obrisiPrihodIzFirestore = async (id) => {
   } finally {
     sprema.value = false;
   }
+};
+
+// Nove funkcije za filtriranje
+const resetirajMjesec = () => {
+  odabraniMjesec.value = '';
+};
+
+const resetirajFiltere = () => {
+  odabranaGodina.value = '';
+  odabraniMjesec.value = '';
+};
+
+const odaberiMjesec = (mjesec) => {
+  odabraniMjesec.value = mjesec;
 };
 
 onMounted(() => {
@@ -644,6 +845,194 @@ const dodajNoviPrihod = async () => {
   font-weight: 700;
 }
 
+/* Novi stilovi za filtere */
+.filteri-okvir {
+  display: flex;
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
+
+.filter-grupa {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-grupa label {
+  font-weight: 500;
+  color: #123458;
+  font-size: 14px;
+}
+
+.filter-grupa select {
+  padding: 10px 15px;
+  border: 2px solid #D4C9BE;
+  border-radius: 6px;
+  background-color: white;
+  color: #123458;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  min-width: 150px;
+}
+
+.filter-grupa select:focus {
+  outline: none;
+  border-color: #123458;
+  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
+}
+
+.gumb-reset {
+  background-color: #5D8AA8;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  height: fit-content;
+}
+
+.gumb-reset:hover {
+  background-color: #4a7491;
+}
+
+/* Stilovi za mjesečni pregled */
+.mjesecni-pregled {
+  margin-bottom: 40px;
+}
+
+.mjesecni-pregled h2 {
+  color: #123458;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.mjesecni-kartice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.mjesecna-kartica {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.mjesecna-kartica:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: #123458;
+}
+
+.mjesec-zaglavlje {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #F1EFEC;
+}
+
+.mjesec-zaglavlje h3 {
+  margin: 0;
+  color: #123458;
+  font-weight: 600;
+}
+
+.broj-prihoda {
+  background-color: #5D8AA8;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mjesec-podaci {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.podatak-red {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.podatak-red.ukupno {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #D4C9BE;
+  font-weight: 600;
+}
+
+.podatak-red .label {
+  color: #5D8AA8;
+  font-size: 14px;
+}
+
+.podatak-red .vrijednost {
+  font-weight: 600;
+  color: #123458;
+}
+
+.podatak-red .vrijednost.placeno {
+  color: #2E7D32;
+}
+
+.podatak-red .vrijednost.neplaceno {
+  color: #E53935;
+}
+
+.podatak-red .vrijednost.trosak {
+  color: #5D8AA8;
+}
+
+/* Stilovi za informacije o filtriranju */
+.filter-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: rgba(18, 52, 88, 0.05);
+  border-left: 4px solid #123458;
+  margin-bottom: 15px;
+  border-radius: 0 6px 6px 0;
+}
+
+.filter-info .material-icons {
+  color: #123458;
+  font-size: 18px;
+}
+
+.filter-info span {
+  color: #123458;
+  font-size: 14px;
+}
+
+.rezultati-broj {
+  color: #5D8AA8;
+  font-style: italic;
+}
+
 .tablica-okvir {
   overflow-x: auto;
   margin-bottom: 30px;
@@ -681,6 +1070,23 @@ const dodajNoviPrihod = async () => {
 
 .red:last-child td {
   border-bottom: none;
+}
+
+.nema-rezultata {
+  text-align: center;
+  padding: 40px;
+  color: #5D8AA8;
+}
+
+.nema-rezultata .material-icons {
+  font-size: 48px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.nema-rezultata p {
+  margin: 0;
+  font-style: italic;
 }
 
 .status {
@@ -831,22 +1237,22 @@ const dodajNoviPrihod = async () => {
   padding: 24px;
 }
 
-.podatak-red {
+.modal-sadrzaj .podatak-red {
   margin-bottom: 18px;
 }
 
-.podatak-red:last-child {
+.modal-sadrzaj .podatak-red:last-child {
   margin-bottom: 0;
 }
 
-.podatak-red label {
+.modal-sadrzaj .podatak-red label {
   font-weight: 500;
   display: block;
   margin-bottom: 6px;
   color: #123458;
 }
 
-.podatak-red p {
+.modal-sadrzaj .podatak-red p {
   margin: 0;
   padding: 8px 12px;
   background-color: white;
@@ -1098,6 +1504,7 @@ input:checked + .klizac:before {
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
 
+/* Responsive stilovi */
 @media (max-width: 1024px) {
   .prihodi {
     padding: 25px;
@@ -1110,11 +1517,49 @@ input:checked + .klizac:before {
   .kartica {
     min-width: auto;
   }
+
+  .mjesecni-kartice {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .prihodi {
     padding: 20px;
+  }
+
+  .filteri-okvir {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .filter-grupa {
+    width: 100%;
+  }
+
+  .filter-grupa select {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .gumb-reset {
+    align-self: center;
+    width: fit-content;
+  }
+
+  .mjesecni-kartice {
+    grid-template-columns: 1fr;
+  }
+
+  .mjesecna-kartica {
+    padding: 16px;
+  }
+
+  .mjesec-zaglavlje {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .naslov {
@@ -1173,66 +1618,6 @@ input:checked + .klizac:before {
     width: 95%;
     margin: 10px;
   }
-
-  .modal-zaglavlje {
-    padding: 12px 16px;
-  }
-
-  .modal-zaglavlje h2 {
-    font-size: 18px;
-  }
-
-  .modal-sadrzaj {
-    padding: 20px;
-  }
-
-  form {
-    padding: 20px;
-  }
-
-  .forma-grupa {
-    margin-bottom: 16px;
-  }
-
-  .forma-grupa input,
-  .forma-grupa textarea {
-    padding: 10px;
-    font-size: 16px;
-  }
-
-  .forma-gumbi {
-    padding: 12px;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .gumb-odustani,
-  .gumb-spremi {
-    width: 100%;
-    padding: 12px;
-  }
-
-  .potvrda-sadrzaj {
-    padding: 20px;
-  }
-
-  .potvrda-sadrzaj .upozorenje {
-    font-size: 36px;
-  }
-
-  .potvrda-sadrzaj p {
-    font-size: 16px;
-  }
-
-  .potvrda-gumbi {
-    padding: 0 20px 20px;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .gumb-potvrdi {
-    width: 100%;
-  }
 }
 
 @media (max-width: 480px) {
@@ -1240,175 +1625,43 @@ input:checked + .klizac:before {
     padding: 15px;
   }
 
-  .naslov {
-    font-size: 1.5rem;
-    margin-bottom: 25px;
-  }
-
-  .kartice {
-    gap: 12px;
-    margin-bottom: 25px;
-  }
-
-  .kartica {
-    padding: 16px;
-  }
-
-  .podaci h3 {
+  .filter-grupa select {
     font-size: 14px;
+    padding: 8px 12px;
   }
 
-  .podaci .iznos {
-    font-size: 20px;
+  .mjesecni-pregled h2 {
+    font-size: 1.3rem;
   }
 
-  .ikona .material-icons {
-    font-size: 28px;
-  }
-
-  .tablica th,
-  .tablica td {
-    padding: 8px 6px;
-    font-size: 12px;
-  }
-
-  .gumb-plati {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-
-  .gumb-plati .material-icons {
-    font-size: 14px;
-  }
-
-  .gumb-brisi {
-    padding: 4px;
-  }
-
-  .gumb-brisi .material-icons {
-    font-size: 16px;
-  }
-
-  .gumb-dodaj {
-    padding: 10px 20px;
-    font-size: 14px;
-  }
-
-  .modal-detalji, .modal-forma, .modal-potvrda {
-    width: 98%;
-    margin: 5px;
-  }
-
-  .modal-zaglavlje {
-    padding: 10px 12px;
-  }
-
-  .modal-zaglavlje h2 {
-    font-size: 16px;
-  }
-
-  .modal-sadrzaj {
-    padding: 16px;
-  }
-
-  form {
-    padding: 16px;
-  }
-
-  .forma-grupa {
-    margin-bottom: 14px;
-  }
-
-  .forma-grupa label {
-    font-size: 14px;
-    margin-bottom: 6px;
-  }
-
-  .forma-grupa input,
-  .forma-grupa textarea {
-    padding: 8px;
-    font-size: 14px;
-  }
-
-  .forma-grupa textarea {
-    height: 80px;
-  }
-
-  .adresa-dropdown {
-    max-height: 200px;
-  }
-
-  .dropdown-item {
-    padding: 10px 12px;
-  }
-
-  .adresa-naziv {
-    font-size: 0.9rem;
-  }
-
-  .adresa-detalji {
-    font-size: 0.8rem;
-  }
-
-  .dropdown-loading {
+  .mjesecna-kartica {
     padding: 12px;
   }
 
-  .klizac {
-    width: 40px;
-    height: 22px;
+  .mjesec-zaglavlje h3 {
+    font-size: 1rem;
   }
 
-  .klizac:before {
-    height: 14px;
-    width: 14px;
-    left: 4px;
-    bottom: 4px;
+  .broj-prihoda {
+    font-size: 11px;
+    padding: 3px 6px;
   }
 
-  input:checked + .klizac:before {
-    transform: translateX(18px);
+  .podatak-red .label,
+  .podatak-red .vrijednost {
+    font-size: 13px;
   }
 
-  .forma-gumbi {
-    padding: 10px;
+  .filter-info {
+    padding: 10px 12px;
+    font-size: 12px;
   }
 
-  .gumb-odustani,
-  .gumb-spremi {
-    padding: 10px;
+  .nema-rezultata .material-icons {
+    font-size: 36px;
+  }
+
+  .nema-rezultata p {
     font-size: 14px;
   }
-
-  .potvrda-sadrzaj {
-    padding: 16px;
-  }
-
-  .potvrda-sadrzaj .upozorenje {
-    font-size: 32px;
-    margin-bottom: 12px;
-  }
-
-  .potvrda-sadrzaj p {
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-
-  .potvrda-gumbi {
-    padding: 0 16px 16px;
-  }
-
-  .podatak-red {
-    margin-bottom: 14px;
-  }
-
-  .podatak-red label {
-    font-size: 14px;
-    margin-bottom: 4px;
-  }
-
-  .podatak-red p {
-    padding: 6px 10px;
-    font-size: 14px;
-  }
-} </style>
+}</style>
