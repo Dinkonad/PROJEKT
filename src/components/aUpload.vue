@@ -410,11 +410,28 @@ const uploadajDatoteku = async (datoteka) => {
   const file = datoteka.file;
   const tip = datoteka.tip;
   
-  const datumVrijeme = new Date().toISOString().replace(/[:.]/g, '-');
+  // Kreiraj jedinstveni timestamp
+  const sada = new Date();
+  const timestamp = sada.getTime(); // Unix timestamp u milisekundama
+  const datumString = sada.toISOString().replace(/[:.]/g, '-').replace('T', '_').substring(0, 19);
+  
+  // Generiraj random broj za dodatnu jedinstvenost
+  const randomNum = Math.floor(Math.random() * 10000);
+  
+  // Uzmi originalnu ekstenziju datoteke
+  const originalName = file.name;
+  const lastDotIndex = originalName.lastIndexOf('.');
+  const fileExtension = lastDotIndex !== -1 ? originalName.substring(lastDotIndex) : '';
+  const nameWithoutExt = lastDotIndex !== -1 ? originalName.substring(0, lastDotIndex) : originalName;
+  
   const korisnikDio = odabraniEmail.value.replace('@', '_at_');
   const tipBucketDio = tip === 'image' ? 'images' : 'video';
-  const datotekaNaziv = `${datumVrijeme}_${file.name.replace(/\s+/g, '_')}`;
+  
+  // Novi format naziva: slika_TIMESTAMP_RANDOM_originalname.ext
+  const datotekaNaziv = `slika_${timestamp}_${randomNum}_${nameWithoutExt.replace(/\s+/g, '_')}${fileExtension}`;
   const putanja = `${korisnikDio}/${datotekaNaziv}`;
+  
+  console.log('Uploading file with name:', datotekaNaziv); // Za debugging
   
   const { data, error } = await supabase.storage
     .from(tipBucketDio)
@@ -428,6 +445,7 @@ const uploadajDatoteku = async (datoteka) => {
     throw error;
   }
   
+  // Dodaj timestamp i random broj u URL za cache busting
   const { data: urlData } = supabase.storage
     .from(tipBucketDio)
     .getPublicUrl(putanja);
@@ -436,11 +454,13 @@ const uploadajDatoteku = async (datoteka) => {
     throw new Error('Problem prilikom dohvaćanja javnog URL-a');
   }
   
-  const publicUrl = urlData.publicUrl;
+  // Dodaj cache busting parametar u URL
+  const publicUrl = `${urlData.publicUrl}?t=${timestamp}&r=${randomNum}`;
   
   const noviMedij = {
     id: 'temp_' + Date.now() + '_' + Math.random(),
-    fileName: file.name,
+    fileName: file.name, // Drži originalni naziv za prikaz
+    displayName: datotekaNaziv, // Dodaj novo polje za puni naziv
     fileType: file.type,
     fileSize: file.size,
     filePath: putanja,
@@ -460,6 +480,7 @@ const uploadajDatoteku = async (datoteka) => {
   try {
     const docRef = await addDoc(collection(db, 'uploads'), {
       fileName: file.name,
+      displayName: datotekaNaziv, // Spremi i puni naziv
       fileType: file.type,
       fileSize: file.size,
       filePath: putanja,
