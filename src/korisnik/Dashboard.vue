@@ -1,4 +1,3 @@
-
 <template>
   <div class="nadzorna-ploca">
     <div class="gornja-traka">
@@ -23,7 +22,16 @@
 
         <div class="galerija-sekcija">
           <div class="galerija-zaglavlje">
-            <h2>Moje fotografije</h2>
+            <div class="naslov-i-refresh">
+              <h2>Moje fotografije</h2>
+              <button @click="osvjeziSlike" class="refresh-gumb" title="Osvježi slike">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+              </button>
+            </div>
             <div class="galerija-akcije">
               <button @click="preuzmiSve" class="gumb-preuzmi-sve" :disabled="slikeKorisnika.length === 0 || preuzimaSeSve">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -54,7 +62,11 @@
               </div>
               
               <div class="slika-pregled-kontejner" @click="prikaziSliku(slika)">
-                <img v-if="slika.publicUrl" :src="slika.publicUrl" :alt="slika.fileName" class="slika-pregled" @error="greskaSlike" />
+                <img v-if="slika.fileCategory === 'image'" :src="slika.publicUrl" :alt="slika.fileName" class="slika-pregled" @error="greskaSlike" />
+                <video v-else-if="slika.fileCategory === 'video'" :src="slika.publicUrl" class="slika-pregled" @error="greskaSlike"></video>
+                <div v-else class="ostalo-prikaz">
+                  <span>{{ slika.fileCategory || 'Nepoznati tip' }}</span>
+                </div>
               </div>
               
               <div class="slika-informacije" :class="{ 'ima-sadrzaj': komentariSlike(slika).length > 0 || otvorenaForma === slika.fileName, 'nema-sadrzaj': komentariSlike(slika).length === 0 && otvorenaForma !== slika.fileName }">
@@ -128,7 +140,8 @@
     <div v-if="trenutnaSlika" class="lightbox" @click="zatvoriPrikaz">
       <div class="lightbox-sadrzaj" @click.stop>
         <button @click="zatvoriPrikaz" class="lightbox-zatvori">✕</button>
-        <img :src="trenutnaSlika.publicUrl" :alt="trenutnaSlika.fileName" class="lightbox-slika">
+        <img v-if="trenutnaSlika.fileCategory === 'image'" :src="trenutnaSlika.publicUrl" :alt="trenutnaSlika.fileName" class="lightbox-slika">
+        <video v-else-if="trenutnaSlika.fileCategory === 'video'" :src="trenutnaSlika.publicUrl" controls autoplay class="lightbox-slika"></video>
       </div>
     </div>
     
@@ -157,7 +170,8 @@ import {
   query,
   where,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  limit
 } from 'firebase/firestore'
 
 const router = useRouter()
@@ -176,6 +190,7 @@ const tekstZaUredbu = ref('')
 const ucitava = ref(false)
 
 let unsubscribeKomentari = null
+let unsubscribeUploads = null
 let cleanupAutoSync = null
 
 const emailKorisnika = computed(() => {
@@ -198,26 +213,16 @@ const komentariSlike = (slika) => {
   return komentari.value.filter(komentar => komentar.imageFileName === slika.fileName)
 }
 
-// Dodana funkcija za auto-sync
 const setupAutoSync = () => {
   const handleSlikeAzurirane = (event) => {
-    console.log('Detektovane nove slike, osvježavam...', event.detail);
-    ucitajSlike();
-  };
-  
-  const handleStorageChange = (event) => {
-    if (event.key === 'uploadani_mediji') {
-      console.log('LocalStorage ažuriran iz drugog taba');
-      ucitajSlike();
-    }
+    console.log('Detektovane nove slike, već se automatski osvježavaju preko Firestore listener-a', event.detail);
+    // Ne pozivamo ucitajSlike() jer Firestore listener automatski ažurira podatke
   };
   
   window.addEventListener('slikeAzurirane', handleSlikeAzurirane);
-  window.addEventListener('storage', handleStorageChange);
   
   return () => {
     window.removeEventListener('slikeAzurirane', handleSlikeAzurirane);
-    window.removeEventListener('storage', handleStorageChange);
   };
 };
 
@@ -364,6 +369,79 @@ const ucitajKomentare = () => {
   } catch (greska) {
     console.error('Greška pri postavljanju listenera za komentare:', greska)
     komentari.value = []
+  }
+}
+
+const ucitajSlike = () => {
+  try {
+    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
+      slikeKorisnika.value = []
+      return
+    }
+    
+    // Postavi Firestore listener umjesto localStorage čitanja
+    const uploadsRef = collection(db, 'uploads')
+    const uploadsQuery = query(
+      uploadsRef, 
+      where('userEmail', '==', emailKorisnika.value),
+      orderBy('uploadedAt', 'desc'), 
+      limit(100)
+    )
+    
+    // Ukloni postojeći listener ako postoji
+    if (unsubscribeUploads) {
+      unsubscribeUploads()
+    }
+    
+    unsubscribeUploads = onSnapshot(uploadsQuery, (snapshot) => {
+      const slike = []
+      snapshot.forEach((doc) => {
+        const podaci = doc.data()
+        slike.push({ 
+          id: doc.id, 
+          ...podaci,
+          // Dodaj fileCategory ako ne postoji (za kompatibilnost)
+          fileCategory: podaci.fileCategory || (podaci.fileType?.startsWith('image/') ? 'image' : 'video')
+        })
+      })
+      
+      slikeKorisnika.value = slike
+      console.log(`Učitano ${slike.length} slika za korisnika ${emailKorisnika.value}`)
+      
+    }, (error) => {
+      console.error('Greška pri dohvaćanju slika iz Firestore:', error)
+      // Fallback na localStorage ako Firestore ne radi
+      const podaci = localStorage.getItem('uploadani_mediji')
+      if (podaci) {
+        const sve = JSON.parse(podaci)
+        slikeKorisnika.value = sve.filter(slika => 
+          slika.userEmail === emailKorisnika.value
+        )
+      } else {
+        slikeKorisnika.value = []
+      }
+    })
+    
+  } catch (greska) {
+    console.error('Greška pri postavljanju Firestore listener-a:', greska)
+    slikeKorisnika.value = []
+  }
+}
+
+const osvjeziSlike = () => {
+  console.log('Manualno osvježavanje slika...')
+  ucitajSlike()
+}
+
+const ocistiListenere = () => {
+  if (unsubscribeUploads) {
+    unsubscribeUploads()
+    unsubscribeUploads = null
+  }
+  
+  if (unsubscribeKomentari) {
+    unsubscribeKomentari()
+    unsubscribeKomentari = null
   }
 }
 
@@ -587,52 +665,26 @@ const formatirajDatum = (datum) => {
   }
 }
 
-const ucitajSlike = () => {
-  try {
-    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
-      slikeKorisnika.value = []
-      return
-    }
-    
-    const podaci = localStorage.getItem('uploadani_mediji')
-    
-    if (podaci) {
-      const sve = JSON.parse(podaci)
-      slikeKorisnika.value = sve.filter(slika => {
-        return slika.userEmail === emailKorisnika.value
-      })
-    } else {
-      slikeKorisnika.value = []
-    }
-    
-  } catch (greska) {
-    console.error('Greška pri učitavanju slika:', greska)
-    slikeKorisnika.value = []
-  }
-}
-
 onMounted(() => {
   ucitajSlike()
   ucitajKomentare()
-  cleanupAutoSync = setupAutoSync() // Dodano za auto-sync
+  cleanupAutoSync = setupAutoSync()
   noviKomentari.value = {}
   document.addEventListener('click', klikIzvan)
 })
 
 onBeforeUnmount(() => {
   if (cleanupAutoSync) {
-    cleanupAutoSync() // Dodano za cleanup auto-sync
+    cleanupAutoSync()
   }
   
   document.removeEventListener('click', klikIzvan)
   document.body.style.overflow = 'auto'
   
-  if (unsubscribeKomentari) {
-    unsubscribeKomentari()
-  }
+  // Očisti sve listenere
+  ocistiListenere()
 })
 </script>
-
 
 <style scoped>
 .nadzorna-ploca {
@@ -777,6 +829,12 @@ onBeforeUnmount(() => {
   margin-bottom: 25px;
 }
 
+.naslov-i-refresh {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .galerija-sekcija h2 {
   color: #123458;
   margin: 0;
@@ -794,6 +852,39 @@ onBeforeUnmount(() => {
   height: 3px;
   background-color: #123458;
   border-radius: 2px;
+}
+
+.refresh-gumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #5D8AA8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(93, 138, 168, 0.2);
+}
+
+.refresh-gumb:hover {
+  background-color: #4a7294;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(93, 138, 168, 0.3);
+}
+
+.refresh-gumb svg {
+  animation: none;
+}
+
+.refresh-gumb:active svg {
+  animation: spin 0.5s ease-in-out;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .galerija-akcije {
@@ -909,6 +1000,17 @@ onBeforeUnmount(() => {
 
 .slika-kartica:hover .slika-pregled {
   transform: scale(1.05);
+}
+
+.ostalo-prikaz {
+  width: 100%;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #F1EFEC;
+  color: #6c757d;
+  font-size: 0.8rem;
 }
 
 .slika-informacije {
@@ -1285,7 +1387,6 @@ onBeforeUnmount(() => {
   transition: width 0.3s ease;
 }
 
-
 @media (max-width: 768px) {
   .sadrzaj-omotac {
     padding: 15px;
@@ -1314,6 +1415,10 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
+  }
+
+  .naslov-i-refresh {
+    justify-content: center;
   }
 
   .gumb-preuzmi-sve {
@@ -1406,7 +1511,8 @@ onBeforeUnmount(() => {
 .prekrivni-gumb-preuzmi:focus,
 .prekrivni-gumb-komentar:focus,
 .profil-ikona:focus,
-.lightbox-zatvori:focus {
+.lightbox-zatvori:focus,
+.refresh-gumb:focus {
   outline: 2px solid #007bff;
   outline-offset: 2px;
 }
@@ -1424,7 +1530,8 @@ onBeforeUnmount(() => {
   .obavijest-preuzimanja,
   .lightbox,
   .slika-prekrivni-sloj,
-  .komentar-forma-akcije {
+  .komentar-forma-akcije,
+  .refresh-gumb {
     display: none !important;
   }
 
@@ -1444,7 +1551,8 @@ onBeforeUnmount(() => {
   }
 
   .prekrivni-gumb-preuzmi,
-  .prekrivni-gumb-komentar {
+  .prekrivni-gumb-komentar,
+  .refresh-gumb {
     background-color: rgba(0, 0, 0, 0.9);
     border: 2px solid #fff;
   }
@@ -1457,7 +1565,8 @@ onBeforeUnmount(() => {
   .prekrivni-gumb-komentar,
   .gumb-preuzmi-sve,
   .profil-ikona,
-  .ispunjavanje-napretka {
+  .ispunjavanje-napretka,
+  .refresh-gumb {
     transition: none !important;
     animation: none !important;
   }
@@ -1469,5 +1578,5 @@ onBeforeUnmount(() => {
   .slika-kartica:hover .slika-pregled {
     transform: none !important;
   }
-}
+} 
 </style>
