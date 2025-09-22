@@ -176,6 +176,7 @@ const tekstZaUredbu = ref('')
 const ucitava = ref(false)
 
 let unsubscribeKomentari = null
+let cleanupAutoSync = null
 
 const emailKorisnika = computed(() => {
   return authStanje.currentUser?.email || 'Nepoznat korisnik'
@@ -196,6 +197,29 @@ const inicijalKorisnika = computed(() => {
 const komentariSlike = (slika) => {
   return komentari.value.filter(komentar => komentar.imageFileName === slika.fileName)
 }
+
+// Dodana funkcija za auto-sync
+const setupAutoSync = () => {
+  const handleSlikeAzurirane = (event) => {
+    console.log('Detektovane nove slike, osvježavam...', event.detail);
+    ucitajSlike();
+  };
+  
+  const handleStorageChange = (event) => {
+    if (event.key === 'uploadani_mediji') {
+      console.log('LocalStorage ažuriran iz drugog taba');
+      ucitajSlike();
+    }
+  };
+  
+  window.addEventListener('slikeAzurirane', handleSlikeAzurirane);
+  window.addEventListener('storage', handleStorageChange);
+  
+  return () => {
+    window.removeEventListener('slikeAzurirane', handleSlikeAzurirane);
+    window.removeEventListener('storage', handleStorageChange);
+  };
+};
 
 const zabiljeziPreuzimanje = (email) => {
   try {
@@ -590,11 +614,16 @@ const ucitajSlike = () => {
 onMounted(() => {
   ucitajSlike()
   ucitajKomentare()
+  cleanupAutoSync = setupAutoSync() // Dodano za auto-sync
   noviKomentari.value = {}
   document.addEventListener('click', klikIzvan)
 })
 
 onBeforeUnmount(() => {
+  if (cleanupAutoSync) {
+    cleanupAutoSync() // Dodano za cleanup auto-sync
+  }
+  
   document.removeEventListener('click', klikIzvan)
   document.body.style.overflow = 'auto'
   

@@ -409,16 +409,10 @@ const uploadajSveDatoteke = async () => {
 const uploadajDatoteku = async (datoteka) => {
   const file = datoteka.file;
   const tip = datoteka.tip;
-  
-  // Kreiraj jedinstveni timestamp
   const sada = new Date();
-  const timestamp = sada.getTime(); // Unix timestamp u milisekundama
+  const timestamp = sada.getTime(); 
   const datumString = sada.toISOString().replace(/[:.]/g, '-').replace('T', '_').substring(0, 19);
-  
-  // Generiraj random broj za dodatnu jedinstvenost
   const randomNum = Math.floor(Math.random() * 10000);
-  
-  // Uzmi originalnu ekstenziju datoteke
   const originalName = file.name;
   const lastDotIndex = originalName.lastIndexOf('.');
   const fileExtension = lastDotIndex !== -1 ? originalName.substring(lastDotIndex) : '';
@@ -454,7 +448,6 @@ const uploadajDatoteku = async (datoteka) => {
     throw new Error('Problem prilikom dohvaćanja javnog URL-a');
   }
   
-  // Dodaj cache busting parametar u URL
   const publicUrl = `${urlData.publicUrl}?t=${timestamp}&r=${randomNum}`;
   
   const noviMedij = {
@@ -499,7 +492,19 @@ const uploadajDatoteku = async (datoteka) => {
   } catch (firestoreError) {
     console.error('Firestore error:', firestoreError);
   }
+  localStorage.setItem('uploadani_mediji', JSON.stringify(trajna_medij_lista));
+
+  window.dispatchEvent(new CustomEvent('slikeAzurirane', {
+    detail: {
+      timestamp: Date.now(),
+      akcija: 'upload',
+      fileName: file.name,
+      userEmail: odabraniEmail.value
+    }
+  }));
 };
+
+
 
 const prekidacFilter = () => {
   prikaziSamoOdabranog.value = !prikaziSamoOdabranog.value;
@@ -669,8 +674,19 @@ const obrisiDatoteku = async () => {
   } finally {
     brisanjeAktivno.value = false;
   }
+  localStorage.setItem('uploadani_mediji', JSON.stringify(lokalni_mediji));
+
+   window.dispatchEvent(new CustomEvent('slikeAzurirane', {
+    detail: {
+      timestamp: Date.now(),
+      akcija: 'delete',
+      fileName: medij.fileName
+    }
+  }));
 };
 
+
+ 
 const obrisiSveKorisnika = async () => {
   if (!zaBrisanjeSviKorisnik.value || brisanjeAktivno.value) return;
   
@@ -717,6 +733,16 @@ const obrisiSveKorisnika = async () => {
   } finally {
     brisanjeAktivno.value = false;
   }
+  localStorage.setItem('uploadani_mediji', JSON.stringify(filtrirani_mediji));
+
+   window.dispatchEvent(new CustomEvent('slikeAzurirane', {
+    detail: {
+      timestamp: Date.now(),
+      akcija: 'deleteAll',
+      userEmail: korisnikEmail,
+      count: sviMediji.length
+    }
+  }));
 };
 
 const resetirajStatus = () => {
