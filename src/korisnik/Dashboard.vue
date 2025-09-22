@@ -141,7 +141,6 @@
   </div>
 </template>
 
-
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
@@ -177,7 +176,7 @@ const tekstZaUredbu = ref('')
 const ucitava = ref(false)
 
 let unsubscribeKomentari = null
-let unsubscribeSlike = null
+let cleanupAutoSync = null
 
 const emailKorisnika = computed(() => {
   return authStanje.currentUser?.email || 'Nepoznat korisnik'
@@ -198,6 +197,29 @@ const inicijalKorisnika = computed(() => {
 const komentariSlike = (slika) => {
   return komentari.value.filter(komentar => komentar.imageFileName === slika.fileName)
 }
+
+// Dodana funkcija za auto-sync
+const setupAutoSync = () => {
+  const handleSlikeAzurirane = (event) => {
+    console.log('Detektovane nove slike, osvježavam...', event.detail);
+    ucitajSlike();
+  };
+  
+  const handleStorageChange = (event) => {
+    if (event.key === 'uploadani_mediji') {
+      console.log('LocalStorage ažuriran iz drugog taba');
+      ucitajSlike();
+    }
+  };
+  
+  window.addEventListener('slikeAzurirane', handleSlikeAzurirane);
+  window.addEventListener('storage', handleStorageChange);
+  
+  return () => {
+    window.removeEventListener('slikeAzurirane', handleSlikeAzurirane);
+    window.removeEventListener('storage', handleStorageChange);
+  };
+};
 
 const zabiljeziPreuzimanje = (email) => {
   try {
@@ -342,35 +364,6 @@ const ucitajKomentare = () => {
   } catch (greska) {
     console.error('Greška pri postavljanju listenera za komentare:', greska)
     komentari.value = []
-  }
-}
-
-const ucitajSlike = () => {
-  try {
-    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
-      slikeKorisnika.value = []
-      return
-    }
-    
-    const q = query(
-      collection(db, 'slike'),
-      where('userEmail', '==', emailKorisnika.value),
-      orderBy('uploadedAt', 'desc')
-    )
-    
-    unsubscribeSlike = onSnapshot(q, (snapshot) => {
-      slikeKorisnika.value = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-    }, (error) => {
-      console.error('Greška pri učitavanju slika:', error)
-      slikeKorisnika.value = []
-    })
-    
-  } catch (greska) {
-    console.error('Greška pri postavljanju listenera za slike:', greska)
-    slikeKorisnika.value = []
   }
 }
 
@@ -594,26 +587,52 @@ const formatirajDatum = (datum) => {
   }
 }
 
+const ucitajSlike = () => {
+  try {
+    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
+      slikeKorisnika.value = []
+      return
+    }
+    
+    const podaci = localStorage.getItem('uploadani_mediji')
+    
+    if (podaci) {
+      const sve = JSON.parse(podaci)
+      slikeKorisnika.value = sve.filter(slika => {
+        return slika.userEmail === emailKorisnika.value
+      })
+    } else {
+      slikeKorisnika.value = []
+    }
+    
+  } catch (greska) {
+    console.error('Greška pri učitavanju slika:', greska)
+    slikeKorisnika.value = []
+  }
+}
+
 onMounted(() => {
   ucitajSlike()
   ucitajKomentare()
+  cleanupAutoSync = setupAutoSync() // Dodano za auto-sync
   noviKomentari.value = {}
   document.addEventListener('click', klikIzvan)
 })
 
 onBeforeUnmount(() => {
+  if (cleanupAutoSync) {
+    cleanupAutoSync() // Dodano za cleanup auto-sync
+  }
+  
   document.removeEventListener('click', klikIzvan)
   document.body.style.overflow = 'auto'
   
   if (unsubscribeKomentari) {
     unsubscribeKomentari()
   }
-  
-  if (unsubscribeSlike) {
-    unsubscribeSlike()
-  }
 })
 </script>
+
 
 <style scoped>
 .nadzorna-ploca {
