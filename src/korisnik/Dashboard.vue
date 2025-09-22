@@ -24,13 +24,21 @@
           <div class="galerija-zaglavlje">
             <div class="naslov-i-refresh">
               <h2>Moje fotografije</h2>
-              <button @click="osvjeziSlike" class="refresh-gumb" title="Osvježi slike">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                </svg>
-              </button>
+              <div class="refresh-buttons">
+                <button @click="osvjeziSlike" class="refresh-gumb" title="Osvježi slike">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                  </svg>
+                </button>
+                <button @click="forcirajSinkronizaciju" class="sync-gumb" title="Forciraj sinkronizaciju">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6"></path>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="galerija-akcije">
               <button @click="preuzmiSve" class="gumb-preuzmi-sve" :disabled="slikeKorisnika.length === 0 || preuzimaSeSve">
@@ -192,6 +200,7 @@ const ucitava = ref(false)
 let unsubscribeKomentari = null
 let unsubscribeUploads = null
 let cleanupAutoSync = null
+let periodickeProvjere = null
 
 const emailKorisnika = computed(() => {
   return authStanje.currentUser?.email || 'Nepoznat korisnik'
@@ -213,18 +222,218 @@ const komentariSlike = (slika) => {
   return komentari.value.filter(komentar => komentar.imageFileName === slika.fileName)
 }
 
+const forcirajSinkronizaciju = async () => {
+  try {
+    console.log('Forciram sinkronizaciju s Firestore...')
+    
+    // Direktno dohvati najnovije podatke bez cache-a
+    const uploadsRef = collection(db, 'uploads')
+    const uploadsQuery = query(
+      uploadsRef, 
+      orderBy('uploadedAt', 'desc'),
+      limit(200)
+    )
+    
+    const snapshot = await getDocs(uploadsQuery)
+    const sveSlike = []
+    
+    snapshot.forEach((doc) => {
+      const podaci = doc.data()
+      sveSlike.push({ 
+        id: doc.id, 
+        ...podaci,
+        fileCategory: podaci.fileCategory || (podaci.fileType?.startsWith('image/') ? 'image' : 'video')
+      })
+    })
+    
+    // Ažuriraj localStorage
+    localStorage.setItem('uploadani_mediji', JSON.stringify(sveSlike))
+    
+    // Filtriraj i prikaži slike trenutnog korisnika
+    const korisnikSlike = sveSlike.filter(slika => slika.userEmail === emailKorisnika.value)
+    slikeKorisnika.value = korisnikSlike
+    
+    console.log(`Forcirano učitano ${korisnikSlike.length} slika za korisnika ${emailKorisnika.value}`)
+    
+    // Pokaži notifikaciju
+    const notification = document.createElement('div')
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10B981;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      z-index: 10000;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `
+    notification.textContent = `Sinkronizacija završena - ${korisnikSlike.length} slika`
+    document.body.appendChild(notification)
+    
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification)
+      }
+    }, 3000)
+    
+  } catch (error) {
+    console.error('Greška pri forciranoj sinkronizaciji:', error)
+    
+    // Error notifikacija
+    const errorNotification = document.createElement('div')
+    errorNotification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #E53935;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      z-index: 10000;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `
+    errorNotification.textContent = 'Greška pri sinkronizaciji'
+    document.body.appendChild(errorNotification)
+    
+    setTimeout(() => {
+      if (document.body.contains(errorNotification)) {
+        document.body.removeChild(errorNotification)
+      }
+    }, 3000)
+  }
+}
+
+const ucitajSlike = () => {
+  try {
+    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
+      slikeKorisnika.value = []
+      return
+    }
+    
+    // Ukloni postojeći listener ako postoji
+    if (unsubscribeUploads) {
+      unsubscribeUploads()
+    }
+    
+    // Listener za sve uploads
+    const uploadsRef = collection(db, 'uploads')
+    const uploadsQuery = query(
+      uploadsRef, 
+      orderBy('uploadedAt', 'desc'), 
+      limit(200)
+    )
+    
+    unsubscribeUploads = onSnapshot(uploadsQuery, (snapshot) => {
+      const sveSlike = []
+      snapshot.forEach((doc) => {
+        const podaci = doc.data()
+        sveSlike.push({ 
+          id: doc.id, 
+          ...podaci,
+          fileCategory: podaci.fileCategory || (podaci.fileType?.startsWith('image/') ? 'image' : 'video')
+        })
+      })
+      
+      // Filtriraj samo slike trenutnog korisnika
+      const korisnikSlike = sveSlike.filter(slika => slika.userEmail === emailKorisnika.value)
+      slikeKorisnika.value = korisnikSlike
+      
+      // Ažuriraj localStorage za backup
+      localStorage.setItem('uploadani_mediji', JSON.stringify(sveSlike))
+      
+      console.log(`Učitano ${korisnikSlike.length} slika za korisnika ${emailKorisnika.value} od ukupno ${sveSlike.length}`)
+      
+    }, (error) => {
+      console.error('Greška pri dohvaćanju slika iz Firestore:', error)
+      // Fallback na localStorage
+      const podaci = localStorage.getItem('uploadani_mediji')
+      if (podaci) {
+        const sve = JSON.parse(podaci)
+        slikeKorisnika.value = sve.filter(slika => 
+          slika.userEmail === emailKorisnika.value
+        )
+      } else {
+        slikeKorisnika.value = []
+      }
+    })
+    
+  } catch (greska) {
+    console.error('Greška pri postavljanju Firestore listener-a:', greska)
+    slikeKorisnika.value = []
+  }
+}
+
+const postaviPeriodickeProvjere = () => {
+  // Provjeri svake 2 minute
+  const interval = setInterval(async () => {
+    try {
+      const uploadsRef = collection(db, 'uploads')
+      const recentQuery = query(
+        uploadsRef,
+        where('uploadedAt', '>', new Date(Date.now() - 120000)), // Zadnje 2 minute
+        orderBy('uploadedAt', 'desc')
+      )
+      
+      const snapshot = await getDocs(recentQuery)
+      if (!snapshot.empty) {
+        console.log(`Pronađeno ${snapshot.size} novih slika, osvježavam...`)
+        await forcirajSinkronizaciju()
+      }
+    } catch (error) {
+      console.log('Periodička provjera nije uspjela:', error)
+    }
+  }, 120000) // 2 minute
+  
+  return () => clearInterval(interval)
+}
+
+const setupWindowFocusSync = () => {
+  const handleWindowFocus = async () => {
+    console.log('Window je u fokusu, provjeravam nove slike...')
+    await forcirajSinkronizaciju()
+  }
+  
+  window.addEventListener('focus', handleWindowFocus)
+  
+  return () => {
+    window.removeEventListener('focus', handleWindowFocus)
+  }
+}
+
 const setupAutoSync = () => {
-  const handleSlikeAzurirane = (event) => {
-    console.log('Detektovane nove slike, već se automatski osvježavaju preko Firestore listener-a', event.detail);
-    // Ne pozivamo ucitajSlike() jer Firestore listener automatski ažurira podatke
+  const handleSlikeAzurirane = async (event) => {
+    console.log('Detektovane nove slike, forciram sinkronizaciju...', event.detail);
+    await forcirajSinkronizaciju()
   };
   
   window.addEventListener('slikeAzurirane', handleSlikeAzurirane);
+  const windowFocusCleanup = setupWindowFocusSync()
   
   return () => {
     window.removeEventListener('slikeAzurirane', handleSlikeAzurirane);
+    windowFocusCleanup()
   };
-};
+}
+
+const osvjeziSlike = async () => {
+  console.log('Manualno osvježavanje slika...')
+  await forcirajSinkronizaciju()
+}
+
+const ocistiListenere = () => {
+  if (unsubscribeUploads) {
+    unsubscribeUploads()
+    unsubscribeUploads = null
+  }
+  
+  if (unsubscribeKomentari) {
+    unsubscribeKomentari()
+    unsubscribeKomentari = null
+  }
+}
 
 const zabiljeziPreuzimanje = (email) => {
   try {
@@ -369,79 +578,6 @@ const ucitajKomentare = () => {
   } catch (greska) {
     console.error('Greška pri postavljanju listenera za komentare:', greska)
     komentari.value = []
-  }
-}
-
-const ucitajSlike = () => {
-  try {
-    if (!emailKorisnika.value || emailKorisnika.value === 'Nepoznat korisnik') {
-      slikeKorisnika.value = []
-      return
-    }
-    
-    // Postavi Firestore listener umjesto localStorage čitanja
-    const uploadsRef = collection(db, 'uploads')
-    const uploadsQuery = query(
-      uploadsRef, 
-      where('userEmail', '==', emailKorisnika.value),
-      orderBy('uploadedAt', 'desc'), 
-      limit(100)
-    )
-    
-    // Ukloni postojeći listener ako postoji
-    if (unsubscribeUploads) {
-      unsubscribeUploads()
-    }
-    
-    unsubscribeUploads = onSnapshot(uploadsQuery, (snapshot) => {
-      const slike = []
-      snapshot.forEach((doc) => {
-        const podaci = doc.data()
-        slike.push({ 
-          id: doc.id, 
-          ...podaci,
-          // Dodaj fileCategory ako ne postoji (za kompatibilnost)
-          fileCategory: podaci.fileCategory || (podaci.fileType?.startsWith('image/') ? 'image' : 'video')
-        })
-      })
-      
-      slikeKorisnika.value = slike
-      console.log(`Učitano ${slike.length} slika za korisnika ${emailKorisnika.value}`)
-      
-    }, (error) => {
-      console.error('Greška pri dohvaćanju slika iz Firestore:', error)
-      // Fallback na localStorage ako Firestore ne radi
-      const podaci = localStorage.getItem('uploadani_mediji')
-      if (podaci) {
-        const sve = JSON.parse(podaci)
-        slikeKorisnika.value = sve.filter(slika => 
-          slika.userEmail === emailKorisnika.value
-        )
-      } else {
-        slikeKorisnika.value = []
-      }
-    })
-    
-  } catch (greska) {
-    console.error('Greška pri postavljanju Firestore listener-a:', greska)
-    slikeKorisnika.value = []
-  }
-}
-
-const osvjeziSlike = () => {
-  console.log('Manualno osvježavanje slika...')
-  ucitajSlike()
-}
-
-const ocistiListenere = () => {
-  if (unsubscribeUploads) {
-    unsubscribeUploads()
-    unsubscribeUploads = null
-  }
-  
-  if (unsubscribeKomentari) {
-    unsubscribeKomentari()
-    unsubscribeKomentari = null
   }
 }
 
@@ -665,10 +801,12 @@ const formatirajDatum = (datum) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await forcirajSinkronizaciju() // Forciraj sinkronizaciju pri učitavanju
   ucitajSlike()
   ucitajKomentare()
   cleanupAutoSync = setupAutoSync()
+  periodickeProvjere = postaviPeriodickeProvjere() // Postavi periodičke provjere
   noviKomentari.value = {}
   document.addEventListener('click', klikIzvan)
 })
@@ -678,10 +816,13 @@ onBeforeUnmount(() => {
     cleanupAutoSync()
   }
   
+  if (periodickeProvjere) {
+    periodickeProvjere()
+  }
+  
   document.removeEventListener('click', klikIzvan)
   document.body.style.overflow = 'auto'
   
-  // Očisti sve listenere
   ocistiListenere()
 })
 </script>
@@ -835,6 +976,11 @@ onBeforeUnmount(() => {
   gap: 15px;
 }
 
+.refresh-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 .galerija-sekcija h2 {
   color: #123458;
   margin: 0;
@@ -880,6 +1026,26 @@ onBeforeUnmount(() => {
 
 .refresh-gumb:active svg {
   animation: spin 0.5s ease-in-out;
+}
+
+.sync-gumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(40, 167, 69, 0.2);
+}
+
+.sync-gumb:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
 }
 
 @keyframes spin {
@@ -1512,7 +1678,8 @@ onBeforeUnmount(() => {
 .prekrivni-gumb-komentar:focus,
 .profil-ikona:focus,
 .lightbox-zatvori:focus,
-.refresh-gumb:focus {
+.refresh-gumb:focus,
+.sync-gumb:focus {
   outline: 2px solid #007bff;
   outline-offset: 2px;
 }
@@ -1531,7 +1698,8 @@ onBeforeUnmount(() => {
   .lightbox,
   .slika-prekrivni-sloj,
   .komentar-forma-akcije,
-  .refresh-gumb {
+  .refresh-gumb,
+  .sync-gumb {
     display: none !important;
   }
 
@@ -1552,7 +1720,8 @@ onBeforeUnmount(() => {
 
   .prekrivni-gumb-preuzmi,
   .prekrivni-gumb-komentar,
-  .refresh-gumb {
+  .refresh-gumb,
+  .sync-gumb {
     background-color: rgba(0, 0, 0, 0.9);
     border: 2px solid #fff;
   }
@@ -1566,7 +1735,8 @@ onBeforeUnmount(() => {
   .gumb-preuzmi-sve,
   .profil-ikona,
   .ispunjavanje-napretka,
-  .refresh-gumb {
+  .refresh-gumb,
+  .sync-gumb {
     transition: none !important;
     animation: none !important;
   }
@@ -1578,5 +1748,5 @@ onBeforeUnmount(() => {
   .slika-kartica:hover .slika-pregled {
     transform: none !important;
   }
-} 
+}
 </style>
