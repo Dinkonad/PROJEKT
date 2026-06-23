@@ -192,11 +192,16 @@
                   <span class="material-icons">payments</span> Označi kao plaćeno
                 </button>
               </td>
-              <td>
-                <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
-                  <span class="material-icons">delete</span>
-                </button>
-              </td>
+             <td>
+  <div class="akcija-gumbi">
+    <button class="gumb-uredi" @click.stop="otvoriUredivanje(prihod)" :disabled="sprema">
+      <span class="material-icons">edit</span>
+    </button>
+    <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
+      <span class="material-icons">delete</span>
+    </button>
+  </div>
+</td>
             </tr>
             <tr v-if="filtriraniPrihodi.length === 0">
               <td colspan="6" class="nema-rezultata">
@@ -371,6 +376,59 @@
         </div>
       </div>
     </Transition>
+    <Transition name="fade">
+  <div class="pozadina" v-if="uredivanjePrihod" @click="uredivanjePrihod = null">
+    <div class="modal-forma" @click.stop>
+      <div class="modal-zaglavlje">
+        <h2>Uredi prihod</h2>
+        <button class="gumb-zatvori" @click="uredivanjePrihod = null">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <form @submit.prevent="spremiUredivanje">
+        <div class="forma-grupa">
+          <label>Naziv eventa:</label>
+          <input type="text" v-model="uredivanjePrihod.nazivEventa" required placeholder="Npr. Vjenčanje, Rođendan...">
+        </div>
+        <div class="forma-grupa">
+          <label>Ime i prezime:</label>
+          <input type="text" v-model="uredivanjePrihod.imeIPrezime" required placeholder="Ime i prezime klijenta">
+        </div>
+        <div class="forma-grupa">
+          <label>Adresa lokacije:</label>
+          <input type="text" v-model="uredivanjePrihod.lokacija" required>
+        </div>
+        <div class="forma-grupa">
+          <label>Datum snimanja:</label>
+          <input type="date" v-model="uredivanjePrihod.datumSnimanja" required>
+        </div>
+        <div class="forma-grupa">
+          <label>Cijena (EUR):</label>
+          <input type="number" v-model="uredivanjePrihod.cijena" step="1.00" min="0" required>
+        </div>
+        <div class="forma-grupa">
+          <label>Putni trošak (EUR):</label>
+          <input type="number" v-model="uredivanjePrihod.putniTrosak" step="1.00" min="0">
+        </div>
+        <div class="forma-grupa">
+          <label>Opis snimanja:</label>
+          <textarea v-model="uredivanjePrihod.opisSnimanja" placeholder="Detalji o snimanju..."></textarea>
+        </div>
+        <div class="forma-grupa checkbox">
+          <label class="prekidac">
+            <input type="checkbox" v-model="uredivanjePrihod.placeno">
+            <span class="klizac"></span>
+            <span class="prekidac-tekst">Plaćeno</span>
+          </label>
+        </div>
+        <div class="forma-gumbi">
+          <button type="button" class="gumb-odustani" @click="uredivanjePrihod = null">Odustani</button>
+          <button type="submit" class="gumb-spremi" :disabled="sprema">Spremi izmjene</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</Transition>
   </div>
 </template>
 
@@ -399,6 +457,7 @@ const selectedIndex = ref(-1);
 const pretragaTimeout = ref(null);
 const ucitava = ref(true);
 const sprema = ref(false);
+const uredivanjePrihod = ref(null);
 
 // Tab navigacija
 const aktivniTab = ref('prihodi'); // 'prihodi' | 'osobe'
@@ -837,6 +896,30 @@ const dodajNoviPrihod = async () => {
     console.error('Greška pri dodavanju novog prihoda:', error);
   }
 };
+
+
+const otvoriUredivanje = (prihod) => {
+  uredivanjePrihod.value = { ...prihod };
+};
+
+const spremiUredivanje = async () => {
+  try {
+    const { id, ...podaci } = uredivanjePrihod.value;
+    await azurirajPrihodUFirestore(id, {
+      nazivEventa: podaci.nazivEventa,
+      imeIPrezime: podaci.imeIPrezime,
+      lokacija: podaci.lokacija,
+      datumSnimanja: podaci.datumSnimanja,
+      cijena: parseFloat(podaci.cijena),
+      putniTrosak: parseFloat(podaci.putniTrosak) || 0,
+      placeno: podaci.placeno,
+      opisSnimanja: podaci.opisSnimanja
+    });
+    uredivanjePrihod.value = null;
+  } catch (error) {
+    console.error('Greška pri uređivanju prihoda:', error);
+  }
+};
 </script>
 
 <style scoped>
@@ -876,7 +959,12 @@ const dodajNoviPrihod = async () => {
   font-weight: 700;
   position: relative;
 }
-
+.akcija-gumbi {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
 .naslov::after {
   content: '';
   position: absolute;
@@ -1377,6 +1465,24 @@ const dodajNoviPrihod = async () => {
 
 .gumb-plati:hover {
   background-color: #1c4c80;
+}
+
+.gumb-uredi {
+  background-color: #5D8AA8;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.gumb-uredi:hover {
+  background-color: #4a7491;
 }
 
 .gumb-brisi {
