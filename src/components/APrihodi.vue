@@ -1,13 +1,27 @@
 <template>
   <div class="prihodi">
     <h1 class="naslov">Prikaz svih prihoda</h1>
-    
+
     <div v-if="ucitava" class="loading-container">
       <span class="material-icons spinning">sync</span>
       <p>Učitavanje prihoda...</p>
     </div>
-    
-    <div v-else class="kartice">
+
+    <!-- Tab navigacija -->
+    <div v-if="!ucitava" class="tab-navigacija">
+      <button
+        :class="['tab-gumb', { aktivan: aktivniTab === 'prihodi' }]"
+        @click="aktivniTab = 'prihodi'">
+        <span class="material-icons">receipt_long</span> Svi prihodi
+      </button>
+      <button
+        :class="['tab-gumb', { aktivan: aktivniTab === 'osobe' }]"
+        @click="aktivniTab = 'osobe'">
+        <span class="material-icons">people</span> Po osobama
+      </button>
+    </div>
+
+    <div v-if="!ucitava" class="kartice">
       <div class="kartica placeno">
         <div class="ikona">
           <span class="material-icons">check_circle</span>
@@ -17,7 +31,7 @@
           <p class="iznos">{{ formatCurrency(ukupnoPlaceno) }}</p>
         </div>
       </div>
-      
+
       <div class="kartica neplaceno">
         <div class="ikona">
           <span class="material-icons">pending</span>
@@ -27,7 +41,7 @@
           <p class="iznos">{{ formatCurrency(ukupnoNePlaceno) }}</p>
         </div>
       </div>
-      
+
       <div class="kartica trosak">
         <div class="ikona">
           <span class="material-icons">directions_car</span>
@@ -39,118 +53,163 @@
       </div>
     </div>
 
-    <!-- Filteri za sortiranje -->
-    <div v-if="!ucitava" class="filteri-okvir">
-      <div class="filter-grupa">
-        <label for="godina-filter">Godina:</label>
-        <select id="godina-filter" v-model="odabranaGodina" @change="resetirajMjesec">
-          <option value="">Sve godine</option>
-          <option v-for="godina in dostupneGodine" :key="godina" :value="godina">{{ godina }}</option>
-        </select>
+    <!-- ==================== TAB: PO OSOBAMA ==================== -->
+    <div v-if="aktivniTab === 'osobe' && !ucitava" class="osobe-okvir">
+      <div v-if="prihodiPoOsobama.length === 0" class="nema-rezultata">
+        <span class="material-icons">people_outline</span>
+        <p>Nema podataka</p>
       </div>
-      
-      <div class="filter-grupa" v-if="odabranaGodina">
-        <label for="mjesec-filter">Mjesec:</label>
-        <select id="mjesec-filter" v-model="odabraniMjesec">
-          <option value="">Svi mjeseci</option>
-          <option v-for="(nazivMjeseca, mjesec) in dostupniMjeseci" :key="mjesec" :value="mjesec">{{ nazivMjeseca }}</option>
-        </select>
-      </div>
-      
-      <button class="gumb-reset" @click="resetirajFiltere" v-if="odabranaGodina || odabraniMjesec">
-        <span class="material-icons">clear</span> Resetuj filtere
-      </button>
-    </div>
 
-    <!-- Mjesečni pregled ako je odabrana godina -->
-    <div v-if="!ucitava && odabranaGodina && !odabraniMjesec" class="mjesecni-pregled">
-      <h2>Pregled po mjesecima - {{ odabranaGodina }}</h2>
-      <div class="mjesecni-kartice">
-        <div v-for="(podaci, mjesec) in mjesecniPodaci" :key="mjesec" 
-             class="mjesecna-kartica" 
-             @click="odaberiMjesec(mjesec)">
-          <div class="mjesec-zaglavlje">
-            <h3>{{ nazviMjeseci[mjesec] }}</h3>
-            <span class="broj-prihoda">{{ podaci.brojPrihoda }} prihoda</span>
+      <div v-for="osoba in prihodiPoOsobama" :key="osoba.imeIPrezime" class="osoba-kartica">
+        <div class="osoba-zaglavlje">
+          <div class="osoba-ime">
+            <span class="material-icons">person</span>
+            <h3>{{ osoba.imeIPrezime }}</h3>
           </div>
-          <div class="mjesec-podaci">
-            <div class="podatak-red">
-              <span class="label">Plaćeno:</span>
-              <span class="vrijednost placeno">{{ formatCurrency(podaci.placeno) }}</span>
-            </div>
-            <div class="podatak-red">
-              <span class="label">Neplaćeno:</span>
-              <span class="vrijednost neplaceno">{{ formatCurrency(podaci.neplaceno) }}</span>
-            </div>
-            <div class="podatak-red">
-              <span class="label">Put. troškovi:</span>
-              <span class="vrijednost trosak">{{ formatCurrency(podaci.putniTroskovi) }}</span>
-            </div>
-            <div class="podatak-red ukupno">
-              <span class="label">Ukupno:</span>
-              <span class="vrijednost">{{ formatCurrency(podaci.ukupno) }}</span>
-            </div>
+          <div class="osoba-snimanja">{{ osoba.brojSnimanja }} {{ osoba.brojSnimanja === 1 ? 'snimanje' : 'snimanja' }}</div>
+        </div>
+        <div class="osoba-financije">
+          <div class="fin-red">
+            <span class="label">Ukupno zarađeno:</span>
+            <span class="vrijednost total">{{ formatCurrency(osoba.ukupnoCijena) }}</span>
           </div>
+          <div class="fin-red">
+            <span class="label">Plaćeno:</span>
+            <span class="vrijednost placeno-tekst">{{ formatCurrency(osoba.ukupnoPlaceno) }}</span>
+          </div>
+          <div class="fin-red" v-if="osoba.ukupnoNePlaceno > 0">
+            <span class="label">Neplaćeno:</span>
+            <span class="vrijednost neplaceno-tekst">{{ formatCurrency(osoba.ukupnoNePlaceno) }}</span>
+          </div>
+          <div class="fin-red" v-if="osoba.ukupnoPutniTroskovi > 0">
+            <span class="label">Putni troškovi:</span>
+            <span class="vrijednost trosak-tekst">{{ formatCurrency(osoba.ukupnoPutniTroskovi) }}</span>
+          </div>
+        </div>
+        <div class="osoba-eventi">
+          <span v-for="(event, i) in osoba.eventi" :key="i" class="event-tag">{{ event }}</span>
         </div>
       </div>
     </div>
 
-    <div v-if="!ucitava" class="dodaj-okvir">
-      <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
-        <span class="material-icons">add</span> Dodaj novi prihod
-      </button>
-    </div>
-    
-    <div v-if="!ucitava" class="tablica-okvir">
-      <div class="filter-info" v-if="odabranaGodina || odabraniMjesec">
-        <span class="material-icons">filter_list</span>
-        <span>Prikaz za: 
-          <strong v-if="odabranaGodina && odabraniMjesec">{{ nazviMjeseci[odabraniMjesec] }} {{ odabranaGodina }}</strong>
-          <strong v-else-if="odabranaGodina">{{ odabranaGodina }}</strong>
-        </span>
-        <span class="rezultati-broj">({{ filtriraniPrihodi.length }} rezultata)</span>
+    <!-- ==================== TAB: SVI PRIHODI ==================== -->
+    <template v-if="aktivniTab === 'prihodi'">
+
+      <!-- Filteri za sortiranje -->
+      <div v-if="!ucitava" class="filteri-okvir">
+        <div class="filter-grupa">
+          <label for="godina-filter">Godina:</label>
+          <select id="godina-filter" v-model="odabranaGodina" @change="resetirajMjesec">
+            <option value="">Sve godine</option>
+            <option v-for="godina in dostupneGodine" :key="godina" :value="godina">{{ godina }}</option>
+          </select>
+        </div>
+
+        <div class="filter-grupa" v-if="odabranaGodina">
+          <label for="mjesec-filter">Mjesec:</label>
+          <select id="mjesec-filter" v-model="odabraniMjesec">
+            <option value="">Svi mjeseci</option>
+            <option v-for="(nazivMjeseca, mjesec) in dostupniMjeseci" :key="mjesec" :value="mjesec">{{ nazivMjeseca }}</option>
+          </select>
+        </div>
+
+        <button class="gumb-reset" @click="resetirajFiltere" v-if="odabranaGodina || odabraniMjesec">
+          <span class="material-icons">clear</span> Resetuj filtere
+        </button>
       </div>
-      
-      <table class="tablica">
-        <thead>
-          <tr>
-            <th>Naziv eventa</th>
-            <th>Ime i prezime</th>
-            <th>Datum</th>
-            <th>Cijena</th>
-            <th>Status Plaćanja</th>
-            <th>Akcija</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
-            <td>{{ prihod.nazivEventa }}</td>
-            <td>{{ prihod.imeIPrezime }}</td>
-            <td>{{ formatDatum(prihod.datumSnimanja) }}</td>
-            <td>{{ formatCurrency(prihod.cijena) }}</td>
-            <td>
-              <div v-if="prihod.placeno" class="status placeno">
-                <span class="material-icons">check_circle</span> Plaćeno
+
+      <!-- Mjesečni pregled ako je odabrana godina -->
+      <div v-if="!ucitava && odabranaGodina && !odabraniMjesec" class="mjesecni-pregled">
+        <h2>Pregled po mjesecima - {{ odabranaGodina }}</h2>
+        <div class="mjesecni-kartice">
+          <div v-for="podaci in mjesecniPodaci" :key="podaci.mjesec"
+     class="mjesecna-kartica"
+     @click="odaberiMjesec(podaci.mjesec)">
+  <div class="mjesec-zaglavlje">
+    <h3>{{ podaci.naziv }}</h3>
+              <span class="broj-prihoda">{{ podaci.brojPrihoda }} prihoda</span>
+            </div>
+            <div class="mjesec-podaci">
+              <div class="podatak-red">
+                <span class="label">Plaćeno:</span>
+                <span class="vrijednost placeno">{{ formatCurrency(podaci.placeno) }}</span>
               </div>
-              <button v-else class="gumb-plati" @click.stop="oznaciKaoPlaceno(prihod.id)" :disabled="sprema">
-                <span class="material-icons">payments</span> Označi kao plaćeno
-              </button>
-            </td>
-            <td>
-              <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
-                <span class="material-icons">delete</span>
-              </button>
-            </td>
-          </tr>
-          <tr v-if="filtriraniPrihodi.length === 0">
-            <td colspan="6" class="nema-rezultata">
-              <span class="material-icons">search_off</span>
-              <p>Nema prihoda za odabrane kriterije</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <div class="podatak-red">
+                <span class="label">Neplaćeno:</span>
+                <span class="vrijednost neplaceno">{{ formatCurrency(podaci.neplaceno) }}</span>
+              </div>
+              <div class="podatak-red">
+                <span class="label">Put. troškovi:</span>
+                <span class="vrijednost trosak">{{ formatCurrency(podaci.putniTroskovi) }}</span>
+              </div>
+              <div class="podatak-red ukupno">
+                <span class="label">Ukupno:</span>
+                <span class="vrijednost">{{ formatCurrency(podaci.ukupno) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!ucitava" class="dodaj-okvir">
+        <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
+          <span class="material-icons">add</span> Dodaj novi prihod
+        </button>
+      </div>
+
+      <div v-if="!ucitava" class="tablica-okvir">
+        <div class="filter-info" v-if="odabranaGodina || odabraniMjesec">
+          <span class="material-icons">filter_list</span>
+          <span>Prikaz za:
+            <strong v-if="odabranaGodina && odabraniMjesec">{{ nazviMjeseci[odabraniMjesec] }} {{ odabranaGodina }}</strong>
+            <strong v-else-if="odabranaGodina">{{ odabranaGodina }}</strong>
+          </span>
+          <span class="rezultati-broj">({{ filtriraniPrihodi.length }} rezultata)</span>
+        </div>
+
+        <table class="tablica">
+          <thead>
+            <tr>
+              <th>Naziv eventa</th>
+              <th>Ime i prezime</th>
+              <th>Datum</th>
+              <th>Cijena</th>
+              <th>Status Plaćanja</th>
+              <th>Akcija</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
+              <td>{{ prihod.nazivEventa }}</td>
+              <td>{{ prihod.imeIPrezime }}</td>
+              <td>{{ formatDatum(prihod.datumSnimanja) }}</td>
+              <td>{{ formatCurrency(prihod.cijena) }}</td>
+              <td>
+                <div v-if="prihod.placeno" class="status placeno">
+                  <span class="material-icons">check_circle</span> Plaćeno
+                </div>
+                <button v-else class="gumb-plati" @click.stop="oznaciKaoPlaceno(prihod.id)" :disabled="sprema">
+                  <span class="material-icons">payments</span> Označi kao plaćeno
+                </button>
+              </td>
+              <td>
+                <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
+                  <span class="material-icons">delete</span>
+                </button>
+              </td>
+            </tr>
+            <tr v-if="filtriraniPrihodi.length === 0">
+              <td colspan="6" class="nema-rezultata">
+                <span class="material-icons">search_off</span>
+                <p>Nema prihoda za odabrane kriterije</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </template>
+    <!-- ==================== KRAJ TABA: SVI PRIHODI ==================== -->
 
     <Transition name="fade">
       <div class="pozadina" v-if="detalji" @click="detalji = null">
@@ -216,20 +275,20 @@
               <label for="nazivEventa">Naziv eventa:</label>
               <input type="text" id="nazivEventa" v-model="noviPrihod.nazivEventa" required placeholder="Npr. Vjenčanje, Rođendan, Konferencija...">
             </div>
-            
+
             <div class="forma-grupa">
               <label for="imeIPrezime">Ime i prezime:</label>
               <input type="text" id="imeIPrezime" v-model="noviPrihod.imeIPrezime" required placeholder="Ime i prezime klijenta">
             </div>
-            
+
             <div class="forma-grupa">
               <label for="lokacija">Adresa lokacije:</label>
               <div class="adresa-autocomplete">
-                <input 
-                  type="text" 
-                  id="lokacija" 
-                  v-model="noviPrihod.lokacija" 
-                  required 
+                <input
+                  type="text"
+                  id="lokacija"
+                  v-model="noviPrihod.lokacija"
+                  required
                   @input="pretraziAdrese"
                   @blur="sakrijPrijedloge"
                   @focus="prikaziPrijedloge"
@@ -237,10 +296,10 @@
                   class="adresa-input"
                   autocomplete="off"
                 >
-                
+
                 <div v-if="prijedloziVisible && prijedloziAdresa.length > 0" class="adresa-dropdown">
-                  <div 
-                    v-for="(prijedlog, index) in prijedloziAdresa" 
+                  <div
+                    v-for="(prijedlog, index) in prijedloziAdresa"
                     :key="index"
                     :class="['dropdown-item', { 'selected': selectedIndex === index }]"
                     @mousedown="odaberiAdresu(prijedlog)"
@@ -249,7 +308,7 @@
                     <div class="adresa-naziv">{{ prijedlog.display_name.split(',')[0] }}</div>
                     <div class="adresa-detalji">{{ prijedlog.display_name }}</div>
                   </div>
-                  
+
                   <div v-if="pretragaUTijeku" class="dropdown-loading">
                     <span class="material-icons spinning">sync</span>
                     Pretražujem...
@@ -257,27 +316,27 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="forma-grupa">
               <label for="datumSnimanja">Datum snimanja:</label>
               <input type="date" id="datumSnimanja" v-model="noviPrihod.datumSnimanja" required>
             </div>
-            
+
             <div class="forma-grupa">
               <label for="cijena">Cijena (EUR):</label>
               <input type="number" id="cijena" v-model="noviPrihod.cijena" step="1.00" min="0" required>
             </div>
-            
+
             <div class="forma-grupa">
               <label for="putniTrosak">Putni trošak (EUR):</label>
               <input type="number" id="putniTrosak" v-model="noviPrihod.putniTrosak" step="1.00" min="0" placeholder="0.00">
             </div>
-            
+
             <div class="forma-grupa">
               <label for="opisSnimanja">Opis snimanja:</label>
               <textarea id="opisSnimanja" v-model="noviPrihod.opisSnimanja" placeholder="Detalji o snimanju, posebni zahtjevi..."></textarea>
             </div>
-            
+
             <div class="forma-grupa checkbox">
               <label class="prekidac">
                 <input type="checkbox" id="placeno" v-model="noviPrihod.placeno">
@@ -285,7 +344,7 @@
                 <span class="prekidac-tekst">Plaćeno</span>
               </label>
             </div>
-            
+
             <div class="forma-gumbi">
               <button type="button" class="gumb-odustani" @click="prikaziFormu = false">Odustani</button>
               <button type="submit" class="gumb-spremi" :disabled="sprema">Spremi</button>
@@ -317,16 +376,16 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { db } from '@/services/firebase.js'; 
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
+import { db } from '@/services/firebase.js';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
   deleteDoc,
   query,
-  orderBy 
+  orderBy
 } from 'firebase/firestore';
 
 const prihodi = ref([]);
@@ -338,16 +397,19 @@ const prijedloziVisible = ref(false);
 const pretragaUTijeku = ref(false);
 const selectedIndex = ref(-1);
 const pretragaTimeout = ref(null);
-const ucitava = ref(true); 
-const sprema = ref(false); 
+const ucitava = ref(true);
+const sprema = ref(false);
 
-// Novi podaci za filtriranje
+// Tab navigacija
+const aktivniTab = ref('prihodi'); // 'prihodi' | 'osobe'
+
+// Filtriranje
 const odabranaGodina = ref('');
 const odabraniMjesec = ref('');
 
 const nazviMjeseci = {
   '01': 'Siječanj',
-  '02': 'Veljača', 
+  '02': 'Veljača',
   '03': 'Ožujak',
   '04': 'Travanj',
   '05': 'Svibanj',
@@ -371,24 +433,25 @@ const noviPrihod = ref({
   opisSnimanja: ''
 });
 
-// Computed svojstva za filtrirane podatke
+// ==================== COMPUTED ====================
+
 const filtriraniPrihodi = computed(() => {
   let filtrirani = [...prihodi.value];
-  
+
   if (odabranaGodina.value) {
     filtrirani = filtrirani.filter(prihod => {
       const godina = new Date(prihod.datumSnimanja).getFullYear().toString();
       return godina === odabranaGodina.value;
     });
   }
-  
+
   if (odabraniMjesec.value) {
     filtrirani = filtrirani.filter(prihod => {
       const mjesec = (new Date(prihod.datumSnimanja).getMonth() + 1).toString().padStart(2, '0');
       return mjesec === odabraniMjesec.value;
     });
   }
-  
+
   return filtrirani.sort((a, b) => new Date(b.datumSnimanja) - new Date(a.datumSnimanja));
 });
 
@@ -403,34 +466,35 @@ const dostupneGodine = computed(() => {
 
 const dostupniMjeseci = computed(() => {
   if (!odabranaGodina.value) return {};
-  
+
   const mjeseci = new Set();
   prihodi.value.forEach(prihod => {
     const datum = new Date(prihod.datumSnimanja);
     const godina = datum.getFullYear().toString();
     const mjesec = (datum.getMonth() + 1).toString().padStart(2, '0');
-    
+
     if (godina === odabranaGodina.value) {
       mjeseci.add(mjesec);
     }
   });
-  
+
   const rezultat = {};
   Array.from(mjeseci).sort().forEach(mjesec => {
     rezultat[mjesec] = nazviMjeseci[mjesec];
   });
-  
+
   return rezultat;
 });
 
 const mjesecniPodaci = computed(() => {
-  if (!odabranaGodina.value) return {};
-  
+  if (!odabranaGodina.value) return [];
+
   const podaci = {};
-  
-  // Inicijaliziraj sve mjesece za odabranu godinu
+
   Object.keys(nazviMjeseci).forEach(mjesec => {
     podaci[mjesec] = {
+      mjesec,
+      naziv: nazviMjeseci[mjesec],
       placeno: 0,
       neplaceno: 0,
       putniTroskovi: 0,
@@ -438,39 +502,32 @@ const mjesecniPodaci = computed(() => {
       brojPrihoda: 0
     };
   });
-  
-  // Dodaj podatke iz prihoda
+
   prihodi.value.forEach(prihod => {
     const datum = new Date(prihod.datumSnimanja);
     const godina = datum.getFullYear().toString();
     const mjesec = (datum.getMonth() + 1).toString().padStart(2, '0');
-    
+
     if (godina === odabranaGodina.value) {
       const cijena = parseFloat(prihod.cijena) || 0;
       const putniTrosak = parseFloat(prihod.putniTrosak) || 0;
-      
+
       podaci[mjesec].brojPrihoda++;
       podaci[mjesec].putniTroskovi += putniTrosak;
-      
+
       if (prihod.placeno) {
         podaci[mjesec].placeno += cijena;
       } else {
         podaci[mjesec].neplaceno += cijena;
       }
-      
+
       podaci[mjesec].ukupno = podaci[mjesec].placeno + podaci[mjesec].neplaceno;
     }
   });
-  
-  // Vrati samo mjesece koji imaju prihode
-  const rezultat = {};
-  Object.keys(podaci).forEach(mjesec => {
-    if (podaci[mjesec].brojPrihoda > 0) {
-      rezultat[mjesec] = podaci[mjesec];
-    }
-  });
-  
-  return rezultat;
+
+  return Object.values(podaci)
+    .filter(p => p.brojPrihoda > 0)
+    .sort((a, b) => a.mjesec.localeCompare(b.mjesec));
 });
 
 const ukupnoPlaceno = computed(() => {
@@ -490,12 +547,52 @@ const ukupnoPutniTroskovi = computed(() => {
     .reduce((sum, prihod) => sum + parseFloat(prihod.putniTrosak || 0), 0);
 });
 
+// ==================== NOVO: PO OSOBAMA ====================
+const prihodiPoOsobama = computed(() => {
+  const mapa = {};
+
+  prihodi.value.forEach(prihod => {
+    const ime = prihod.imeIPrezime?.trim() || 'Nepoznato';
+
+    if (!mapa[ime]) {
+      mapa[ime] = {
+        imeIPrezime: ime,
+        ukupnoCijena: 0,
+        ukupnoPlaceno: 0,
+        ukupnoNePlaceno: 0,
+        ukupnoPutniTroskovi: 0,
+        brojSnimanja: 0,
+        eventi: []
+      };
+    }
+
+    const cijena = parseFloat(prihod.cijena) || 0;
+    const putniTrosak = parseFloat(prihod.putniTrosak) || 0;
+
+    mapa[ime].ukupnoCijena += cijena;
+    mapa[ime].ukupnoPutniTroskovi += putniTrosak;
+    mapa[ime].brojSnimanja++;
+    mapa[ime].eventi.push(prihod.nazivEventa);
+
+    if (prihod.placeno) {
+      mapa[ime].ukupnoPlaceno += cijena;
+    } else {
+      mapa[ime].ukupnoNePlaceno += cijena;
+    }
+  });
+
+  // Sortiraj po ukupnoj cijeni (od najveće)
+  return Object.values(mapa).sort((a, b) => b.ukupnoCijena - a.ukupnoCijena);
+});
+
+// ==================== FIRESTORE ====================
+
 const ucitajPrihodeiFirestore = async () => {
   try {
     ucitava.value = true;
     const q = query(collection(db, 'prihodi'), orderBy('datumSnimanja', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     prihodi.value = [];
     querySnapshot.forEach((doc) => {
       prihodi.value.push({
@@ -514,7 +611,7 @@ const dodajPrihodUFirestore = async (prihodData) => {
   try {
     sprema.value = true;
     const docRef = await addDoc(collection(db, 'prihodi'), prihodData);
-    
+
     prihodi.value.push({
       id: docRef.id,
       ...prihodData
@@ -532,7 +629,7 @@ const azurirajPrihodUFirestore = async (id, updateData) => {
     sprema.value = true;
     const prihodRef = doc(db, 'prihodi', id);
     await updateDoc(prihodRef, updateData);
-    
+
     const index = prihodi.value.findIndex(p => p.id === id);
     if (index !== -1) {
       prihodi.value[index] = { ...prihodi.value[index], ...updateData };
@@ -549,7 +646,7 @@ const obrisiPrihodIzFirestore = async (id) => {
   try {
     sprema.value = true;
     await deleteDoc(doc(db, 'prihodi', id));
-    
+
     const index = prihodi.value.findIndex(p => p.id === id);
     if (index !== -1) {
       prihodi.value.splice(index, 1);
@@ -562,7 +659,8 @@ const obrisiPrihodIzFirestore = async (id) => {
   }
 };
 
-// Nove funkcije za filtriranje
+// ==================== FILTERI ====================
+
 const resetirajMjesec = () => {
   odabraniMjesec.value = '';
 };
@@ -580,6 +678,7 @@ onMounted(() => {
   ucitajPrihodeiFirestore();
 });
 
+
 const formatCurrency = (value) => {
   return `${parseFloat(value).toFixed(2)} EUR`;
 };
@@ -592,32 +691,34 @@ const formatDatum = (dateString) => {
   return `${day}.${month}.${year}`;
 };
 
+// ==================== ADRESA AUTOCOMPLETE ====================
+
 const pretraziAdrese = async () => {
-  const query = noviPrihod.value.lokacija.trim();
+  const q = noviPrihod.value.lokacija.trim();
   selectedIndex.value = -1;
-  
-  if (query.length < 3) {
+
+  if (q.length < 3) {
     prijedloziAdresa.value = [];
     prijedloziVisible.value = false;
     return;
   }
-  
+
   if (pretragaTimeout.value) {
     clearTimeout(pretragaTimeout.value);
   }
-  
+
   pretragaTimeout.value = setTimeout(async () => {
     try {
       pretragaUTijeku.value = true;
       prijedloziVisible.value = true;
- 
+
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=hr&limit=8`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=hr&limit=8`
       );
       const data = await response.json();
-      
+
       prijedloziAdresa.value = data || [];
-      
+
     } catch (error) {
       console.error('Greška pri pretraživanju adresa:', error);
       prijedloziAdresa.value = [];
@@ -636,7 +737,7 @@ const odaberiAdresu = (prijedlog) => {
 
 const navigirajPrijedloge = (event) => {
   if (!prijedloziVisible.value || prijedloziAdresa.value.length === 0) return;
-  
+
   switch (event.key) {
     case 'ArrowDown':
       event.preventDefault();
@@ -670,6 +771,8 @@ const sakrijPrijedloge = () => {
     selectedIndex.value = -1;
   }, 150);
 };
+
+// ==================== AKCIJE ====================
 
 const prikaziDetalje = (prihod) => {
   detalji.value = { ...prihod };
@@ -709,11 +812,10 @@ const dodajNoviPrihod = async () => {
       putniTrosak: parseFloat(noviPrihod.value.putniTrosak) || 0,
       placeno: noviPrihod.value.placeno,
       opisSnimanja: noviPrihod.value.opisSnimanja,
-      created: new Date() 
+      created: new Date()
     };
-    
+
     await dodajPrihodUFirestore(prihodData);
-    
 
     noviPrihod.value = {
       nazivEventa: '',
@@ -725,12 +827,12 @@ const dodajNoviPrihod = async () => {
       placeno: false,
       opisSnimanja: ''
     };
-    
+
     prijedloziAdresa.value = [];
     prijedloziVisible.value = false;
     selectedIndex.value = -1;
     prikaziFormu.value = false;
-    
+
   } catch (error) {
     console.error('Greška pri dodavanju novog prihoda:', error);
   }
@@ -787,6 +889,42 @@ const dodajNoviPrihod = async () => {
   border-radius: 2px;
 }
 
+/* ==================== TAB NAVIGACIJA ==================== */
+.tab-navigacija {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #D4C9BE;
+  padding-bottom: 0;
+}
+
+.tab-gumb {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: #5D8AA8;
+  font-family: 'Roboto', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+}
+
+.tab-gumb:hover {
+  color: #123458;
+}
+
+.tab-gumb.aktivan {
+  color: #123458;
+  border-bottom-color: #123458;
+}
+
+/* ==================== KARTICE (summary) ==================== */
 .kartice {
   display: flex;
   gap: 20px;
@@ -845,7 +983,112 @@ const dodajNoviPrihod = async () => {
   font-weight: 700;
 }
 
-/* Novi stilovi za filtere */
+/* ==================== PO OSOBAMA ==================== */
+.osobe-okvir {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.osoba-kartica {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.osoba-kartica:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.osoba-zaglavlje {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #F1EFEC;
+}
+
+.osoba-ime {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.osoba-ime .material-icons {
+  color: #5D8AA8;
+  font-size: 22px;
+}
+
+.osoba-ime h3 {
+  margin: 0;
+  color: #123458;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.osoba-snimanja {
+  background: #5D8AA8;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.osoba-financije {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.fin-red {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fin-red .label {
+  color: #5D8AA8;
+  font-size: 14px;
+}
+
+.fin-red .vrijednost {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.fin-red .total {
+  color: #123458;
+  font-size: 16px;
+}
+
+.fin-red .placeno-tekst { color: #2E7D32; }
+.fin-red .neplaceno-tekst { color: #E53935; }
+.fin-red .trosak-tekst { color: #5D8AA8; }
+
+.osoba-eventi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.event-tag {
+  background: #F1EFEC;
+  color: #123458;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  border: 1px solid #D4C9BE;
+}
+
+/* ==================== FILTERI ==================== */
 .filteri-okvir {
   display: flex;
   align-items: end;
@@ -908,7 +1151,7 @@ const dodajNoviPrihod = async () => {
   background-color: #4a7491;
 }
 
-/* Stilovi za mjesečni pregled */
+/* ==================== MJESEČNI PREGLED ==================== */
 .mjesecni-pregled {
   margin-bottom: 40px;
 }
@@ -1006,7 +1249,7 @@ const dodajNoviPrihod = async () => {
   color: #5D8AA8;
 }
 
-/* Stilovi za informacije o filtriranju */
+/* ==================== FILTER INFO ==================== */
 .filter-info {
   display: flex;
   align-items: center;
@@ -1033,6 +1276,7 @@ const dodajNoviPrihod = async () => {
   font-style: italic;
 }
 
+/* ==================== TABLICA ==================== */
 .tablica-okvir {
   overflow-x: auto;
   margin-bottom: 30px;
@@ -1152,6 +1396,7 @@ const dodajNoviPrihod = async () => {
   background-color: #C62828;
 }
 
+/* ==================== DODAJ GUMB ==================== */
 .dodaj-okvir {
   display: flex;
   justify-content: center;
@@ -1180,6 +1425,7 @@ const dodajNoviPrihod = async () => {
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
 
+/* ==================== MODALI ==================== */
 .pozadina {
   position: fixed;
   top: 0;
@@ -1260,6 +1506,7 @@ const dodajNoviPrihod = async () => {
   border: 1px solid #D4C9BE;
 }
 
+/* ==================== FORMA ==================== */
 form {
   padding: 24px;
 }
@@ -1275,8 +1522,8 @@ form {
   color: #123458;
 }
 
-.forma-grupa input[type="text"], 
-.forma-grupa input[type="number"], 
+.forma-grupa input[type="text"],
+.forma-grupa input[type="number"],
 .forma-grupa input[type="date"],
 .forma-grupa textarea {
   width: 100%;
@@ -1298,7 +1545,7 @@ form {
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2) !important;
 }
 
-.forma-grupa input:focus, 
+.forma-grupa input:focus,
 .forma-grupa textarea:focus {
   outline: none;
   border-color: #123458;
@@ -1484,6 +1731,7 @@ input:checked + .klizac:before {
   justify-content: center;
 }
 
+/* ==================== TRANZICIJE ==================== */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease;
 }
@@ -1504,7 +1752,7 @@ input:checked + .klizac:before {
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
 
-/* Responsive stilovi */
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 1024px) {
   .prihodi {
     padding: 25px;
@@ -1521,11 +1769,24 @@ input:checked + .klizac:before {
   .mjesecni-kartice {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
+
+  .osobe-okvir {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .prihodi {
     padding: 20px;
+  }
+
+  .tab-navigacija {
+    gap: 5px;
+  }
+
+  .tab-gumb {
+    padding: 8px 14px;
+    font-size: 13px;
   }
 
   .filteri-okvir {
@@ -1546,6 +1807,10 @@ input:checked + .klizac:before {
   .gumb-reset {
     align-self: center;
     width: fit-content;
+  }
+
+  .osobe-okvir {
+    grid-template-columns: 1fr;
   }
 
   .mjesecni-kartice {
@@ -1625,6 +1890,12 @@ input:checked + .klizac:before {
     padding: 15px;
   }
 
+  .tab-gumb {
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
   .filter-grupa select {
     font-size: 14px;
     padding: 8px 12px;
@@ -1664,4 +1935,13 @@ input:checked + .klizac:before {
   .nema-rezultata p {
     font-size: 14px;
   }
-}</style>
+
+  .osoba-kartica {
+    padding: 14px;
+  }
+
+  .osoba-ime h3 {
+    font-size: 14px;
+  }
+}
+</style>
