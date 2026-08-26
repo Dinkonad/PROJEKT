@@ -217,17 +217,23 @@
             <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
               <td>{{ prihod.nazivEventa }}</td>
               <td>
-                {{ prihod.imeIPrezime }}
-                <span
-                  v-for="s in suradniciZaPrihod(prihod)"
-                  :key="s"
-                  class="suradnik-oznaka"
-                  :style="{ backgroundColor: bojaZaSuradnika(s) }"
-                >{{ s }}</span>
+                <div class="celija-stog">
+                  <span>{{ prihod.imeIPrezime }}</span>
+                  <span class="oznaka-red" v-if="suradniciZaPrihod(prihod).length">
+                    <span
+                      v-for="s in suradniciZaPrihod(prihod)"
+                      :key="s"
+                      class="suradnik-oznaka"
+                      :style="{ backgroundColor: bojaZaSuradnika(s) }"
+                    >{{ s }}</span>
+                  </span>
+                </div>
               </td>
               <td>
-                {{ formatDatumRaspon(prihod) }}
-                <span v-if="brojDana(prihod) > 1" class="broj-dana-oznaka">{{ brojDana(prihod) }} dana</span>
+                <div class="celija-stog">
+                  <span>{{ formatDatumRaspon(prihod) }}</span>
+                  <span v-if="brojDana(prihod) > 1" class="broj-dana-oznaka">{{ brojDana(prihod) }} dana</span>
+                </div>
               </td>
               <td>{{ formatCurrency(prihod.cijena) }}</td>
               <td>
@@ -282,7 +288,7 @@
             </div>
             <div class="podatak-red" v-if="suradniciZaPrihod(detalji).length > 0">
               <label>S kime si radio:</label>
-              <p>
+              <p class="oznaka-red">
                 <span
                   v-for="s in suradniciZaPrihod(detalji)"
                   :key="s"
@@ -1445,7 +1451,7 @@ const spremiUredivanje = async () => {
 .loading-container {
   text-align: center;
   padding: 50px;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .spinning {
@@ -1462,15 +1468,15 @@ const spremiUredivanje = async () => {
   margin: 0 auto;
   padding: 30px;
   font-family: 'Roboto', sans-serif;
-  color: #030303;
-  background-color: #F1EFEC;
+  color: var(--text-body);
+  background-color: var(--bg-page);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .naslov {
   text-align: center;
-  color: #123458;
+  color: var(--text-heading);
   margin-bottom: 40px;
   font-weight: 700;
   position: relative;
@@ -1489,7 +1495,7 @@ const spremiUredivanje = async () => {
   transform: translateX(-50%);
   width: 80px;
   height: 3px;
-  background-color: #123458;
+  background-color: var(--accent);
   border-radius: 2px;
 }
 
@@ -1498,7 +1504,7 @@ const spremiUredivanje = async () => {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  border-bottom: 2px solid #D4C9BE;
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0;
 }
 
@@ -1507,7 +1513,7 @@ const spremiUredivanje = async () => {
   border: none;
   padding: 10px 20px;
   cursor: pointer;
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-family: 'Roboto', sans-serif;
   font-size: 15px;
   font-weight: 500;
@@ -1520,17 +1526,17 @@ const spremiUredivanje = async () => {
 }
 
 .tab-gumb:hover {
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .tab-gumb.aktivan {
-  color: #123458;
-  border-bottom-color: #123458;
+  color: var(--text-heading);
+  border-bottom-color: var(--accent);
 }
 
 .gumb-pdf {
   margin-left: auto;
-  background-color: #123458;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 6px;
@@ -1547,11 +1553,11 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-pdf:hover:not(:disabled) {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
 }
 
 .gumb-pdf:disabled {
-  background-color: #9CA3AF;
+  background-color: var(--gray-muted);
   cursor: not-allowed;
 }
 
@@ -1633,7 +1639,7 @@ const spremiUredivanje = async () => {
 }
 
 .osoba-kartica {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -1651,7 +1657,7 @@ const spremiUredivanje = async () => {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 12px;
-  border-bottom: 2px solid #F1EFEC;
+  border-bottom: 2px solid var(--bg-card-muted);
 }
 
 .osoba-ime {
@@ -1661,19 +1667,19 @@ const spremiUredivanje = async () => {
 }
 
 .osoba-ime .material-icons {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 22px;
 }
 
 .osoba-ime h3 {
   margin: 0;
-  color: #123458;
+  color: var(--text-heading);
   font-size: 16px;
   font-weight: 600;
 }
 
 .osoba-snimanja {
-  background: #5D8AA8;
+  background: var(--accent-soft);
   color: white;
   padding: 4px 10px;
   border-radius: 12px;
@@ -1696,7 +1702,7 @@ const spremiUredivanje = async () => {
 }
 
 .fin-red .label {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -1706,13 +1712,13 @@ const spremiUredivanje = async () => {
 }
 
 .fin-red .total {
-  color: #123458;
+  color: var(--text-heading);
   font-size: 16px;
 }
 
-.fin-red .placeno-tekst { color: #2E7D32; }
-.fin-red .neplaceno-tekst { color: #E53935; }
-.fin-red .trosak-tekst { color: #5D8AA8; }
+.fin-red .placeno-tekst { color: var(--success); }
+.fin-red .neplaceno-tekst { color: var(--danger); }
+.fin-red .trosak-tekst { color: var(--text-muted); }
 .fin-red .bratu-tekst { color: #9C7A54; }
 
 .osoba-eventi {
@@ -1722,12 +1728,12 @@ const spremiUredivanje = async () => {
 }
 
 .event-tag {
-  background: #F1EFEC;
-  color: #123458;
+  background: var(--bg-card-muted);
+  color: var(--text-heading);
   padding: 3px 10px;
   border-radius: 20px;
   font-size: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 /* ==================== FILTERI ==================== */
@@ -1737,7 +1743,7 @@ const spremiUredivanje = async () => {
   gap: 20px;
   margin-bottom: 30px;
   padding: 20px;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   flex-wrap: wrap;
@@ -1751,16 +1757,16 @@ const spremiUredivanje = async () => {
 
 .filter-grupa label {
   font-weight: 500;
-  color: #123458;
+  color: var(--text-heading);
   font-size: 14px;
 }
 
 .filter-grupa select {
   padding: 10px 15px;
-  border: 2px solid #D4C9BE;
+  border: 2px solid var(--border-color);
   border-radius: 6px;
-  background-color: white;
-  color: #123458;
+  background-color: var(--bg-card);
+  color: var(--text-heading);
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
   cursor: pointer;
@@ -1770,12 +1776,12 @@ const spremiUredivanje = async () => {
 
 .filter-grupa select:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
 .gumb-reset {
-  background-color: #5D8AA8;
+  background-color: var(--accent-soft);
   color: white;
   border: none;
   padding: 10px 16px;
@@ -1790,7 +1796,7 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-reset:hover {
-  background-color: #4a7491;
+  background-color: var(--accent-soft-hover);
 }
 
 /* ==================== MJESEČNI PREGLED ==================== */
@@ -1799,7 +1805,7 @@ const spremiUredivanje = async () => {
 }
 
 .mjesecni-pregled h2 {
-  color: #123458;
+  color: var(--text-heading);
   margin-bottom: 20px;
   font-weight: 600;
 }
@@ -1811,7 +1817,7 @@ const spremiUredivanje = async () => {
 }
 
 .mjesecna-kartica {
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -1823,7 +1829,7 @@ const spremiUredivanje = async () => {
 .mjesecna-kartica:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  border-color: #123458;
+  border-color: var(--accent);
 }
 
 .mjesec-zaglavlje {
@@ -1832,17 +1838,17 @@ const spremiUredivanje = async () => {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 2px solid #F1EFEC;
+  border-bottom: 2px solid var(--bg-card-muted);
 }
 
 .mjesec-zaglavlje h3 {
   margin: 0;
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
 }
 
 .broj-prihoda {
-  background-color: #5D8AA8;
+  background-color: var(--accent-soft);
   color: white;
   padding: 4px 8px;
   border-radius: 12px;
@@ -1865,30 +1871,30 @@ const spremiUredivanje = async () => {
 .podatak-red.ukupno {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #D4C9BE;
+  border-top: 1px solid var(--border-color);
   font-weight: 600;
 }
 
 .podatak-red .label {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .podatak-red .vrijednost {
   font-weight: 600;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .podatak-red .vrijednost.placeno {
-  color: #2E7D32;
+  color: var(--success);
 }
 
 .podatak-red .vrijednost.neplaceno {
-  color: #E53935;
+  color: var(--danger);
 }
 
 .podatak-red .vrijednost.trosak {
-  color: #5D8AA8;
+  color: var(--text-muted);
 }
 
 .podatak-red .vrijednost.bratu {
@@ -1896,13 +1902,13 @@ const spremiUredivanje = async () => {
 }
 
 .podatak-red.neto .vrijednost {
-  color: #2E7D32;
+  color: var(--success);
 }
 
 .napomena {
   display: block;
   margin-top: 6px;
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 400;
 }
@@ -1914,23 +1920,23 @@ const spremiUredivanje = async () => {
   gap: 8px;
   padding: 12px 16px;
   background-color: rgba(18, 52, 88, 0.05);
-  border-left: 4px solid #123458;
+  border-left: 4px solid var(--accent);
   margin-bottom: 15px;
   border-radius: 0 6px 6px 0;
 }
 
 .filter-info .material-icons {
-  color: #123458;
+  color: var(--text-heading);
   font-size: 18px;
 }
 
 .filter-info span {
-  color: #123458;
+  color: var(--text-heading);
   font-size: 14px;
 }
 
 .rezultati-broj {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -1940,7 +1946,7 @@ const spremiUredivanje = async () => {
   margin-bottom: 30px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .tablica {
@@ -1949,7 +1955,7 @@ const spremiUredivanje = async () => {
 }
 
 .tablica th {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   padding: 16px;
   text-align: left;
@@ -1958,7 +1964,7 @@ const spremiUredivanje = async () => {
 
 .tablica td {
   padding: 16px;
-  border-bottom: 1px solid #D4C9BE;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .red {
@@ -1977,7 +1983,7 @@ const spremiUredivanje = async () => {
 .nema-rezultata {
   text-align: center;
   padding: 40px;
-  color: #5D8AA8;
+  color: var(--text-muted);
 }
 
 .nema-rezultata .material-icons {
@@ -1991,10 +1997,22 @@ const spremiUredivanje = async () => {
   font-style: italic;
 }
 
+.celija-stog {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.oznaka-red {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .broj-dana-oznaka {
   display: inline-block;
-  margin-left: 6px;
-  background-color: #5D8AA8;
+  background-color: var(--accent-soft);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -2005,7 +2023,6 @@ const spremiUredivanje = async () => {
 
 .suradnik-oznaka {
   display: inline-block;
-  margin-left: 6px;
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -2049,16 +2066,17 @@ const spremiUredivanje = async () => {
   background: rgba(255, 255, 255, 0.25);
   border: none;
   color: white;
-  width: 18px;
-  height: 18px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .suradnik-chip-x:hover {
@@ -2078,7 +2096,7 @@ const spremiUredivanje = async () => {
 }
 
 .placeno {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -2086,7 +2104,7 @@ const spremiUredivanje = async () => {
 }
 
 .neplaceno {
-  color: #E53935;
+  color: var(--danger);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -2094,7 +2112,7 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-plati {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   border: none;
   padding: 8px 16px;
@@ -2108,11 +2126,11 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-plati:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
 }
 
 .gumb-uredi {
-  background-color: #5D8AA8;
+  background-color: var(--accent-soft);
   color: white;
   border: none;
   padding: 8px;
@@ -2126,11 +2144,11 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-uredi:hover {
-  background-color: #4a7491;
+  background-color: var(--accent-soft-hover);
 }
 
 .gumb-brisi {
-  background-color: #E53935;
+  background-color: var(--danger);
   color: white;
   border: none;
   padding: 8px;
@@ -2143,7 +2161,7 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-brisi:hover {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
 }
 
 /* ==================== DODAJ GUMB ==================== */
@@ -2154,7 +2172,7 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-dodaj {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   border: none;
   padding: 12px 24px;
@@ -2170,7 +2188,7 @@ const spremiUredivanje = async () => {
 }
 
 .gumb-dodaj:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-2px);
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
@@ -2190,7 +2208,7 @@ const spremiUredivanje = async () => {
 }
 
 .modal-detalji, .modal-forma, .modal-potvrda {
-  background-color: #F1EFEC;
+  background-color: var(--bg-card);
   border-radius: 12px;
   padding: 0;
   width: 500px;
@@ -2200,7 +2218,7 @@ const spremiUredivanje = async () => {
 }
 
 .modal-zaglavlje {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   padding: 16px 24px;
   display: flex;
@@ -2245,15 +2263,15 @@ const spremiUredivanje = async () => {
   font-weight: 500;
   display: block;
   margin-bottom: 6px;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .modal-sadrzaj .podatak-red p {
   margin: 0;
   padding: 8px 12px;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 6px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 /* ==================== FORMA ==================== */
@@ -2269,7 +2287,7 @@ form {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .forma-grupa input[type="text"],
@@ -2279,26 +2297,26 @@ form {
   width: 100%;
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid #D4C9BE;
-  background-color: white;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .adresa-input {
-  border: 2px solid #D4C9BE !important;
+  border: 2px solid var(--border-color) !important;
 }
 
 .adresa-input:focus {
-  border-color: #123458 !important;
+  border-color: var(--accent) !important;
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2) !important;
 }
 
 .forma-grupa input:focus,
 .forma-grupa textarea:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
@@ -2316,8 +2334,8 @@ form {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #D4C9BE;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-top: none;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -2329,14 +2347,14 @@ form {
 .dropdown-item {
   padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #F1EFEC;
+  border-bottom: 1px solid var(--bg-card-muted);
   transition: all 0.2s ease;
 }
 
 .dropdown-item:hover,
 .dropdown-item.selected {
   background-color: rgba(18, 52, 88, 0.05);
-  border-left: 3px solid #123458;
+  border-left: 3px solid var(--accent);
 }
 
 .dropdown-item:last-child {
@@ -2345,12 +2363,12 @@ form {
 
 .adresa-naziv {
   font-weight: 600;
-  color: #123458;
+  color: var(--text-heading);
   font-size: 1rem;
 }
 
 .adresa-detalji {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 0.85rem;
   line-height: 1.3;
 }
@@ -2358,7 +2376,7 @@ form {
 .dropdown-loading {
   padding: 16px;
   text-align: center;
-  color: #5D8AA8;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2387,7 +2405,7 @@ form {
   display: inline-block;
   width: 50px;
   height: 26px;
-  background-color: #D4C9BE;
+  background-color: var(--border-color);
   border-radius: 34px;
   transition: .4s;
   margin-right: 10px;
@@ -2407,7 +2425,7 @@ form {
 }
 
 input:checked + .klizac {
-  background-color: #123458;
+  background-color: var(--accent);
 }
 
 input:checked + .klizac:before {
@@ -2435,8 +2453,8 @@ input:checked + .klizac:before {
 }
 
 .gumb-odustani {
-  background-color: #D4C9BE;
-  color: #123458;
+  background-color: var(--border-color);
+  color: var(--text-heading);
 }
 
 .gumb-odustani:hover {
@@ -2444,20 +2462,20 @@ input:checked + .klizac:before {
 }
 
 .gumb-spremi, .gumb-potvrdi {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
 }
 
 .gumb-spremi:hover, .gumb-potvrdi:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
 }
 
 .gumb-potvrdi {
-  background-color: #E53935;
+  background-color: var(--danger);
 }
 
 .gumb-potvrdi:hover {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
 }
 
 .potvrda-sadrzaj {
@@ -2467,7 +2485,7 @@ input:checked + .klizac:before {
 
 .potvrda-sadrzaj .upozorenje {
   font-size: 48px;
-  color: #E53935;
+  color: var(--danger);
   margin-bottom: 16px;
 }
 
@@ -2497,7 +2515,7 @@ input:checked + .klizac:before {
 .forma-gumbi {
   position: sticky;
   bottom: 0;
-  background-color: #F1EFEC;
+  background-color: var(--bg-card);
   padding: 15px;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
@@ -2622,7 +2640,7 @@ input:checked + .klizac:before {
   }
 
   .gumb-plati {
-    padding: 6px 12px;
+    padding: 10px 14px;
     font-size: 12px;
   }
 

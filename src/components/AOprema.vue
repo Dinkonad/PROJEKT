@@ -552,15 +552,15 @@ const dodajNovuOpremu = async () => {
   margin: 0 auto;
   padding: 30px;
   font-family: 'Roboto', sans-serif;
-  color: #030303;
-  background-color: #F1EFEC;
+  color: var(--text-body);
+  background-color: var(--bg-page);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .naslov {
   text-align: center;
-  color: #123458;
+  color: var(--text-heading);
   margin-bottom: 40px;
   font-weight: 700;
   position: relative;
@@ -574,7 +574,7 @@ const dodajNovuOpremu = async () => {
   transform: translateX(-50%);
   width: 80px;
   height: 3px;
-  background-color: #123458;
+  background-color: var(--accent);
   border-radius: 2px;
 }
 
@@ -678,7 +678,7 @@ const dodajNovuOpremu = async () => {
   margin-bottom: 30px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .tablica {
@@ -687,7 +687,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .tablica th {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   padding: 16px;
   text-align: left;
@@ -696,7 +696,7 @@ const dodajNovuOpremu = async () => {
 
 .tablica td {
   padding: 16px;
-  border-bottom: 1px solid #D4C9BE;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .red {
@@ -710,7 +710,7 @@ const dodajNovuOpremu = async () => {
 
 .prodano-red {
   background-color: rgba(107, 114, 128, 0.1);
-  color: #6B7280;
+  color: var(--gray-muted);
 }
 
 .red:last-child td {
@@ -730,12 +730,12 @@ const dodajNovuOpremu = async () => {
 }
 
 .status.prodano {
-  color: #6B7280;
+  color: var(--gray-muted);
   font-weight: 500;
 }
 
 .placeno {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -743,7 +743,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .aktivno {
-  color: #10B981;
+  color: var(--success);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -751,7 +751,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .prodano {
-  color: #6B7280;
+  color: var(--gray-muted);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -759,7 +759,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .gumb-prodaj {
-  background-color: #6B7280;
+  background-color: var(--gray-muted);
   color: #F1EFEC;
   border: none;
   padding: 8px 16px;
@@ -777,7 +777,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .gumb-brisi {
-  background-color: #E53935;
+  background-color: var(--danger);
   color: white;
   border: none;
   padding: 8px;
@@ -790,7 +790,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .gumb-brisi:hover {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
 }
 
 .dodaj-okvir {
@@ -800,7 +800,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .gumb-dodaj {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   border: none;
   padding: 12px 24px;
@@ -816,7 +816,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .gumb-dodaj:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-2px);
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
@@ -835,7 +835,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .modal-detalji, .modal-forma, .modal-potvrda {
-  background-color: #F1EFEC;
+  background-color: var(--bg-card);
   border-radius: 12px;
   padding: 0;
   width: 500px;
@@ -845,7 +845,7 @@ const dodajNovuOpremu = async () => {
 }
 
 .modal-zaglavlje {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   padding: 16px 24px;
   display: flex;
@@ -890,15 +890,15 @@ const dodajNovuOpremu = async () => {
   font-weight: 500;
   display: block;
   margin-bottom: 6px;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .podatak-red p {
   margin: 0;
   padding: 8px 12px;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 6px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 form {
@@ -913,7 +913,7 @@ form {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .forma-grupa input[type="text"], 
@@ -924,8 +924,8 @@ form {
   width: 100%;
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid #D4C9BE;
-  background-color: white;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -935,7 +935,7 @@ form {
 .forma-grupa textarea:focus,
 .forma-grupa select:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
@@ -952,7 +952,7 @@ form {
 }
 
 .gumb-odustani {
-  background-color: #9CA3AF;
+  background-color: var(--gray-muted);
   color: #F1EFEC;
   border: none;
   padding: 12px 24px;
@@ -967,7 +967,7 @@ form {
 }
 
 .gumb-spremi {
-  background-color: #123458;
+  background-color: var(--accent);
   color: #F1EFEC;
   border: none;
   padding: 12px 24px;
@@ -978,7 +978,7 @@ form {
 }
 
 .gumb-spremi:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
 }
 
 .potvrda-sadrzaj {
@@ -991,7 +991,7 @@ form {
 
 .upozorenje {
   font-size: 48px;
-  color: #E53935;
+  color: var(--danger);
   margin-bottom: 16px;
 }
 
@@ -1003,7 +1003,7 @@ form {
 }
 
 .gumb-potvrdi {
-  background-color: #E53935;
+  background-color: var(--danger);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1014,7 +1014,7 @@ form {
 }
 
 .gumb-potvrdi:hover {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
 }
 
 .fade-enter-active,

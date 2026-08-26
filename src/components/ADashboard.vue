@@ -17,6 +17,11 @@
             <div class="bocna-korisnik-email">{{ korisnikEmail }}</div>
             <div class="bocna-korisnik-uloga">Administrator</div>
           </div>
+          <button class="gumb-tema" @click="toggleTemu">
+            <span class="material-icons">{{ temaState.tamna ? 'light_mode' : 'dark_mode' }}</span>
+            {{ temaState.tamna ? 'Svijetla tema' : 'Tamna tema' }}
+          </button>
+
           <div class="odjava-sekcija">
             <button class="gumb-odjava" @click="odjaviKorisnika">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -249,6 +254,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
+import { useTheme } from '../store/theme';
 import { db } from '@/services/firebase.js';
 import {
   collection,
@@ -257,6 +263,7 @@ import {
 
 const router = useRouter();
 const { logout: authLogout } = useAuth();
+const { state: temaState, toggleTemu } = useTheme();
 
 const bocnaTrakaOtvorena = ref(false);
 const prihodi = ref([]);
@@ -304,9 +311,14 @@ const krajIstogMjesecaLani = new Date(danas.getFullYear() - 1, danas.getMonth() 
 const nazivOvogMjeseca = computed(() => `${nazviMjeseci[danas.getMonth()]} ${danas.getFullYear()}`);
 const nazivIstogMjesecaLani = computed(() => `${nazviMjeseci[danas.getMonth()]} ${danas.getFullYear() - 1}`);
 
-// ono sto je stvarno tvoje s prihoda - putni trosak i dano bratu se ne racunaju kao tvoja zarada nigdje na dashboardu
+// ono sto je stvarno tvoje s prihoda (i putni trosak i dano bratu iskljuceni) - koristi se za "Neto" liniju
 const netoZaPrihod = (p) => {
   return (parseFloat(p.cijena) || 0) - (parseFloat(p.putniTrosak) || 0) - (parseFloat(p.danoBratu) || 0);
+};
+
+// "Ukupno" iskljucuje samo bratov dio (to nikad nije tvoje), ali NE i putni trosak - taj ostaje u "Ukupno"
+const bezBrataZaPrihod = (p) => {
+  return (parseFloat(p.cijena) || 0) - (parseFloat(p.danoBratu) || 0);
 };
 
 const ovajMjesecPrihodi = computed(() => {
@@ -322,8 +334,8 @@ const istiMjesecLaniPrihodi = computed(() => {
 });
 
 // bruto (puna cijena) - glavni broj na kartici; neto se prikazuje odvojeno ispod
-const ovajMjesecUkupno = computed(() => ovajMjesecPrihodi.value.reduce((s, p) => s + (parseFloat(p.cijena) || 0), 0));
-const istiMjesecLaniUkupno = computed(() => istiMjesecLaniPrihodi.value.reduce((s, p) => s + (parseFloat(p.cijena) || 0), 0));
+const ovajMjesecUkupno = computed(() => ovajMjesecPrihodi.value.reduce((s, p) => s + bezBrataZaPrihod(p), 0));
+const istiMjesecLaniUkupno = computed(() => istiMjesecLaniPrihodi.value.reduce((s, p) => s + bezBrataZaPrihod(p), 0));
 const ovajMjesecNeto = computed(() => ovajMjesecPrihodi.value.reduce((s, p) => s + netoZaPrihod(p), 0));
 const ovajMjesecNetoPoDanu = computed(() => {
   if (ovajMjesecRadniDani.value === 0) return 0;
@@ -362,9 +374,9 @@ const ovajMjesecEventi = computed(() => {
 });
 
 // ==================== SVEUKUPNO (SVIH VREMENA) ====================
-// ovdje namjerno bruto iznos (cijena), ne neto - "sveukupno" prikazuje ukupan promet, ne tvoj neto dio
+// "Ukupno" ovdje ne racuna bratov dio, ali racuna putni trosak - pun neto je posebna linija ispod
 const ukupnoPrihodaSvihVremena = computed(() => {
-  return prihodi.value.reduce((s, p) => s + (parseFloat(p.cijena) || 0), 0);
+  return prihodi.value.reduce((s, p) => s + bezBrataZaPrihod(p), 0);
 });
 
 const ukupnoNetoSvihVremena = computed(() => {
@@ -494,7 +506,7 @@ const godisnjaUsporedba = computed(() => {
     if (!p.datumSnimanja) return;
     const godina = new Date(p.datumSnimanja).getFullYear();
     if (isNaN(godina)) return;
-    mapa[godina] = (mapa[godina] || 0) + (parseFloat(p.cijena) || 0);
+    mapa[godina] = (mapa[godina] || 0) + bezBrataZaPrihod(p);
   });
 
   const godine = Object.keys(mapa).map(Number).sort((a, b) => a - b);
@@ -541,7 +553,7 @@ const mjeseciGraf = computed(() => {
     if (!p.datumSnimanja) return;
     const d = new Date(p.datumSnimanja);
     if (d.getFullYear().toString() !== odabranaGodinaGrafa.value) return;
-    iznosiPoMjesecu[d.getMonth()] += (parseFloat(p.cijena) || 0);
+    iznosiPoMjesecu[d.getMonth()] += bezBrataZaPrihod(p);
     imaPodataka = true;
   });
 
@@ -619,7 +631,7 @@ onMounted(() => {
 .admin-ploca {
   display: flex;
   height: 100vh;
-  background-color: #F1EFEC;
+  background-color: var(--bg-page);
   font-family: 'Roboto', sans-serif;
   position: relative;
 }
@@ -657,7 +669,7 @@ onMounted(() => {
   border: none;
   color: white;
   cursor: pointer;
-  padding: 8px;
+  padding: 12px;
   border-radius: 50%;
   transition: background-color 0.2s;
 }
@@ -709,6 +721,32 @@ onMounted(() => {
 .odjava-sekcija {
   display: flex;
   justify-content: center;
+}
+
+.gumb-tema {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.gumb-tema .material-icons {
+  font-size: 18px;
+}
+
+.gumb-tema:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .gumb-odjava {
@@ -822,16 +860,16 @@ onMounted(() => {
 .ucitavanje {
   padding: 40px 20px;
   text-align: center;
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 1.1rem;
 }
 
 .sekcija {
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 16px;
   padding: 40px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #D4C9BE;
+  box-shadow: 0 6px 20px var(--shadow-color);
+  border: 1px solid var(--border-color);
 }
 
 .sekcija-zaglavlje {
@@ -844,7 +882,7 @@ onMounted(() => {
 }
 
 .sekcija-zaglavlje h2 {
-  color: #123458;
+  color: var(--text-heading);
   margin: 0;
   font-weight: 600;
   font-size: 1.5rem;
@@ -852,7 +890,7 @@ onMounted(() => {
 
 .gumb-kalendar {
   padding: 10px 18px;
-  background-color: #123458;
+  background-color: var(--accent);
   color: white;
   text-decoration: none;
   border-radius: 8px;
@@ -863,14 +901,14 @@ onMounted(() => {
 }
 
 .gumb-kalendar:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 
 .prazan-sadrzaj {
-  color: #123458;
+  color: var(--text-heading);
   padding: 30px 20px;
   text-align: center;
 }
@@ -898,12 +936,13 @@ onMounted(() => {
 .uvid-broj {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #123458;
+  color: var(--text-heading);
 }
 
 .uvid-trend {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: 0.9rem;
   font-weight: 500;
@@ -913,17 +952,17 @@ onMounted(() => {
   font-size: 20px;
 }
 
-.uvid-trend.pozitivno { color: #2E7D32; }
-.uvid-trend.negativno { color: #E53935; }
-.uvid-trend.neutralno { color: #5D8AA8; }
+.uvid-trend.pozitivno { color: var(--success); }
+.uvid-trend.negativno { color: var(--danger); }
+.uvid-trend.neutralno { color: var(--text-muted); }
 
 .uvid-podredak {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-top: 16px;
-  border-top: 1px solid #D4C9BE;
-  color: #5D8AA8;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -938,16 +977,16 @@ onMounted(() => {
   gap: 6px;
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid #D4C9BE;
+  border-top: 1px solid var(--border-color);
 }
 
 .event-tag {
-  background-color: #F1EFEC;
-  color: #123458;
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
   padding: 3px 10px;
   border-radius: 20px;
   font-size: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 /* ==================== SURADNICI ==================== */
@@ -962,7 +1001,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 10px;
-  border-bottom: 1px solid #F1EFEC;
+  border-bottom: 1px solid var(--bg-card-muted);
 }
 
 .suradnik-red:last-child {
@@ -970,7 +1009,7 @@ onMounted(() => {
 }
 
 .suradnik-rang {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-weight: 700;
   width: 20px;
 }
@@ -984,19 +1023,19 @@ onMounted(() => {
 
 .suradnik-ime {
   flex: 1;
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 500;
 }
 
 .suradnik-broj {
-  color: #2E7D32;
+  color: var(--success);
   font-weight: 700;
   font-size: 0.9rem;
 }
 
 /* ==================== LOKACIJE ==================== */
 .lokacije-ukupno {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -1009,7 +1048,7 @@ onMounted(() => {
 }
 
 .grad-grupa {
-  border-bottom: 1px solid #F1EFEC;
+  border-bottom: 1px solid var(--bg-card-muted);
 }
 
 .grad-grupa:last-child {
@@ -1027,29 +1066,30 @@ onMounted(() => {
 }
 
 .grad-red:hover {
-  background-color: #F1EFEC;
+  background-color: var(--bg-card-muted);
 }
 
 .grad-strelica {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 20px;
 }
 
 .grad-naziv {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
 }
 
 .grad-broj,
 .grad-dani {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
   text-align: right;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .grad-dani {
-  color: #2E7D32;
+  color: var(--success);
 }
 
 .adrese-lista {
@@ -1068,7 +1108,7 @@ onMounted(() => {
 }
 
 .adresa-naziv {
-  color: #5D8AA8;
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1076,24 +1116,24 @@ onMounted(() => {
 
 .adresa-broj,
 .adresa-dani {
-  color: #123458;
+  color: var(--text-heading);
   text-align: right;
   white-space: nowrap;
 }
 
 .godina-select {
   padding: 8px 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9rem;
-  background-color: white;
-  color: #123458;
+  background-color: var(--bg-card);
+  color: var(--text-heading);
   font-weight: 500;
 }
 
 .godina-select:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(18, 52, 88, 0.1);
 }
 
@@ -1104,7 +1144,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 8px;
   padding-top: 10px;
-  border-bottom: 2px solid #D4C9BE;
+  border-bottom: 2px solid var(--border-color);
   overflow-x: auto;
 }
 
@@ -1118,7 +1158,7 @@ onMounted(() => {
 }
 
 .mjesec-iznos {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 700;
   font-size: 0.7rem;
   white-space: nowrap;
@@ -1134,17 +1174,17 @@ onMounted(() => {
 .mjesec-stupac-traka {
   width: 60%;
   max-width: 32px;
-  background-color: #D4C9BE;
+  background-color: var(--border-color);
   border-radius: 6px 6px 0 0;
   transition: height 0.3s ease;
 }
 
 .mjesec-stupac-traka.trenutni {
-  background-color: #123458;
+  background-color: var(--accent);
 }
 
 .mjesec-naziv {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-weight: 600;
   font-size: 0.8rem;
 }
@@ -1156,7 +1196,8 @@ onMounted(() => {
   justify-content: center;
   gap: 28px;
   padding-top: 10px;
-  border-bottom: 2px solid #D4C9BE;
+  border-bottom: 2px solid var(--border-color);
+  overflow-x: auto;
 }
 
 .godina-stupac {
@@ -1168,7 +1209,7 @@ onMounted(() => {
 }
 
 .godina-iznos {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 700;
   font-size: 0.95rem;
   white-space: nowrap;
@@ -1179,8 +1220,8 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.godina-promjena.pozitivno { color: #2E7D32; }
-.godina-promjena.negativno { color: #E53935; }
+.godina-promjena.pozitivno { color: var(--success); }
+.godina-promjena.negativno { color: var(--danger); }
 
 .godina-stupac-omotac {
   width: 100%;
@@ -1191,17 +1232,17 @@ onMounted(() => {
 
 .godina-stupac-traka {
   width: 56px;
-  background-color: #D4C9BE;
+  background-color: var(--border-color);
   border-radius: 6px 6px 0 0;
   transition: height 0.3s ease;
 }
 
 .godina-stupac-traka.trenutna {
-  background-color: #123458;
+  background-color: var(--accent);
 }
 
 .godina-naziv {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -1213,7 +1254,8 @@ onMounted(() => {
   justify-content: space-between;
   gap: 10px;
   padding-top: 10px;
-  border-bottom: 2px solid #D4C9BE;
+  border-bottom: 2px solid var(--border-color);
+  overflow-x: auto;
 }
 
 .dan-stupac {
@@ -1225,7 +1267,7 @@ onMounted(() => {
 }
 
 .dan-postotak {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 700;
   font-size: 0.95rem;
 }
@@ -1240,31 +1282,27 @@ onMounted(() => {
 
 .dan-stupac-traka {
   width: 100%;
-  background-color: #D4C9BE;
+  background-color: var(--border-color);
   border-radius: 6px 6px 0 0;
   transition: height 0.3s ease;
 }
 
 .dan-stupac-traka.najcesci {
-  background-color: #123458;
+  background-color: var(--accent);
 }
 
 .dan-naziv {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
   font-size: 0.85rem;
 }
 
 .dan-broj {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 0.75rem;
 }
 
 @media (max-width: 1024px) {
-  .gornja-traka.pomjerena {
-    left: 0;
-  }
-  
   .glavni-sadrzaj.pomjeren {
     margin-left: 0;
   }
@@ -1301,9 +1339,14 @@ onMounted(() => {
   }
 
   .adresa-red {
-    grid-template-columns: 1fr 55px 55px;
+    grid-template-columns: 1fr 60px 60px;
+    font-size: 0.8rem;
   }
-  
+
+  .godina-select {
+    width: 100%;
+  }
+
   .sekcija {
     padding: 20px;
     border-radius: 12px;
@@ -1364,6 +1407,22 @@ onMounted(() => {
 
   .sekcija-zaglavlje h2 {
     font-size: 1.1rem;
+  }
+
+  .uvid-broj {
+    font-size: 1.5rem;
+  }
+
+  .adresa-red {
+    grid-template-columns: 1fr 46px 46px;
+    font-size: 0.72rem;
+    gap: 6px;
+  }
+
+  .grad-red {
+    grid-template-columns: 20px 1fr 44px 70px;
+    font-size: 0.78rem;
+    gap: 6px;
   }
 
   .traka-sadrzaj {
