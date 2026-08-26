@@ -71,6 +71,16 @@
             <p class="iznos">{{ formatCurrency(obiteljskaVrijednost) }}</p>
           </div>
         </div>
+
+        <div class="kartica bratovo">
+          <div class="ikona">
+            <span class="material-icons">face</span>
+          </div>
+          <div class="podaci">
+            <h3>Bratova oprema</h3>
+            <p class="iznos">{{ formatCurrency(bratovaVrijednost) }}</p>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -195,6 +205,7 @@
                 <option value="ja">Osobno</option>
                 <option value="obitelj">Obiteljski</option>
                 <option value="pola">Pola-pola (brat)</option>
+                <option value="brat">Bratovo (u potpunosti)</option>
               </select>
             </div>
             
@@ -376,12 +387,20 @@ const obrisiOpremuIzFirestore = async (id) => {
 
 const ukupnaVrijednost = computed(() => {
   return oprema.value
-    .filter(item => !item.prodano)
+    .filter(item => !item.prodano && item.tip !== 'brat')
     .reduce((sum, item) => sum + parseFloat(item.cijena), 0);
 });
 
 const ukupnoKupljenoIkada = computed(() => {
-  return oprema.value.reduce((sum, item) => sum + parseFloat(item.cijena), 0);
+  return oprema.value
+    .filter(item => item.tip !== 'brat')
+    .reduce((sum, item) => sum + parseFloat(item.cijena), 0);
+});
+
+const bratovaVrijednost = computed(() => {
+  return oprema.value
+    .filter(item => !item.prodano && item.tip === 'brat')
+    .reduce((sum, item) => sum + parseFloat(item.cijena), 0);
 });
 
 const mojaVrijednost = computed(() => {
@@ -445,6 +464,7 @@ const vlasnistvo = (tip) => {
     case 'ja': return 'Osobno';
     case 'obitelj': return 'Obiteljski';
     case 'pola': return 'Pola-pola (brat)';
+    case 'brat': return 'Bratovo (u potpunosti)';
     default: return 'Nepoznato';
   }
 };
@@ -567,6 +587,11 @@ const dodajNovuOpremu = async () => {
   gap: 20px;
   margin-bottom: 20px;
   justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.kartice-red .kartica {
+  flex-basis: 250px;
 }
 
 .kartica {
@@ -612,6 +637,11 @@ const dodajNovuOpremu = async () => {
 
 .kartica.prodano {
   background-color: #6B7280;
+  color: #F1EFEC;
+}
+
+.kartica.bratovo {
+  background-color: #9C7A54;
   color: #F1EFEC;
 }
 

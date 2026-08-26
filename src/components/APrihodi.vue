@@ -19,6 +19,9 @@
         @click="aktivniTab = 'osobe'">
         <span class="material-icons">people</span> Po osobama
       </button>
+      <button class="gumb-pdf" @click="izvezuPDF" :disabled="prihodi.length === 0">
+        <span class="material-icons">picture_as_pdf</span> Preuzmi PDF backup
+      </button>
     </div>
 
     <div v-if="!ucitava" class="kartice">
@@ -49,6 +52,26 @@
         <div class="podaci">
           <h3>Ukupno putni troškovi</h3>
           <p class="iznos">{{ formatCurrency(ukupnoPutniTroskovi) }}</p>
+        </div>
+      </div>
+
+      <div class="kartica bratu">
+        <div class="ikona">
+          <span class="material-icons">volunteer_activism</span>
+        </div>
+        <div class="podaci">
+          <h3>Dano bratu</h3>
+          <p class="iznos">{{ formatCurrency(ukupnoDanoBratu) }}</p>
+        </div>
+      </div>
+
+      <div class="kartica neto">
+        <div class="ikona">
+          <span class="material-icons">savings</span>
+        </div>
+        <div class="podaci">
+          <h3>Moj neto prihod</h3>
+          <p class="iznos">{{ formatCurrency(mojNetoPrihod) }}</p>
         </div>
       </div>
     </div>
@@ -84,6 +107,10 @@
           <div class="fin-red" v-if="osoba.ukupnoPutniTroskovi > 0">
             <span class="label">Putni troškovi:</span>
             <span class="vrijednost trosak-tekst">{{ formatCurrency(osoba.ukupnoPutniTroskovi) }}</span>
+          </div>
+          <div class="fin-red" v-if="osoba.ukupnoDanoBratu > 0">
+            <span class="label">Dano bratu:</span>
+            <span class="vrijednost bratu-tekst">{{ formatCurrency(osoba.ukupnoDanoBratu) }}</span>
           </div>
         </div>
         <div class="osoba-eventi">
@@ -142,9 +169,17 @@
                 <span class="label">Put. troškovi:</span>
                 <span class="vrijednost trosak">{{ formatCurrency(podaci.putniTroskovi) }}</span>
               </div>
+              <div class="podatak-red" v-if="podaci.danoBratu > 0">
+                <span class="label">Dano bratu:</span>
+                <span class="vrijednost bratu">{{ formatCurrency(podaci.danoBratu) }}</span>
+              </div>
               <div class="podatak-red ukupno">
                 <span class="label">Ukupno:</span>
                 <span class="vrijednost">{{ formatCurrency(podaci.ukupno) }}</span>
+              </div>
+              <div class="podatak-red neto">
+                <span class="label">Moj neto:</span>
+                <span class="vrijednost">{{ formatCurrency(podaci.neto) }}</span>
               </div>
             </div>
           </div>
@@ -181,8 +216,19 @@
           <tbody>
             <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
               <td>{{ prihod.nazivEventa }}</td>
-              <td>{{ prihod.imeIPrezime }}</td>
-              <td>{{ formatDatum(prihod.datumSnimanja) }}</td>
+              <td>
+                {{ prihod.imeIPrezime }}
+                <span
+                  v-for="s in suradniciZaPrihod(prihod)"
+                  :key="s"
+                  class="suradnik-oznaka"
+                  :style="{ backgroundColor: bojaZaSuradnika(s) }"
+                >{{ s }}</span>
+              </td>
+              <td>
+                {{ formatDatumRaspon(prihod) }}
+                <span v-if="brojDana(prihod) > 1" class="broj-dana-oznaka">{{ brojDana(prihod) }} dana</span>
+              </td>
               <td>{{ formatCurrency(prihod.cijena) }}</td>
               <td>
                 <div v-if="prihod.placeno" class="status placeno">
@@ -234,13 +280,24 @@
               <label>Ime i prezime:</label>
               <p>{{ detalji.imeIPrezime }}</p>
             </div>
+            <div class="podatak-red" v-if="suradniciZaPrihod(detalji).length > 0">
+              <label>S kime si radio:</label>
+              <p>
+                <span
+                  v-for="s in suradniciZaPrihod(detalji)"
+                  :key="s"
+                  class="suradnik-oznaka"
+                  :style="{ backgroundColor: bojaZaSuradnika(s) }"
+                >{{ s }}</span>
+              </p>
+            </div>
             <div class="podatak-red">
               <label>Adresa lokacije:</label>
               <p>{{ detalji.lokacija }}</p>
             </div>
             <div class="podatak-red">
               <label>Datum snimanja:</label>
-              <p>{{ formatDatum(detalji.datumSnimanja) }}</p>
+              <p>{{ formatDatumRaspon(detalji) }} <span v-if="brojDana(detalji) > 1">({{ brojDana(detalji) }} dana)</span></p>
             </div>
             <div class="podatak-red">
               <label>Cijena:</label>
@@ -249,6 +306,10 @@
             <div class="podatak-red">
               <label>Putni trošak:</label>
               <p>{{ formatCurrency(detalji.putniTrosak || 0) }}</p>
+            </div>
+            <div class="podatak-red" v-if="detalji.danoBratu">
+              <label>Dano bratu:</label>
+              <p>{{ formatCurrency(detalji.danoBratu || 0) }}</p>
             </div>
             <div class="podatak-red">
               <label>Status:</label>
@@ -283,7 +344,70 @@
 
             <div class="forma-grupa">
               <label for="imeIPrezime">Ime i prezime:</label>
-              <input type="text" id="imeIPrezime" v-model="noviPrihod.imeIPrezime" required placeholder="Ime i prezime klijenta">
+              <div class="adresa-autocomplete">
+                <input
+                  type="text"
+                  id="imeIPrezime"
+                  v-model="noviPrihod.imeIPrezime"
+                  required
+                  @focus="klijentDropdownOtvoren = true"
+                  @input="klijentDropdownOtvoren = true"
+                  @blur="sakrijKlijentDropdown"
+                  class="adresa-input"
+                  autocomplete="off"
+                  placeholder="Odaberi postojećeg ili upiši novog klijenta..."
+                >
+                <div v-if="klijentDropdownOtvoren && filtriraniKlijenti.length > 0" class="adresa-dropdown">
+                  <div
+                    v-for="k in filtriraniKlijenti"
+                    :key="k"
+                    class="dropdown-item"
+                    @mousedown="odaberiKlijenta(k)"
+                  >
+                    <div class="adresa-naziv">{{ k }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="forma-grupa">
+              <label for="suradnik">S kime radiš (opcionalno, možeš dodati više):</label>
+              <div class="adresa-autocomplete">
+                <input
+                  type="text"
+                  id="suradnik"
+                  v-model="noviSuradnikUnos"
+                  @focus="suradnikDropdownOtvoren = true"
+                  @input="suradnikDropdownOtvoren = true"
+                  @keydown.enter.prevent="dodajSuradnika()"
+                  @blur="sakrijSuradnikDropdown"
+                  class="adresa-input"
+                  autocomplete="off"
+                  placeholder="Upiši ili odaberi ime, pa Enter za dodavanje..."
+                >
+                <div v-if="suradnikDropdownOtvoren && filtriraniSuradnici.length > 0" class="adresa-dropdown">
+                  <div
+                    v-for="s in filtriraniSuradnici"
+                    :key="s"
+                    class="dropdown-item suradnik-item"
+                    @mousedown="dodajSuradnika(s)"
+                  >
+                    <span class="suradnik-tockica" :style="{ backgroundColor: bojaZaSuradnika(s) }"></span>
+                    <div class="adresa-naziv">{{ s }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="suradnik-chipovi" v-if="noviPrihod.suradnici.length > 0">
+                <span
+                  v-for="(s, i) in noviPrihod.suradnici"
+                  :key="s"
+                  class="suradnik-chip"
+                  :style="{ backgroundColor: bojaZaSuradnika(s) }"
+                >
+                  {{ s }}
+                  <button type="button" class="suradnik-chip-x" @click="ukloniSuradnika(i)">×</button>
+                </span>
+              </div>
             </div>
 
             <div class="forma-grupa">
@@ -323,8 +447,21 @@
             </div>
 
             <div class="forma-grupa">
-              <label for="datumSnimanja">Datum snimanja:</label>
+              <label for="datumSnimanja">Datum snimanja (početak):</label>
               <input type="date" id="datumSnimanja" v-model="noviPrihod.datumSnimanja" required>
+            </div>
+
+            <div class="forma-grupa checkbox">
+              <label class="prekidac">
+                <input type="checkbox" v-model="viseDanaNoviPrihod">
+                <span class="klizac"></span>
+                <span class="prekidac-tekst">Radio sam više dana</span>
+              </label>
+            </div>
+
+            <div class="forma-grupa" v-if="viseDanaNoviPrihod">
+              <label for="datumZavrsetak">Datum završetka:</label>
+              <input type="date" id="datumZavrsetak" v-model="noviPrihod.datumZavrsetak" :min="noviPrihod.datumSnimanja" required>
             </div>
 
             <div class="forma-grupa">
@@ -335,6 +472,20 @@
             <div class="forma-grupa">
               <label for="putniTrosak">Putni trošak (EUR):</label>
               <input type="number" id="putniTrosak" v-model="noviPrihod.putniTrosak" step="1.00" min="0" placeholder="0.00">
+            </div>
+
+            <div class="forma-grupa checkbox">
+              <label class="prekidac">
+                <input type="checkbox" v-model="daoBratuNoviPrihod">
+                <span class="klizac"></span>
+                <span class="prekidac-tekst">Dao si nešto bratu s ovog posla</span>
+              </label>
+            </div>
+
+            <div class="forma-grupa" v-if="daoBratuNoviPrihod">
+              <label for="danoBratu">Koliko si dao bratu (EUR):</label>
+              <input type="number" id="danoBratu" v-model="noviPrihod.danoBratu" step="1.00" min="0" placeholder="0.00">
+              <small class="napomena">Ovaj iznos ide isključivo bratu - ne računa se nigdje kao tvoja zarada.</small>
             </div>
 
             <div class="forma-grupa">
@@ -392,15 +543,79 @@
         </div>
         <div class="forma-grupa">
           <label>Ime i prezime:</label>
-          <input type="text" v-model="uredivanjePrihod.imeIPrezime" required placeholder="Ime i prezime klijenta">
+          <div class="adresa-autocomplete">
+            <input
+              type="text"
+              v-model="uredivanjePrihod.imeIPrezime"
+              required
+              @focus="klijentDropdownOtvorenUredi = true"
+              @input="klijentDropdownOtvorenUredi = true"
+              @blur="sakrijKlijentDropdownUredi"
+              class="adresa-input"
+              autocomplete="off"
+              placeholder="Odaberi postojećeg ili upiši novog klijenta..."
+            >
+            <div v-if="klijentDropdownOtvorenUredi && filtriraniKlijentiUredi.length > 0" class="adresa-dropdown">
+              <div
+                v-for="k in filtriraniKlijentiUredi"
+                :key="k"
+                class="dropdown-item"
+                @mousedown="odaberiKlijentaUredi(k)"
+              >
+                <div class="adresa-naziv">{{ k }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="forma-grupa">
+          <label>S kime radiš (opcionalno, možeš dodati više):</label>
+          <div class="adresa-autocomplete">
+            <input
+              type="text"
+              v-model="uredivanjeSuradnikUnos"
+              @focus="suradnikDropdownOtvorenUredi = true"
+              @input="suradnikDropdownOtvorenUredi = true"
+              @keydown.enter.prevent="dodajSuradnikaUredi()"
+              @blur="sakrijSuradnikDropdownUredi"
+              class="adresa-input"
+              autocomplete="off"
+              placeholder="Upiši ili odaberi ime, pa Enter za dodavanje..."
+            >
+            <div v-if="suradnikDropdownOtvorenUredi && filtriraniSuradniciUredi.length > 0" class="adresa-dropdown">
+              <div
+                v-for="s in filtriraniSuradniciUredi"
+                :key="s"
+                class="dropdown-item suradnik-item"
+                @mousedown="dodajSuradnikaUredi(s)"
+              >
+                <span class="suradnik-tockica" :style="{ backgroundColor: bojaZaSuradnika(s) }"></span>
+                <div class="adresa-naziv">{{ s }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="suradnik-chipovi" v-if="uredivanjePrihod.suradnici && uredivanjePrihod.suradnici.length > 0">
+            <span
+              v-for="(s, i) in uredivanjePrihod.suradnici"
+              :key="s"
+              class="suradnik-chip"
+              :style="{ backgroundColor: bojaZaSuradnika(s) }"
+            >
+              {{ s }}
+              <button type="button" class="suradnik-chip-x" @click="ukloniSuradnikaUredi(i)">×</button>
+            </span>
+          </div>
         </div>
         <div class="forma-grupa">
           <label>Adresa lokacije:</label>
           <input type="text" v-model="uredivanjePrihod.lokacija" required>
         </div>
         <div class="forma-grupa">
-          <label>Datum snimanja:</label>
+          <label>Datum snimanja (početak):</label>
           <input type="date" v-model="uredivanjePrihod.datumSnimanja" required>
+        </div>
+        <div class="forma-grupa">
+          <label>Datum završetka (ostavi prazno ako je jedan dan):</label>
+          <input type="date" v-model="uredivanjePrihod.datumZavrsetak" :min="uredivanjePrihod.datumSnimanja">
         </div>
         <div class="forma-grupa">
           <label>Cijena (EUR):</label>
@@ -409,6 +624,18 @@
         <div class="forma-grupa">
           <label>Putni trošak (EUR):</label>
           <input type="number" v-model="uredivanjePrihod.putniTrosak" step="1.00" min="0">
+        </div>
+        <div class="forma-grupa checkbox">
+          <label class="prekidac">
+            <input type="checkbox" v-model="daoBratuUredi">
+            <span class="klizac"></span>
+            <span class="prekidac-tekst">Dao si nešto bratu s ovog posla</span>
+          </label>
+        </div>
+        <div class="forma-grupa" v-if="daoBratuUredi">
+          <label>Koliko si dao bratu (EUR):</label>
+          <input type="number" v-model="uredivanjePrihod.danoBratu" step="1.00" min="0">
+          <small class="napomena">Ovaj iznos ide isključivo bratu - ne računa se nigdje kao tvoja zarada.</small>
         </div>
         <div class="forma-grupa">
           <label>Opis snimanja:</label>
@@ -435,6 +662,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase.js';
+import jsPDF from 'jspdf';
 import {
   collection,
   addDoc,
@@ -484,15 +712,180 @@ const nazviMjeseci = {
 const noviPrihod = ref({
   nazivEventa: '',
   imeIPrezime: '',
+  suradnici: [],
   lokacija: '',
   datumSnimanja: '',
+  datumZavrsetak: '',
   cijena: 0,
   putniTrosak: 0,
+  danoBratu: 0,
   placeno: false,
   opisSnimanja: ''
 });
 
+const viseDanaNoviPrihod = ref(false);
+const daoBratuNoviPrihod = ref(false);
+const daoBratuUredi = ref(false);
+
+// svaka osoba dobiva boju prema svom redoslijedu u abecednoj listi svih poznatih suradnika
+// (ne po hashu imena) - to garantira da su boje razlicite dok god ima manje ljudi nego boja u paleti
+const paletaBojaSuradnika = [
+  '#5D8AA8', '#9C7A54', '#8E44AD', '#E67E22', '#16A085', '#3949AB', '#C2185B', '#6D4C41',
+  '#00838F', '#AD1457', '#558B2F', '#4527A0', '#D84315', '#00695C', '#757575', '#1565C0'
+];
+
+const bojaZaSuradnika = (ime) => {
+  if (!ime) return paletaBojaSuradnika[0];
+  const indeks = postojeciSuradnici.value.indexOf(ime);
+  if (indeks === -1) return paletaBojaSuradnika[0];
+  return paletaBojaSuradnika[indeks % paletaBojaSuradnika.length];
+};
+
+// stariji prihodi imaju jednog suradnika kao string (suradnik), noviji kao niz (suradnici) - ujednacavamo
+const suradniciZaPrihod = (prihod) => {
+  if (Array.isArray(prihod?.suradnici) && prihod.suradnici.length) return prihod.suradnici;
+  if (prihod?.suradnik?.trim()) return [prihod.suradnik.trim()];
+  return [];
+};
+
+// broj radnih dana za prihod (ako ima datumZavrsetak, racuna raspon, inace 1 dan)
+const brojDana = (prihod) => {
+  if (!prihod?.datumZavrsetak || !prihod?.datumSnimanja) return 1;
+  const pocetak = new Date(prihod.datumSnimanja);
+  const kraj = new Date(prihod.datumZavrsetak);
+  const dani = Math.round((kraj - pocetak) / (1000 * 60 * 60 * 24)) + 1;
+  return dani > 0 ? dani : 1;
+};
+
+const formatDatumRaspon = (prihod) => {
+  if (!prihod?.datumSnimanja) return '-';
+  if (prihod.datumZavrsetak && prihod.datumZavrsetak !== prihod.datumSnimanja) {
+    return `${formatDatum(prihod.datumSnimanja)} - ${formatDatum(prihod.datumZavrsetak)}`;
+  }
+  return formatDatum(prihod.datumSnimanja);
+};
+
 // ==================== COMPUTED ====================
+
+const postojeciSuradnici = computed(() => {
+  const skup = new Set();
+  prihodi.value.forEach(p => {
+    suradniciZaPrihod(p).forEach(ime => skup.add(ime));
+  });
+  return Array.from(skup).sort((a, b) => a.localeCompare(b, 'hr'));
+});
+
+const suradnikDropdownOtvoren = ref(false);
+const suradnikDropdownOtvorenUredi = ref(false);
+const noviSuradnikUnos = ref('');
+const uredivanjeSuradnikUnos = ref('');
+
+const filtriraniSuradnici = computed(() => {
+  const upit = noviSuradnikUnos.value.trim().toLowerCase();
+  return postojeciSuradnici.value.filter(s =>
+    !noviPrihod.value.suradnici.includes(s) && (!upit || s.toLowerCase().includes(upit))
+  );
+});
+
+const filtriraniSuradniciUredi = computed(() => {
+  const upit = uredivanjeSuradnikUnos.value.trim().toLowerCase();
+  const vecDodani = uredivanjePrihod.value?.suradnici || [];
+  return postojeciSuradnici.value.filter(s =>
+    !vecDodani.includes(s) && (!upit || s.toLowerCase().includes(upit))
+  );
+});
+
+const dodajSuradnika = (ime) => {
+  const cisto = (ime ?? noviSuradnikUnos.value).trim();
+  if (!cisto || noviPrihod.value.suradnici.includes(cisto)) {
+    noviSuradnikUnos.value = '';
+    suradnikDropdownOtvoren.value = false;
+    return;
+  }
+  noviPrihod.value.suradnici.push(cisto);
+  noviSuradnikUnos.value = '';
+  suradnikDropdownOtvoren.value = false;
+};
+
+const ukloniSuradnika = (indeks) => {
+  noviPrihod.value.suradnici.splice(indeks, 1);
+};
+
+const sakrijSuradnikDropdown = () => {
+  setTimeout(() => {
+    suradnikDropdownOtvoren.value = false;
+  }, 150);
+};
+
+const dodajSuradnikaUredi = (ime) => {
+  const cisto = (ime ?? uredivanjeSuradnikUnos.value).trim();
+  if (!cisto || uredivanjePrihod.value.suradnici.includes(cisto)) {
+    uredivanjeSuradnikUnos.value = '';
+    suradnikDropdownOtvorenUredi.value = false;
+    return;
+  }
+  uredivanjePrihod.value.suradnici.push(cisto);
+  uredivanjeSuradnikUnos.value = '';
+  suradnikDropdownOtvorenUredi.value = false;
+};
+
+const ukloniSuradnikaUredi = (indeks) => {
+  uredivanjePrihod.value.suradnici.splice(indeks, 1);
+};
+
+const sakrijSuradnikDropdownUredi = () => {
+  setTimeout(() => {
+    suradnikDropdownOtvorenUredi.value = false;
+  }, 150);
+};
+
+// ==================== ODABIR KLIJENTA (ime i prezime) ====================
+const postojeciKlijenti = computed(() => {
+  const skup = new Set();
+  prihodi.value.forEach(p => {
+    if (p.imeIPrezime?.trim()) {
+      skup.add(p.imeIPrezime.trim());
+    }
+  });
+  return Array.from(skup).sort((a, b) => a.localeCompare(b, 'hr'));
+});
+
+const klijentDropdownOtvoren = ref(false);
+const klijentDropdownOtvorenUredi = ref(false);
+
+const filtriraniKlijenti = computed(() => {
+  const upit = (noviPrihod.value.imeIPrezime || '').trim().toLowerCase();
+  if (!upit) return postojeciKlijenti.value;
+  return postojeciKlijenti.value.filter(k => k.toLowerCase().includes(upit));
+});
+
+const filtriraniKlijentiUredi = computed(() => {
+  const upit = (uredivanjePrihod.value?.imeIPrezime || '').trim().toLowerCase();
+  if (!upit) return postojeciKlijenti.value;
+  return postojeciKlijenti.value.filter(k => k.toLowerCase().includes(upit));
+});
+
+const odaberiKlijenta = (ime) => {
+  noviPrihod.value.imeIPrezime = ime;
+  klijentDropdownOtvoren.value = false;
+};
+
+const sakrijKlijentDropdown = () => {
+  setTimeout(() => {
+    klijentDropdownOtvoren.value = false;
+  }, 150);
+};
+
+const odaberiKlijentaUredi = (ime) => {
+  uredivanjePrihod.value.imeIPrezime = ime;
+  klijentDropdownOtvorenUredi.value = false;
+};
+
+const sakrijKlijentDropdownUredi = () => {
+  setTimeout(() => {
+    klijentDropdownOtvorenUredi.value = false;
+  }, 150);
+};
 
 const filtriraniPrihodi = computed(() => {
   let filtrirani = [...prihodi.value];
@@ -557,7 +950,9 @@ const mjesecniPodaci = computed(() => {
       placeno: 0,
       neplaceno: 0,
       putniTroskovi: 0,
+      danoBratu: 0,
       ukupno: 0,
+      neto: 0,
       brojPrihoda: 0
     };
   });
@@ -570,9 +965,11 @@ const mjesecniPodaci = computed(() => {
     if (godina === odabranaGodina.value) {
       const cijena = parseFloat(prihod.cijena) || 0;
       const putniTrosak = parseFloat(prihod.putniTrosak) || 0;
+      const danoBratu = parseFloat(prihod.danoBratu) || 0;
 
       podaci[mjesec].brojPrihoda++;
       podaci[mjesec].putniTroskovi += putniTrosak;
+      podaci[mjesec].danoBratu += danoBratu;
 
       if (prihod.placeno) {
         podaci[mjesec].placeno += cijena;
@@ -581,6 +978,7 @@ const mjesecniPodaci = computed(() => {
       }
 
       podaci[mjesec].ukupno = podaci[mjesec].placeno + podaci[mjesec].neplaceno;
+      podaci[mjesec].neto = podaci[mjesec].ukupno - podaci[mjesec].putniTroskovi - podaci[mjesec].danoBratu;
     }
   });
 
@@ -592,18 +990,28 @@ const mjesecniPodaci = computed(() => {
 const ukupnoPlaceno = computed(() => {
   return filtriraniPrihodi.value
     .filter(prihod => prihod.placeno)
-    .reduce((sum, prihod) => sum + parseFloat(prihod.cijena), 0);
+    .reduce((sum, prihod) => sum + parseFloat(prihod.cijena) - parseFloat(prihod.danoBratu || 0), 0);
 });
 
 const ukupnoNePlaceno = computed(() => {
   return filtriraniPrihodi.value
     .filter(prihod => !prihod.placeno)
-    .reduce((sum, prihod) => sum + parseFloat(prihod.cijena), 0);
+    .reduce((sum, prihod) => sum + parseFloat(prihod.cijena) - parseFloat(prihod.danoBratu || 0), 0);
 });
 
 const ukupnoPutniTroskovi = computed(() => {
   return filtriraniPrihodi.value
     .reduce((sum, prihod) => sum + parseFloat(prihod.putniTrosak || 0), 0);
+});
+
+const ukupnoDanoBratu = computed(() => {
+  return filtriraniPrihodi.value
+    .reduce((sum, prihod) => sum + parseFloat(prihod.danoBratu || 0), 0);
+});
+
+const mojNetoPrihod = computed(() => {
+  return filtriraniPrihodi.value
+    .reduce((sum, prihod) => sum + parseFloat(prihod.cijena || 0) - parseFloat(prihod.putniTrosak || 0) - parseFloat(prihod.danoBratu || 0), 0);
 });
 
 // ==================== NOVO: PO OSOBAMA ====================
@@ -620,6 +1028,7 @@ const prihodiPoOsobama = computed(() => {
         ukupnoPlaceno: 0,
         ukupnoNePlaceno: 0,
         ukupnoPutniTroskovi: 0,
+        ukupnoDanoBratu: 0,
         brojSnimanja: 0,
         eventi: []
       };
@@ -627,9 +1036,11 @@ const prihodiPoOsobama = computed(() => {
 
     const cijena = parseFloat(prihod.cijena) || 0;
     const putniTrosak = parseFloat(prihod.putniTrosak) || 0;
+    const danoBratu = parseFloat(prihod.danoBratu) || 0;
 
     mapa[ime].ukupnoCijena += cijena;
     mapa[ime].ukupnoPutniTroskovi += putniTrosak;
+    mapa[ime].ukupnoDanoBratu += danoBratu;
     mapa[ime].brojSnimanja++;
     mapa[ime].eventi.push(prihod.nazivEventa);
 
@@ -750,6 +1161,97 @@ const formatDatum = (dateString) => {
   return `${day}.${month}.${year}`;
 };
 
+// ==================== PDF BACKUP ====================
+// jsPDF-ovi standardni fontovi ne podrzavaju hrvatske dijakritike (č,ć,đ,š,ž),
+// zato ih transliteriramo prije ispisa u PDF kako se ne bi prikazali kao krive znakovke.
+const bezDijakritika = (tekst) => {
+  if (!tekst) return '';
+  return String(tekst)
+    .replace(/[čć]/g, 'c').replace(/[ČĆ]/g, 'C')
+    .replace(/đ/g, 'dj').replace(/Đ/g, 'Dj')
+    .replace(/š/g, 's').replace(/Š/g, 'S')
+    .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+};
+
+const izvezuPDF = () => {
+  if (prihodi.value.length === 0) return;
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const sviSortirano = [...prihodi.value].sort((a, b) => new Date(b.datumSnimanja) - new Date(a.datumSnimanja));
+
+  const kolone = [
+    { naziv: 'Event', x: 14 },
+    { naziv: 'Ime i prezime', x: 70 },
+    { naziv: 'Datum', x: 130 },
+    { naziv: 'Cijena', x: 160 },
+    { naziv: 'Putni tr.', x: 190 },
+    { naziv: 'Dano bratu', x: 220 },
+    { naziv: 'Status', x: 255 }
+  ];
+  const donjaGranica = 195;
+
+  const ispisiZaglavljeTablice = (y) => {
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    kolone.forEach(k => doc.text(k.naziv, k.x, y));
+    doc.setFont(undefined, 'normal');
+    doc.line(14, y + 2, 283, y + 2);
+    return y + 8;
+  };
+
+  doc.setFontSize(16);
+  doc.text('Backup svih prihoda', 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Generirano: ${new Date().toLocaleDateString('hr-HR')} ${new Date().toLocaleTimeString('hr-HR')}`, 14, 21);
+  doc.text(`Ukupno stavki: ${sviSortirano.length}`, 14, 26);
+
+  let y = ispisiZaglavljeTablice(34);
+
+  sviSortirano.forEach(prihod => {
+    if (y > donjaGranica) {
+      doc.addPage();
+      y = ispisiZaglavljeTablice(20);
+    }
+
+    doc.setFontSize(9);
+    doc.text(bezDijakritika(prihod.nazivEventa || '-'), kolone[0].x, y, { maxWidth: 54 });
+    doc.text(bezDijakritika(prihod.imeIPrezime || '-'), kolone[1].x, y, { maxWidth: 58 });
+    doc.text(formatDatumRaspon(prihod), kolone[2].x, y, { maxWidth: 28 });
+    doc.text(formatCurrency(prihod.cijena), kolone[3].x, y);
+    doc.text(formatCurrency(prihod.putniTrosak || 0), kolone[4].x, y);
+    doc.text(formatCurrency(prihod.danoBratu || 0), kolone[5].x, y);
+    doc.text(prihod.placeno ? 'Placeno' : 'Nije placeno', kolone[6].x, y);
+    y += 7;
+  });
+
+  y += 8;
+  if (y > donjaGranica) {
+    doc.addPage();
+    y = 20;
+  }
+
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('Sazetak', 14, y);
+  y += 7;
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+
+  const ukupnoPlacenoSve = sviSortirano.filter(p => p.placeno).reduce((s, p) => s + (parseFloat(p.cijena) || 0) - (parseFloat(p.danoBratu) || 0), 0);
+  const ukupnoNeplacenoSve = sviSortirano.filter(p => !p.placeno).reduce((s, p) => s + (parseFloat(p.cijena) || 0) - (parseFloat(p.danoBratu) || 0), 0);
+  const ukupnoPutniSve = sviSortirano.reduce((s, p) => s + (parseFloat(p.putniTrosak) || 0), 0);
+  const ukupnoBratuSve = sviSortirano.reduce((s, p) => s + (parseFloat(p.danoBratu) || 0), 0);
+  const netoSve = sviSortirano.reduce((s, p) => s + (parseFloat(p.cijena) || 0) - (parseFloat(p.putniTrosak) || 0) - (parseFloat(p.danoBratu) || 0), 0);
+
+  doc.text(`Ukupno placeno: ${formatCurrency(ukupnoPlacenoSve)}`, 14, y); y += 6;
+  doc.text(`Ukupno neplaceno: ${formatCurrency(ukupnoNeplacenoSve)}`, 14, y); y += 6;
+  doc.text(`Ukupno putni troskovi: ${formatCurrency(ukupnoPutniSve)}`, 14, y); y += 6;
+  doc.text(`Ukupno dano bratu: ${formatCurrency(ukupnoBratuSve)}`, 14, y); y += 6;
+  doc.text(`Moj neto prihod: ${formatCurrency(netoSve)}`, 14, y);
+
+  doc.save(`prihodi-backup-${new Date().toISOString().split('T')[0]}.pdf`);
+};
+
 // ==================== ADRESA AUTOCOMPLETE ====================
 
 const pretraziAdrese = async () => {
@@ -865,10 +1367,13 @@ const dodajNoviPrihod = async () => {
     const prihodData = {
       nazivEventa: noviPrihod.value.nazivEventa,
       imeIPrezime: noviPrihod.value.imeIPrezime,
+      suradnici: [...noviPrihod.value.suradnici],
       lokacija: noviPrihod.value.lokacija,
       datumSnimanja: noviPrihod.value.datumSnimanja,
+      datumZavrsetak: viseDanaNoviPrihod.value ? noviPrihod.value.datumZavrsetak : '',
       cijena: parseFloat(noviPrihod.value.cijena),
       putniTrosak: parseFloat(noviPrihod.value.putniTrosak) || 0,
+      danoBratu: daoBratuNoviPrihod.value ? (parseFloat(noviPrihod.value.danoBratu) || 0) : 0,
       placeno: noviPrihod.value.placeno,
       opisSnimanja: noviPrihod.value.opisSnimanja,
       created: new Date()
@@ -879,13 +1384,19 @@ const dodajNoviPrihod = async () => {
     noviPrihod.value = {
       nazivEventa: '',
       imeIPrezime: '',
+      suradnici: [],
       lokacija: '',
       datumSnimanja: '',
+      datumZavrsetak: '',
       cijena: 0,
       putniTrosak: 0,
+      danoBratu: 0,
       placeno: false,
       opisSnimanja: ''
     };
+    viseDanaNoviPrihod.value = false;
+    daoBratuNoviPrihod.value = false;
+    noviSuradnikUnos.value = '';
 
     prijedloziAdresa.value = [];
     prijedloziVisible.value = false;
@@ -899,7 +1410,9 @@ const dodajNoviPrihod = async () => {
 
 
 const otvoriUredivanje = (prihod) => {
-  uredivanjePrihod.value = { ...prihod };
+  uredivanjePrihod.value = { ...prihod, suradnici: suradniciZaPrihod(prihod) };
+  uredivanjeSuradnikUnos.value = '';
+  daoBratuUredi.value = (parseFloat(prihod.danoBratu) || 0) > 0;
 };
 
 const spremiUredivanje = async () => {
@@ -908,10 +1421,13 @@ const spremiUredivanje = async () => {
     await azurirajPrihodUFirestore(id, {
       nazivEventa: podaci.nazivEventa,
       imeIPrezime: podaci.imeIPrezime,
+      suradnici: [...podaci.suradnici],
       lokacija: podaci.lokacija,
       datumSnimanja: podaci.datumSnimanja,
+      datumZavrsetak: podaci.datumZavrsetak || '',
       cijena: parseFloat(podaci.cijena),
       putniTrosak: parseFloat(podaci.putniTrosak) || 0,
+      danoBratu: daoBratuUredi.value ? (parseFloat(podaci.danoBratu) || 0) : 0,
       placeno: podaci.placeno,
       opisSnimanja: podaci.opisSnimanja
     });
@@ -1012,6 +1528,33 @@ const spremiUredivanje = async () => {
   border-bottom-color: #123458;
 }
 
+.gumb-pdf {
+  margin-left: auto;
+  background-color: #123458;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  align-self: center;
+}
+
+.gumb-pdf:hover:not(:disabled) {
+  background-color: #1c4c80;
+}
+
+.gumb-pdf:disabled {
+  background-color: #9CA3AF;
+  cursor: not-allowed;
+}
+
 /* ==================== KARTICE (summary) ==================== */
 .kartice {
   display: flex;
@@ -1048,6 +1591,16 @@ const spremiUredivanje = async () => {
 
 .kartica.trosak {
   background-color: #5D8AA8;
+  color: #F1EFEC;
+}
+
+.kartica.bratu {
+  background-color: #9C7A54;
+  color: #F1EFEC;
+}
+
+.kartica.neto {
+  background-color: #2E7D32;
   color: #F1EFEC;
 }
 
@@ -1160,6 +1713,7 @@ const spremiUredivanje = async () => {
 .fin-red .placeno-tekst { color: #2E7D32; }
 .fin-red .neplaceno-tekst { color: #E53935; }
 .fin-red .trosak-tekst { color: #5D8AA8; }
+.fin-red .bratu-tekst { color: #9C7A54; }
 
 .osoba-eventi {
   display: flex;
@@ -1337,6 +1891,22 @@ const spremiUredivanje = async () => {
   color: #5D8AA8;
 }
 
+.podatak-red .vrijednost.bratu {
+  color: #9C7A54;
+}
+
+.podatak-red.neto .vrijednost {
+  color: #2E7D32;
+}
+
+.napomena {
+  display: block;
+  margin-top: 6px;
+  color: #5D8AA8;
+  font-size: 12px;
+  font-weight: 400;
+}
+
 /* ==================== FILTER INFO ==================== */
 .filter-info {
   display: flex;
@@ -1419,6 +1989,80 @@ const spremiUredivanje = async () => {
 .nema-rezultata p {
   margin: 0;
   font-style: italic;
+}
+
+.broj-dana-oznaka {
+  display: inline-block;
+  margin-left: 6px;
+  background-color: #5D8AA8;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.suradnik-oznaka {
+  display: inline-block;
+  margin-left: 6px;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.suradnik-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.suradnik-tockica {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.suradnik-chipovi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.suradnik-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  padding: 4px 6px 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.suradnik-chip-x {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.suradnik-chip-x:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .status {
@@ -1888,11 +2532,20 @@ input:checked + .klizac:before {
 
   .tab-navigacija {
     gap: 5px;
+    flex-wrap: wrap;
   }
 
   .tab-gumb {
     padding: 8px 14px;
     font-size: 13px;
+  }
+
+  .gumb-pdf {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+    order: 3;
   }
 
   .filteri-okvir {
