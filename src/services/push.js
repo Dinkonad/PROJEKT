@@ -27,7 +27,12 @@ export async function jePretplacenNaOvomUredjaju() {
   return !!pretplata;
 }
 
-export async function ukljuciPushNotifikacije() {
+export async function dohvatiPushPretplate() {
+  const snap = await getDoc(PRETPLATE_DOC());
+  return snap.exists() ? (snap.data().pretplate || []) : [];
+}
+
+export async function ukljuciPushNotifikacije(nazivUredaja) {
   if (!jePodrzanoPush()) throw new Error('Preglednik ne podržava push notifikacije.');
   if (!VAPID_PUBLIC_KEY) throw new Error('VAPID ključ nije postavljen (VITE_VAPID_PUBLIC_KEY).');
 
@@ -42,9 +47,8 @@ export async function ukljuciPushNotifikacije() {
     applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY)
   });
 
-  const json = pretplata.toJSON();
-  const snap = await getDoc(PRETPLATE_DOC());
-  const postojece = snap.exists() ? (snap.data().pretplate || []) : [];
+  const json = { ...pretplata.toJSON(), naziv: nazivUredaja || 'Uređaj' };
+  const postojece = await dohvatiPushPretplate();
   const filtrirane = postojece.filter((p) => p.endpoint !== json.endpoint);
   filtrirane.push(json);
   await setDoc(PRETPLATE_DOC(), { pretplate: filtrirane }, { merge: true });
@@ -59,8 +63,13 @@ export async function iskljuciPushNotifikacije() {
   const endpoint = pretplata.endpoint;
   await pretplata.unsubscribe();
 
-  const snap = await getDoc(PRETPLATE_DOC());
-  const postojece = snap.exists() ? (snap.data().pretplate || []) : [];
+  const postojece = await dohvatiPushPretplate();
   const filtrirane = postojece.filter((p) => p.endpoint !== endpoint);
+  await setDoc(PRETPLATE_DOC(), { pretplate: filtrirane }, { merge: true });
+}
+
+export async function ukloniPushPretplatu(zapis) {
+  const postojece = await dohvatiPushPretplate();
+  const filtrirane = postojece.filter((p) => p.endpoint !== zapis.endpoint);
   await setDoc(PRETPLATE_DOC(), { pretplate: filtrirane }, { merge: true });
 }

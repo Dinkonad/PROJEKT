@@ -55,13 +55,20 @@
           </button>
         </div>
 
-        <button v-if="pushPodrzan" type="button" class="vise-stavka" :disabled="pushUTijeku" @click="promijeniPush">
-          <span class="material-icons">{{ pushUkljucen ? 'notifications_active' : 'notifications_none' }}</span>
-          {{ pushUTijeku ? 'Molim pričekaj...' : (pushUkljucen ? 'Isključi notifikacije' : 'Uključi notifikacije') }}
+        <button v-if="pushPodrzan && !pushUkljucen" type="button" class="vise-stavka" :disabled="pushUTijeku" @click="promijeniPush">
+          <span class="material-icons">notifications_none</span>
+          {{ pushUTijeku ? 'Molim pričekaj...' : 'Uključi notifikacije' }}
         </button>
+        <div v-for="zapis in pushPretplate" :key="zapis.endpoint" class="vise-stavka vise-faceid-redak">
+          <span class="material-icons">notifications_active</span>
+          <span class="vise-faceid-naziv">Notifikacije: {{ zapis.naziv || 'Nepoznat uređaj (stariji zapis)' }}</span>
+          <button type="button" class="vise-faceid-ukloni" title="Ukloni" @click="ukloniPushZapis(zapis)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
 
         <!-- PRIVREMENO - obrisat ćemo kasnije -->
-        <button v-if="pushUkljucen" type="button" class="vise-stavka" :disabled="pushTestUTijeku" @click="testirajPush">
+        <button v-if="pushPretplate.length > 0" type="button" class="vise-stavka" :disabled="pushTestUTijeku" @click="testirajPush">
           <span class="material-icons">bug_report</span>
           {{ pushTestUTijeku ? 'Šaljem...' : 'TEST notifikacija' }}
         </button>
@@ -80,7 +87,7 @@ import { ref, computed, onMounted } from 'vue';
 import { navStavke } from '@/config/navigacija.js';
 import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
 import { auth } from '@/services/firebase.js';
-import { jePodrzanoPush, jePretplacenNaOvomUredjaju, ukljuciPushNotifikacije, iskljuciPushNotifikacije } from '@/services/push.js';
+import { jePodrzanoPush, jePretplacenNaOvomUredjaju, dohvatiPushPretplate, ukljuciPushNotifikacije, iskljuciPushNotifikacije, ukloniPushPretplatu } from '@/services/push.js';
 
 const props = defineProps({
   korisnikEmail: { type: String, default: '' },
@@ -92,6 +99,7 @@ const viseOtvoreno = ref(false);
 const faceIdCredentiali = ref([]);
 const pushPodrzan = ref(jePodrzanoPush());
 const pushUkljucen = ref(false);
+const pushPretplate = ref([]);
 const pushUTijeku = ref(false);
 const pushTestUTijeku = ref(false);
 const BACKEND_URL = import.meta.env.VITE_GARMIN_BACKEND_URL || '';
@@ -103,24 +111,39 @@ onMounted(() => {
   dohvatiRegistrirane().then(lista => { faceIdCredentiali.value = lista; });
   if (pushPodrzan.value) {
     jePretplacenNaOvomUredjaju().then(stanje => { pushUkljucen.value = stanje; });
+    dohvatiPushPretplate().then(lista => { pushPretplate.value = lista; });
   }
 });
 
 const promijeniPush = async () => {
+  const nazivUredaja = prompt('Naziv uređaja (npr. iPhone):', 'iPhone') || 'Uređaj';
   pushUTijeku.value = true;
   try {
-    if (pushUkljucen.value) {
-      await iskljuciPushNotifikacije();
-      pushUkljucen.value = false;
-    } else {
-      await ukljuciPushNotifikacije();
-      pushUkljucen.value = true;
-    }
+    await ukljuciPushNotifikacije(nazivUredaja);
+    pushUkljucen.value = true;
+    pushPretplate.value = await dohvatiPushPretplate();
   } catch (error) {
     console.error('Greška pri uključivanju push notifikacija:', error);
     alert('Nije uspjelo: ' + error.message);
   } finally {
     pushUTijeku.value = false;
+  }
+};
+
+const ukloniPushZapis = async (zapis) => {
+  if (!confirm(`Ukloniti notifikacije za "${zapis.naziv}"?`)) return;
+  try {
+    await ukloniPushPretplatu(zapis);
+    pushPretplate.value = pushPretplate.value.filter(p => p.endpoint !== zapis.endpoint);
+
+    const registracija = await navigator.serviceWorker.getRegistration();
+    const trenutnaPretplata = registracija ? await registracija.pushManager.getSubscription() : null;
+    if (trenutnaPretplata && trenutnaPretplata.endpoint === zapis.endpoint) {
+      await trenutnaPretplata.unsubscribe();
+      pushUkljucen.value = false;
+    }
+  } catch (error) {
+    console.error('Greška pri uklanjanju push zapisa:', error);
   }
 };
 
