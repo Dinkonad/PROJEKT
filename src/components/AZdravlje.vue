@@ -134,9 +134,12 @@ let unsubDani = null;
 let unsubMeta = null;
 
 onMounted(() => {
-  const q = query(collection(db, 'zdravlje-dani'), orderBy('__name__', 'desc'), limit(30));
+  const q = query(collection(db, 'zdravlje-dani'), orderBy('dan', 'desc'), limit(30));
   unsubDani = onSnapshot(q, (snap) => {
     dani.value = snap.docs.map(d => ({ datum: d.id, ...d.data() }));
+    ucitava.value = false;
+  }, (error) => {
+    console.error('Greška pri čitanju Zdravlje podataka:', error);
     ucitava.value = false;
   });
   unsubMeta = onSnapshot(doc(db, 'zdravlje-meta', 'zadnji-sync'), (snap) => {
