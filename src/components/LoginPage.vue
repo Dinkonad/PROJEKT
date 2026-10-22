@@ -39,6 +39,11 @@
 
             <button class="gumb-prijava" @click="prijava">Prijava</button>
 
+            <button v-if="faceIdDostupan" class="gumb-faceid" :disabled="faceIdUTijeku" @click="prijavaFaceIdom">
+              <span class="faceid-ikona">🔐</span>
+              {{ faceIdUTijeku ? 'Potvrđujem...' : 'Prijavi se Face ID-om' }}
+            </button>
+
             <button class="google-prijava" @click="prijavaGoogleom">
               <img 
                 src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" 
@@ -126,11 +131,17 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { signInWithCustomToken } from 'firebase/auth';
 import { useAuth } from '../store/auth';
+import { auth } from '../services/firebase';
+import { jePodrzano, prijaviSeFaceIdom } from '../services/webauthn';
 import AdminPrijava from './ADashboard.vue';
 
 const router = useRouter();
 const { state, login, loginWithGoogle, signup, loginAsAdmin } = useAuth();
+
+const faceIdDostupan = ref(jePodrzano());
+const faceIdUTijeku = ref(false);
 
 const korisnickoIme = ref('');
 const lozinka = ref('');
@@ -182,6 +193,23 @@ const prijava = async () => {
     očistiPolja();
   } catch (error) {
     greškaPrijave.value = 'Pogrešan email ili lozinka.';
+  }
+};
+
+const prijavaFaceIdom = async () => {
+  greškaPrijave.value = '';
+  faceIdUTijeku.value = true;
+  try {
+    const token = await prijaviSeFaceIdom();
+    await signInWithCustomToken(auth, token);
+    očistiPolja();
+  } catch (error) {
+    console.error('Greška pri Face ID prijavi:', error);
+    greškaPrijave.value = error.message?.includes('nije registriran')
+      ? 'Face ID nije registriran na ovom računu - prijavi se lozinkom i registriraj ga u postavkama.'
+      : 'Face ID prijava nije uspjela. Pokušaj ponovno ili koristi lozinku.';
+  } finally {
+    faceIdUTijeku.value = false;
   }
 };
 
@@ -250,6 +278,36 @@ const promijeniNačin = () => {
     position: relative;
   }
   
+  .gumb-faceid {
+    width: 100%;
+    padding: 10px;
+    background-color: #F1EFEC;
+    color: #123458;
+    border: 1px solid #D4C9BE;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .gumb-faceid:hover:not(:disabled) {
+    background-color: #e5e1da;
+  }
+
+  .gumb-faceid:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .faceid-ikona {
+    font-size: 18px;
+  }
+
   .google-prijava {
     width: 100%;
     padding: 10px;

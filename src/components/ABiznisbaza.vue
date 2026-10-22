@@ -44,6 +44,10 @@
           <span class="material-icons">add</span> Dodaj dan
         </button>
 
+        <button class="gumb-tjedni-alati" @click="otvoriModalTjedan">
+          <span class="material-icons">date_range</span> Tjedni alati
+        </button>
+
         <button
           v-if="mozePrebaciti"
           class="gumb-prebaci"
@@ -132,11 +136,17 @@
           <div class="grupa-polja grupa-vrijeme">
             <div>
               <label>Od:</label>
-              <input v-model="forma.pocetnoVrijeme" type="time" required>
+              <select v-model="forma.pocetnoVrijeme" required>
+                <option value="" disabled>Odaberi sat</option>
+                <option v-for="sat in satoviDana" :key="sat" :value="sat">{{ sat }}</option>
+              </select>
             </div>
             <div>
               <label>Do:</label>
-              <input v-model="forma.zavrsnoVrijeme" type="time" required>
+              <select v-model="forma.zavrsnoVrijeme" required>
+                <option value="" disabled>Odaberi sat</option>
+                <option v-for="sat in satoviDana" :key="sat" :value="sat">{{ sat }}</option>
+              </select>
             </div>
           </div>
           <div class="grupa-polja">
@@ -195,6 +205,74 @@
       </div>
     </div>
 
+    <!-- ==================== MODAL: TJEDNI ALATI ==================== -->
+    <div v-if="prikaziModalTjedan" class="prekrivka-modala" @click="prikaziModalTjedan = false">
+      <div class="modal modal-siroki" @click.stop>
+        <div class="zaglavlje-modala">
+          <h3>Tjedni alati</h3>
+          <button class="gumb-zatvaranja" @click="prikaziModalTjedan = false">&times;</button>
+        </div>
+
+        <div class="forma">
+          <div class="grupa-polja grupa-vrijeme">
+            <div>
+              <label>Od:</label>
+              <input v-model="tjedanOd" type="date">
+            </div>
+            <div>
+              <label>Do:</label>
+              <input v-model="tjedanDo" type="date">
+            </div>
+          </div>
+
+          <div v-if="unosiZaTjedan.length === 0" class="prazno">
+            <p>Nema unosa u ovom periodu</p>
+          </div>
+          <div v-else class="tjedni-pregled">
+            <div v-for="unos in unosiZaTjedan" :key="unos.id" class="tjedni-redak">
+              <span>{{ formatKratkiDatum(unos.datum) }}</span>
+              <span>{{ unos.pocetnoVrijeme }}-{{ unos.zavrsnoVrijeme }}</span>
+              <span class="tjedni-opis">{{ unos.opis || '-' }}</span>
+            </div>
+            <div class="tjedni-ukupno">Ukupno: {{ formatSati(ukupnoSatiTjedan) }} · {{ formatCurrency(ukupnoZaradaTjedan) }}</div>
+          </div>
+
+          <div class="akcije-tjedna">
+            <button class="gumb-spremiti" :disabled="unosiZaTjedan.length === 0" @click="dodajTjedanUKalendar">
+              <span class="material-icons">event</span> Dodaj sve u kalendar
+            </button>
+            <button class="gumb-odustati" :disabled="unosiZaTjedan.length === 0" @click="kopirajIzvjestaj">
+              <span class="material-icons">content_copy</span> Kopiraj izvještaj za šefa
+            </button>
+          </div>
+          <p v-if="porukaKopiranja" class="napomena-satnica">{{ porukaKopiranja }}</p>
+          <textarea v-if="prikazTekstaIzvjestaja" class="pregled-izvjestaja" readonly :value="prikazTekstaIzvjestaja"></textarea>
+
+          <div class="razdjelnik-predlozaka"></div>
+
+          <h4>Predlošci tjedna</h4>
+          <p class="napomena-satnica">Spremi ovaj raspored (Od-Do gore) kao predložak, pa ga ubuduće primijeni na bilo koji drugi tjedan jednim klikom.</p>
+
+          <button class="gumb-odustati gumb-puna-sirina" :disabled="unosiZaTjedan.length === 0" @click="spremiKaoPredlozak">
+            <span class="material-icons">bookmark_add</span> Spremi ovaj tjedan kao predložak
+          </button>
+
+          <div v-if="predlosci.length > 0" class="lista-predlozaka">
+            <div v-for="predlozak in predlosci" :key="predlozak.id" class="predlozak-redak">
+              <span class="predlozak-naziv">{{ predlozak.naziv }}</span>
+              <span class="predlozak-info">{{ predlozak.dani.length }} dana</span>
+              <button class="gumb-akcija" title="Primijeni na odabrani tjedan (Od gore)" @click="primijeniPredlozak(predlozak)">
+                <span class="material-icons">play_arrow</span>
+              </button>
+              <button class="gumb-akcija obrisi" title="Obriši predložak" @click="obrisiPredlozak(predlozak)">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="poruka" :class="['poruka-rezultat', poruka.uspjeh ? 'uspjeh' : 'greska']">
       {{ poruka.tekst }}
     </div>
@@ -204,7 +282,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
-import { preuzmiICS } from '@/utils/ics.js';
+import { preuzmiICS, preuzmiVisestrukiICS } from '@/utils/ics.js';
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, setDoc, getDoc,
   onSnapshot, serverTimestamp
@@ -228,14 +306,23 @@ const unosZaBrisanje = ref(null);
 const prebacivanjeUTijeku = ref(false);
 const poruka = ref(null);
 
+const prikaziModalTjedan = ref(false);
+const tjedanOd = ref('');
+const tjedanDo = ref('');
+const predlosci = ref([]);
+const porukaKopiranja = ref('');
+const prikazTekstaIzvjestaja = ref('');
+
 let unsubUnosi = null;
 let unsubPrebacivanja = null;
+let unsubPredlosci = null;
 
 const nazviMjeseci = [
   'Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj',
   'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'
 ];
 const kraticeDanaPon = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'];
+const satoviDana = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
 const kraticeDanaTjedna = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub'];
 
 const uISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -312,6 +399,18 @@ const formatCurrency = (v) => `${(parseFloat(v) || 0).toFixed(2)} EUR`;
 const formatDugiDatum = (datumString) => new Date(datumString).toLocaleDateString('hr-HR', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 });
+const formatKratkiDatum = (datumString) => new Date(datumString).toLocaleDateString('hr-HR', {
+  weekday: 'short', day: 'numeric', month: 'numeric'
+});
+
+const unosiZaTjedan = computed(() => {
+  if (!tjedanOd.value || !tjedanDo.value) return [];
+  return unosi.value
+    .filter(u => u.datum >= tjedanOd.value && u.datum <= tjedanDo.value)
+    .sort((a, b) => a.datum.localeCompare(b.datum) || a.pocetnoVrijeme.localeCompare(b.pocetnoVrijeme));
+});
+const ukupnoSatiTjedan = computed(() => unosiZaTjedan.value.reduce((s, u) => s + (u.satiRada || 0), 0));
+const ukupnoZaradaTjedan = computed(() => unosiZaTjedan.value.reduce((s, u) => s + (u.zarada || 0), 0));
 
 const odaberiDan = (dan) => {
   odabraniDanDatum.value = odabraniDanDatum.value === dan.datum ? null : dan.datum;
@@ -344,6 +443,9 @@ const postaviRealtimeListenere = () => {
     snapshot.docs.forEach(d => { mapa[d.id] = d.data().prebaceno === true; });
     prebacivanja.value = mapa;
   });
+  unsubPredlosci = onSnapshot(collection(db, 'biznisbaza-predlosci'), (snapshot) => {
+    predlosci.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
 };
 
 onMounted(async () => {
@@ -356,6 +458,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (unsubUnosi) unsubUnosi();
   if (unsubPrebacivanja) unsubPrebacivanja();
+  if (unsubPredlosci) unsubPredlosci();
 });
 
 const resetirajFormu = () => {
@@ -485,6 +588,107 @@ const prebaciUPrihode = async () => {
     prikaziPoruku(false, 'Greška pri prebacivanju u Prihodi.');
   } finally {
     prebacivanjeUTijeku.value = false;
+  }
+};
+
+// ==================== TJEDNI ALATI ====================
+const sljedeciPonedjeljakIso = () => {
+  const danas = new Date();
+  const dan = danas.getDay(); // 0=Ned..6=Sub
+  const danaDoPon = dan === 0 ? 1 : (dan === 1 ? 7 : 8 - dan);
+  const ponedjeljak = new Date(danas);
+  ponedjeljak.setDate(danas.getDate() + danaDoPon);
+  return uISO(ponedjeljak);
+};
+
+const otvoriModalTjedan = () => {
+  if (!tjedanOd.value) {
+    tjedanOd.value = sljedeciPonedjeljakIso();
+    const nedjelja = new Date(tjedanOd.value);
+    nedjelja.setDate(nedjelja.getDate() + 6);
+    tjedanDo.value = uISO(nedjelja);
+  }
+  porukaKopiranja.value = '';
+  prikazTekstaIzvjestaja.value = '';
+  prikaziModalTjedan.value = true;
+};
+
+const dodajTjedanUKalendar = () => {
+  preuzmiVisestrukiICS(unosiZaTjedan.value, `raspored-${tjedanOd.value}.ics`);
+};
+
+const izgradiTekstIzvjestaja = () => {
+  const linije = unosiZaTjedan.value.map(u =>
+    `${formatKratkiDatum(u.datum)}: ${u.pocetnoVrijeme}-${u.zavrsnoVrijeme}${u.opis ? ' (' + u.opis + ')' : ''}`
+  );
+  return `Raspored ${formatKratkiDatum(tjedanOd.value)} - ${formatKratkiDatum(tjedanDo.value)}\n\n${linije.join('\n')}\n\nUkupno: ${formatSati(ukupnoSatiTjedan.value)}`;
+};
+
+const kopirajIzvjestaj = async () => {
+  const tekst = izgradiTekstIzvjestaja();
+  prikazTekstaIzvjestaja.value = tekst;
+  try {
+    await navigator.clipboard.writeText(tekst);
+    porukaKopiranja.value = 'Kopirano - zalijepi gdje god trebaš poslati.';
+  } catch (error) {
+    porukaKopiranja.value = 'Kopiranje nije uspjelo - označi tekst ispod ručno.';
+  }
+};
+
+const spremiKaoPredlozak = async () => {
+  const naziv = prompt('Naziv predloška:', `Tjedan ${formatKratkiDatum(tjedanOd.value)}`);
+  if (!naziv) return;
+
+  const pocetak = new Date(tjedanOd.value);
+  const dani = unosiZaTjedan.value.map(u => {
+    const danOffset = Math.round((new Date(u.datum) - pocetak) / (1000 * 60 * 60 * 24));
+    return { danOffset, pocetnoVrijeme: u.pocetnoVrijeme, zavrsnoVrijeme: u.zavrsnoVrijeme, opis: u.opis || '' };
+  });
+
+  try {
+    await addDoc(collection(db, 'biznisbaza-predlosci'), { naziv, dani, kreirano: serverTimestamp() });
+    prikaziPoruku(true, `Predložak "${naziv}" spremljen.`);
+  } catch (error) {
+    console.error('Greška pri spremanju predloška:', error);
+    prikaziPoruku(false, 'Greška pri spremanju predloška.');
+  }
+};
+
+const primijeniPredlozak = async (predlozak) => {
+  if (!tjedanOd.value) return;
+  if (!confirm(`Primijeniti "${predlozak.naziv}" na tjedan koji počinje ${formatKratkiDatum(tjedanOd.value)}?`)) return;
+
+  const pocetak = new Date(tjedanOd.value);
+  try {
+    for (const dan of predlozak.dani) {
+      const ciljniDatum = new Date(pocetak);
+      ciljniDatum.setDate(pocetak.getDate() + dan.danOffset);
+      const sati = izracunajSate(dan.pocetnoVrijeme, dan.zavrsnoVrijeme);
+
+      await addDoc(collection(db, 'raspored-aktivnosti'), {
+        datum: uISO(ciljniDatum),
+        pocetnoVrijeme: dan.pocetnoVrijeme,
+        zavrsnoVrijeme: dan.zavrsnoVrijeme,
+        opis: dan.opis || '',
+        satiRada: sati,
+        placaPoSatu: trenutnaSatnica.value,
+        zarada: Math.round(sati * trenutnaSatnica.value * 100) / 100,
+        kreirano: serverTimestamp()
+      });
+    }
+    prikaziPoruku(true, `Predložak "${predlozak.naziv}" primijenjen na ${predlozak.dani.length} dana.`);
+  } catch (error) {
+    console.error('Greška pri primjeni predloška:', error);
+    prikaziPoruku(false, 'Greška pri primjeni predloška.');
+  }
+};
+
+const obrisiPredlozak = async (predlozak) => {
+  if (!confirm(`Obrisati predložak "${predlozak.naziv}"?`)) return;
+  try {
+    await deleteDoc(doc(db, 'biznisbaza-predlosci', predlozak.id));
+  } catch (error) {
+    console.error('Greška pri brisanju predloška:', error);
   }
 };
 </script>
@@ -681,6 +885,23 @@ const prebaciUPrihode = async () => {
 .gumb-prebaci:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.gumb-tjedni-alati {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.gumb-tjedni-alati:hover {
+  background-color: var(--border-color);
 }
 
 .oznaka-prebaceno {
@@ -886,6 +1107,129 @@ const prebaciUPrihode = async () => {
   overflow-y: auto;
 }
 
+.modal-siroki {
+  max-width: 560px;
+}
+
+.tjedni-pregled {
+  background: var(--bg-card-muted);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tjedni-redak {
+  display: grid;
+  grid-template-columns: 80px 100px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-heading);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tjedni-redak:last-child {
+  border-bottom: none;
+}
+
+.tjedni-opis {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tjedni-ukupno {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid var(--border-color);
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.akcije-tjedna {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.akcije-tjedna .gumb-spremiti,
+.akcije-tjedna .gumb-odustati {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.akcije-tjedna button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pregled-izvjestaja {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-page);
+  color: var(--text-body);
+  font-family: monospace;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+  resize: vertical;
+}
+
+.razdjelnik-predlozaka {
+  border-top: 1px solid var(--border-color);
+  margin: 10px 0 16px;
+}
+
+.forma h4 {
+  margin: 0 0 6px;
+  color: var(--text-heading);
+}
+
+.gumb-puna-sirina {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.lista-predlozaka {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.predlozak-redak {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card-muted);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.predlozak-naziv {
+  flex: 1;
+  color: var(--text-heading);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.predlozak-info {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
 .zaglavlje-modala {
   background: var(--accent);
   color: white;
@@ -924,12 +1268,14 @@ const prebaciUPrihode = async () => {
   font-size: 14px;
 }
 
-.grupa-polja input {
+.grupa-polja input,
+.grupa-polja select {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
+  font-family: 'Roboto', sans-serif;
   background: var(--bg-page);
   color: var(--text-body);
 }
@@ -1085,6 +1431,19 @@ const prebaciUPrihode = async () => {
 
   .gumb-prebaci {
     margin-left: 0;
+  }
+
+  .tjedni-redak {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "datum vrijeme" "opis opis";
+  }
+
+  .tjedni-redak span:nth-child(1) { grid-area: datum; }
+  .tjedni-redak span:nth-child(2) { grid-area: vrijeme; }
+  .tjedni-opis { grid-area: opis; white-space: normal; }
+
+  .akcije-tjedna {
+    flex-direction: column;
   }
 }
 </style>

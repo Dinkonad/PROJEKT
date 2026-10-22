@@ -13,14 +13,7 @@
           <div class="ikona"><span class="material-icons">speed</span></div>
           <div class="podaci">
             <h3>Zadnja kilometraža</h3>
-            <p class="iznos">{{ zadnjaKilometraza !== null ? `${zadnjaKilometraza} km` : '-' }}</p>
-          </div>
-        </div>
-        <div class="kartica">
-          <div class="ikona"><span class="material-icons">local_gas_station</span></div>
-          <div class="podaci">
-            <h3>Prosječna potrošnja</h3>
-            <p class="iznos">{{ prosjecnaPotrosnja !== null ? `${prosjecnaPotrosnja.toFixed(1)} L/100km` : '-' }}</p>
+            <p class="iznos">{{ zadnjaKilometraza !== null ? `${zadnjaKilometraza.toLocaleString('hr-HR')} km` : '-' }}</p>
           </div>
         </div>
         <div class="kartica">
@@ -59,13 +52,34 @@
 
       <div v-else class="lista-unosa">
         <div v-for="unos in filtriraniUnosi" :key="unos.id" class="redak-unosa">
-          <span :class="['oznaka-tipa', `tip-${unos.tip}`]">{{ nazivTipa(unos.tip) }}</span>
-          <div class="redak-detalji">
+          <div class="redak-glavno">
+            <span :class="['oznaka-tipa', `tip-${unos.tip}`]">{{ nazivTipa(unos.tip) }}</span>
             <span class="redak-datum">{{ formatDatum(unos.datum) }}</span>
-            <span v-if="unos.tip === 'kilometraza'" class="redak-opis">{{ unos.kilometri }} km · {{ unos.litreUtoceno }} L</span>
-            <span v-else-if="unos.tip === 'servis'" class="redak-opis">{{ unos.opis || 'Servis' }}</span>
+            <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
           </div>
-          <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
+
+          <div class="redak-detalji">
+            <template v-if="unos.tip === 'kilometraza'">
+              <span class="redak-info">
+                {{ unos.pocetnaKilometraza?.toLocaleString('hr-HR') }} km
+                <span v-if="unos.konacnaKilometraza"> → {{ unos.konacnaKilometraza.toLocaleString('hr-HR') }} km</span>
+              </span>
+              <span class="redak-info">
+                {{ unos.pocetnaPotrosnja }} L
+                <span v-if="unos.konacnaPotrosnja"> → {{ unos.konacnaPotrosnja }} L</span>
+              </span>
+              <span v-if="potrosnjaUnosa(unos) !== null" class="redak-potrosnja">{{ potrosnjaUnosa(unos).toFixed(1) }} L/100km</span>
+            </template>
+            <template v-else-if="unos.tip === 'servis'">
+              <span v-if="unos.imeOsobe" class="redak-info"><span class="material-icons">person</span>{{ unos.imeOsobe }}</span>
+              <span v-if="unos.lokacija" class="redak-info"><span class="material-icons">place</span>{{ unos.lokacija }}</span>
+              <span v-if="unos.opis" class="redak-opis">{{ unos.opis }}</span>
+            </template>
+            <template v-else>
+              <span v-if="unos.opis" class="redak-opis">{{ unos.opis }}</span>
+            </template>
+          </div>
+
           <div class="redak-akcije">
             <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
               <span class="material-icons">edit</span>
@@ -91,7 +105,7 @@
             <select v-model="forma.tip">
               <option value="registracija">Registracija</option>
               <option value="servis">Servis</option>
-              <option value="kilometraza">Kilometraža / gorivo</option>
+              <option value="kilometraza">Gorivo / potrošnja</option>
             </select>
           </div>
           <div class="grupa-polja">
@@ -104,27 +118,54 @@
               <label>Iznos (EUR):</label>
               <input v-model.number="forma.iznos" type="number" step="0.01" min="0" required>
             </div>
+            <div class="grupa-polja">
+              <label>Opis (napomena):</label>
+              <textarea v-model="forma.opis" rows="3" placeholder="Npr. tehnički pregled, osiguranje..."></textarea>
+            </div>
           </template>
 
           <template v-else-if="forma.tip === 'servis'">
             <div class="grupa-polja">
-              <label>Opis servisa:</label>
-              <input v-model="forma.opis" type="text" placeholder="Npr. zamjena ulja i filtera">
-            </div>
-            <div class="grupa-polja">
               <label>Iznos (EUR):</label>
               <input v-model.number="forma.iznos" type="number" step="0.01" min="0" required>
+            </div>
+            <div class="grupa-polja">
+              <label>Ime osobe / servisa:</label>
+              <input v-model="forma.imeOsobe" type="text" placeholder="Npr. Marko, Auto servis Horvat">
+            </div>
+            <div class="grupa-polja">
+              <label>Lokacija:</label>
+              <input v-model="forma.lokacija" type="text" placeholder="Npr. Pula">
+            </div>
+            <div class="grupa-polja">
+              <label>Opis (što se radilo):</label>
+              <textarea v-model="forma.opis" rows="3" placeholder="Npr. zamjena ulja i filtera, kočione pločice..."></textarea>
             </div>
           </template>
 
           <template v-else>
-            <div class="grupa-polja">
-              <label>Kilometraža (km):</label>
-              <input v-model.number="forma.kilometri" type="number" min="0" required>
+            <div class="grupa-polja grupa-vrijeme">
+              <div>
+                <label>Početna kilometraža:</label>
+                <input v-model.number="forma.pocetnaKilometraza" type="number" min="0" required>
+              </div>
+              <div>
+                <label>Konačna kilometraža:</label>
+                <input v-model.number="forma.konacnaKilometraza" type="number" min="0" placeholder="Upiši kad stigneš">
+              </div>
             </div>
-            <div class="grupa-polja">
-              <label>Natočeno goriva (L):</label>
-              <input v-model.number="forma.litreUtoceno" type="number" step="0.01" min="0" required>
+            <div class="grupa-polja grupa-vrijeme">
+              <div>
+                <label>Početna potrošnja (L):</label>
+                <input v-model.number="forma.pocetnaPotrosnja" type="number" step="0.01" min="0" required placeholder="Npr. 80">
+              </div>
+              <div>
+                <label>Konačna potrošnja (L):</label>
+                <input v-model.number="forma.konacnaPotrosnja" type="number" step="0.01" min="0" placeholder="Npr. 93">
+              </div>
+            </div>
+            <div class="pregled-izracuna" v-if="pregledPotrosnje !== null">
+              <span>{{ pregledPotrosnje.toFixed(1) }} L/100km</span>
             </div>
           </template>
 
@@ -164,7 +205,7 @@ const aktivniTab = ref('sve');
 
 const prikaziModalUnos = ref(false);
 const uredujeUnos = ref(null);
-const forma = ref({ tip: 'registracija', datum: '', iznos: null, opis: '', kilometri: null, litreUtoceno: null });
+const forma = ref(praznaForma());
 const unosZaBrisanje = ref(null);
 
 let unsub = null;
@@ -173,10 +214,19 @@ const tabovi = [
   { vrijednost: 'sve', naziv: 'Sve' },
   { vrijednost: 'registracija', naziv: 'Registracija' },
   { vrijednost: 'servis', naziv: 'Servis' },
-  { vrijednost: 'kilometraza', naziv: 'Kilometraža' }
+  { vrijednost: 'kilometraza', naziv: 'Gorivo' }
 ];
 
-const nazivTipa = (tip) => ({ registracija: 'Registracija', servis: 'Servis', kilometraza: 'Km/gorivo' }[tip] || tip);
+function praznaForma() {
+  return {
+    tip: 'registracija', datum: '', iznos: null, opis: '',
+    imeOsobe: '', lokacija: '',
+    pocetnaKilometraza: null, konacnaKilometraza: null,
+    pocetnaPotrosnja: null, konacnaPotrosnja: null
+  };
+}
+
+const nazivTipa = (tip) => ({ registracija: 'Registracija', servis: 'Servis', kilometraza: 'Gorivo' }[tip] || tip);
 const formatCurrency = (v) => `${(parseFloat(v) || 0).toFixed(2)} EUR`;
 const formatDatum = (datumString) => datumString ? new Date(datumString).toLocaleDateString('hr-HR') : '';
 
@@ -185,30 +235,24 @@ const filtriraniUnosi = computed(() => {
   return [...lista].sort((a, b) => b.datum.localeCompare(a.datum));
 });
 
-const unosiKilometraze = computed(() => {
-  return unosi.value
-    .filter(u => u.tip === 'kilometraza')
-    .sort((a, b) => a.kilometri - b.kilometri);
+const potrosnjaUnosa = (unos) => {
+  const km = (unos.konacnaKilometraza || 0) - (unos.pocetnaKilometraza || 0);
+  const litre = (unos.konacnaPotrosnja || 0) - (unos.pocetnaPotrosnja || 0);
+  if (km <= 0 || litre <= 0) return null;
+  return (litre / km) * 100;
+};
+
+const pregledPotrosnje = computed(() => {
+  if (forma.value.tip !== 'kilometraza') return null;
+  return potrosnjaUnosa(forma.value);
 });
 
 const zadnjaKilometraza = computed(() => {
-  if (unosiKilometraze.value.length === 0) return null;
-  return unosiKilometraze.value[unosiKilometraze.value.length - 1].kilometri;
-});
-
-const prosjecnaPotrosnja = computed(() => {
-  const zapisi = unosiKilometraze.value;
-  if (zapisi.length < 2) return null;
-
-  const potrosnje = [];
-  for (let i = 1; i < zapisi.length; i++) {
-    const km = zapisi[i].kilometri - zapisi[i - 1].kilometri;
-    if (km > 0) {
-      potrosnje.push((zapisi[i].litreUtoceno / km) * 100);
-    }
-  }
-  if (potrosnje.length === 0) return null;
-  return potrosnje.reduce((s, p) => s + p, 0) / potrosnje.length;
+  const sveKilometraze = unosi.value
+    .filter(u => u.tip === 'kilometraza')
+    .flatMap(u => [u.pocetnaKilometraza, u.konacnaKilometraza])
+    .filter(v => typeof v === 'number');
+  return sveKilometraze.length ? Math.max(...sveKilometraze) : null;
 });
 
 const ukupnoServisi = computed(() => unosi.value.filter(u => u.tip === 'servis').reduce((s, u) => s + (parseFloat(u.iznos) || 0), 0));
@@ -225,8 +269,6 @@ onBeforeUnmount(() => {
   if (unsub) unsub();
 });
 
-const praznaForma = () => ({ tip: 'registracija', datum: '', iznos: null, opis: '', kilometri: null, litreUtoceno: null });
-
 const otvoriModalUnos = (unos = null) => {
   uredujeUnos.value = unos;
   forma.value = unos ? { ...praznaForma(), ...unos } : praznaForma();
@@ -242,12 +284,17 @@ const spremiUnos = async () => {
   const podaci = { tip: forma.value.tip, datum: forma.value.datum };
   if (forma.value.tip === 'registracija') {
     podaci.iznos = forma.value.iznos || 0;
+    podaci.opis = forma.value.opis || '';
   } else if (forma.value.tip === 'servis') {
     podaci.iznos = forma.value.iznos || 0;
+    podaci.imeOsobe = forma.value.imeOsobe || '';
+    podaci.lokacija = forma.value.lokacija || '';
     podaci.opis = forma.value.opis || '';
   } else {
-    podaci.kilometri = forma.value.kilometri || 0;
-    podaci.litreUtoceno = forma.value.litreUtoceno || 0;
+    podaci.pocetnaKilometraza = forma.value.pocetnaKilometraza || 0;
+    podaci.konacnaKilometraza = forma.value.konacnaKilometraza || null;
+    podaci.pocetnaPotrosnja = forma.value.pocetnaPotrosnja || 0;
+    podaci.konacnaPotrosnja = forma.value.konacnaPotrosnja || null;
   }
 
   try {
@@ -401,14 +448,18 @@ const potvrdiBrisanje = async () => {
 }
 
 .redak-unosa {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
-  gap: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 14px 16px;
+}
+
+.redak-glavno {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .oznaka-tipa {
@@ -424,31 +475,59 @@ const potvrdiBrisanje = async () => {
 .tip-servis { background-color: var(--danger); }
 .tip-kilometraza { background-color: var(--success); }
 
-.redak-detalji {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 .redak-datum {
   color: var(--text-heading);
   font-weight: 600;
   font-size: 0.9rem;
 }
 
-.redak-opis {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
 .redak-iznos {
+  margin-left: auto;
   color: var(--success);
   font-weight: 700;
 }
 
+.redak-detalji {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.redak-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.redak-info .material-icons {
+  font-size: 15px;
+}
+
+.redak-opis {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  flex-basis: 100%;
+}
+
+.redak-potrosnja {
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
 .redak-akcije {
   display: flex;
+  justify-content: flex-end;
   gap: 4px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
 }
 
 .gumb-akcija {
@@ -479,12 +558,13 @@ const potvrdiBrisanje = async () => {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
 }
 
 .modal {
   background: var(--bg-card);
   border-radius: 10px;
-  width: 90%;
+  width: 100%;
   max-width: 440px;
   max-height: 90vh;
   overflow-y: auto;
@@ -529,14 +609,38 @@ const potvrdiBrisanje = async () => {
 }
 
 .grupa-polja input,
-.grupa-polja select {
+.grupa-polja select,
+.grupa-polja textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
+  font-family: 'Roboto', sans-serif;
   background: var(--bg-page);
   color: var(--text-body);
+  resize: vertical;
+}
+
+.grupa-vrijeme {
+  display: flex;
+  gap: 12px;
+}
+
+.grupa-vrijeme > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.pregled-izracuna {
+  display: flex;
+  justify-content: center;
+  background: var(--bg-card-muted);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
 }
 
 .akcije-forme {
@@ -599,29 +703,34 @@ const potvrdiBrisanje = async () => {
   color: white;
 }
 
+@media (max-width: 900px) {
+  .auto {
+    padding: 24px;
+  }
+}
+
 @media (max-width: 768px) {
   .auto {
     padding: 20px;
     padding-bottom: 100px;
   }
 
-  .redak-unosa {
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "oznaka iznos"
-      "detalji detalji"
-      "akcije akcije";
-    row-gap: 8px;
+  .kartice {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 
-  .oznaka-tipa { grid-area: oznaka; justify-self: start; }
-  .redak-iznos { grid-area: iznos; }
-  .redak-detalji { grid-area: detalji; }
-  .redak-akcije {
-    grid-area: akcije;
-    justify-content: flex-end;
-    border-top: 1px solid var(--border-color);
-    padding-top: 8px;
+  .redak-glavno {
+    gap: 8px;
+  }
+
+  .redak-iznos {
+    margin-left: 0;
+    flex-basis: 100%;
+    text-align: left;
+  }
+
+  .tab-navigacija {
+    gap: 6px;
   }
 
   .gumb-dodaj {
@@ -629,6 +738,45 @@ const potvrdiBrisanje = async () => {
     width: 100%;
     justify-content: center;
     order: 99;
+  }
+
+  .grupa-vrijeme {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auto {
+    padding: 14px;
+    padding-bottom: 100px;
+  }
+
+  .naslov {
+    font-size: 1.5rem;
+  }
+
+  .kartice {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .kartica {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .kartica .ikona {
+    width: 36px;
+    height: 36px;
+  }
+
+  .kartica .podaci .iznos {
+    font-size: 1rem;
+  }
+
+  .redak-info, .redak-opis {
+    font-size: 0.8rem;
   }
 }
 </style>

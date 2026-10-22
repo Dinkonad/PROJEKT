@@ -3,14 +3,21 @@
     <div class="zaglavlje">
       <h1 class="naslov">Zdravlje</h1>
       <div class="zaglavlje-akcije">
-        <span class="zadnji-sync">Zadnje osvježeno: {{ formatVrijemeSync(zadnjiSync?.vrijeme) }}</span>
-        <button class="gumb-osvjezi" :disabled="osvjezavanje" @click="osvjeziSad">
+        <span v-if="uTijeku" class="zadnji-sync u-tijeku">
+          <span class="material-icons spinning">sync</span> Sinkronizacija u tijeku...
+        </span>
+        <span v-else class="zadnji-sync">Zadnje osvježeno: {{ formatVrijemeSync(zadnjiSync?.vrijeme) }}</span>
+        <button class="gumb-osvjezi" :disabled="uTijeku || osvjezavanje" @click="osvjeziSad">
           <span class="material-icons" :class="{ spinning: osvjezavanje }">sync</span>
-          {{ osvjezavanje ? 'Osvježavam...' : 'Osvježi sad' }}
+          Osvježi sad
+        </button>
+        <button class="gumb-povijest" :disabled="uTijeku || osvjezavanje" @click="povuciPovijest">
+          <span class="material-icons">history</span> Povuci povijest
         </button>
       </div>
     </div>
 
+    <p v-if="zadnjiSync?.greska" class="poruka-greska">Zadnji pokušaj nije uspio: {{ zadnjiSync.greska }}</p>
     <p v-if="porukaGreske" class="poruka-greska">{{ porukaGreske }}</p>
 
     <div v-if="ucitava" class="loading-container">
@@ -188,7 +195,9 @@ const formatVrijemeSync = (timestamp) => {
   return new Date(timestamp.seconds * 1000).toLocaleString('hr-HR');
 };
 
-const osvjeziSad = async () => {
+const uTijeku = computed(() => zadnjiSync.value?.uTijeku === true);
+
+const pokreniSync = async (parametri) => {
   if (!BACKEND_URL) {
     porukaGreske.value = 'Backend adresa nije postavljena (VITE_GARMIN_BACKEND_URL u .env).';
     return;
@@ -197,7 +206,7 @@ const osvjeziSad = async () => {
   porukaGreske.value = '';
   try {
     const token = await auth.currentUser.getIdToken();
-    const odgovor = await fetch(`${BACKEND_URL}/sync`, {
+    const odgovor = await fetch(`${BACKEND_URL}/sync${parametri}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -205,12 +214,22 @@ const osvjeziSad = async () => {
       const tekst = await odgovor.text();
       throw new Error(tekst || `Greška ${odgovor.status}`);
     }
+    // sinkronizacija sad radi u pozadini na serveru - napredak pratimo preko
+    // zdravlje-meta/zadnji-sync (uTijeku), koji već slušamo uživo
   } catch (error) {
-    console.error('Greška pri osvježavanju zdravstvenih podataka:', error);
-    porukaGreske.value = 'Osvježavanje nije uspjelo. Prvi poziv na Render može potrajati do minutu (budi se iz mirovanja) - probaj ponovno za malo.';
+    console.error('Greška pri pokretanju sinkronizacije:', error);
+    porukaGreske.value = 'Pokretanje nije uspjelo. Prvi poziv na Render može potrajati do minutu (budi se iz mirovanja) - probaj ponovno za malo.';
   } finally {
     osvjezavanje.value = false;
   }
+};
+
+const osvjeziSad = () => pokreniSync('?days=3');
+
+const povuciPovijest = () => {
+  const od = prompt('Od kojeg datuma povući povijest? (YYYY-MM-DD)', '2024-01-01');
+  if (!od) return;
+  pokreniSync(`?since=${od}`);
 };
 </script>
 
@@ -262,9 +281,34 @@ const osvjeziSad = async () => {
   font-weight: 500;
 }
 
-.gumb-osvjezi:disabled {
+.gumb-osvjezi:disabled, .gumb-povijest:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.gumb-povijest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.zadnji-sync.u-tijeku {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.zadnji-sync.u-tijeku .material-icons {
+  font-size: 18px;
 }
 
 .spinning {

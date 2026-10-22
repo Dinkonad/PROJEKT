@@ -69,6 +69,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { navStavke } from '@/config/navigacija.js';
 import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
+import { auth } from '@/services/firebase.js';
 
 const props = defineProps({
   korisnikEmail: { type: String, default: '' },
@@ -93,12 +94,13 @@ const registrirajFaceId = async () => {
   }
   const nazivUredaja = prompt('Naziv uređaja (npr. iPhone):', 'iPhone') || 'Uređaj';
   try {
-    const zapis = await registrirajNoviCredential(props.korisnikEmail, nazivUredaja);
-    faceIdCredentiali.value.push(zapis);
+    const idToken = await auth.currentUser.getIdToken();
+    await registrirajNoviCredential(idToken, nazivUredaja);
+    faceIdCredentiali.value = await dohvatiRegistrirane();
     alert('Face ID je registriran na ovom uređaju.');
   } catch (error) {
     console.error('Greška pri registraciji Face ID:', error);
-    alert('Registracija nije uspjela. Provjeri da stranica radi preko https i da uređaj podržava Face ID/Touch ID.');
+    alert('Registracija nije uspjela: ' + error.message);
   }
 };
 

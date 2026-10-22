@@ -1,14 +1,11 @@
-// Face ID / Touch ID / Windows Hello preko WebAuthn-a.
-//
-// VAŽNA NAPOMENA: ovdje nema posebnog backend servera koji provjerava kriptografski
-// potpis (to bi zahtijevalo server koji ovaj projekt nema). Zato ovo NIJE zamjena
-// za Firebase login, nego lokalna "brava" preko VEĆ prijavljene Firebase sesije -
-// isti princip kao "Face ID za otvaranje" u bankovnim aplikacijama. Ako platforma
-// (Face ID/Touch ID/Windows Hello) uspješno potvrdi korisnika, smatramo ekran otključanim;
-// ako ne uspije ili je otkazano, aplikacija ostaje zaključana i nudi prijavu lozinkom.
+// Face ID / Touch ID / Windows Hello - prava WebAuthn registracija i prijava.
+// Backend (isti Render servis kao Garmin sync) čuva javni ključ svakog uređaja i
+// kriptografski provjerava potpis, pa nakon uspješne potvrde izdaje pravu Firebase
+// prijavu (custom token) - isto sigurno kao prijava lozinkom.
 import { db } from './firebase.js';
-import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+const BACKEND_URL = import.meta.env.VITE_GARMIN_BACKEND_URL || '';
 const SIGURNOSNI_DOC = () => doc(db, 'security', 'webauthn-credentials');
 
 const b64urlEncode = (buffer) => {
@@ -26,8 +23,6 @@ const b64urlDecode = (str) => {
   return bytes.buffer;
 };
 
-const nasumicniChallenge = () => crypto.getRandomValues(new Uint8Array(32));
-
 export function jePodrzano() {
   return typeof window !== 'undefined' && !!window.PublicKeyCredential && !!navigator.credentials;
 }
@@ -42,50 +37,98 @@ export async function dohvatiRegistrirane() {
   }
 }
 
-export async function registrirajNoviCredential(korisnikEmail, nazivUredaja) {
-  const credential = await navigator.credentials.create({
-    publicKey: {
-      challenge: nasumicniChallenge(),
-      rp: { name: 'Nagy Photos', id: window.location.hostname },
-      user: {
-        id: new TextEncoder().encode(korisnikEmail),
-        name: korisnikEmail,
-        displayName: korisnikEmail
-      },
-      pubKeyCredParams: [
-        { type: 'public-key', alg: -7 },
-        { type: 'public-key', alg: -257 }
-      ],
-      authenticatorSelection: {
-        authenticatorAttachment: 'platform',
-        userVerification: 'required',
-        residentKey: 'preferred'
-      },
-      timeout: 60000,
-      attestation: 'none'
-    }
-  });
+const pripremiKreiranjeOpcije = (opcije) => ({
+  ...opcije,
+  challenge: b64urlDecode(opcije.challenge),
+  user: { ...opcije.user, id: b64urlDecode(opcije.user.id) },
+  excludeCredentials: (opcije.excludeCredentials || []).map(c => ({ ...c, id: b64urlDecode(c.id) }))
+});
 
-  const zapis = {
-    id: b64urlEncode(credential.rawId),
-    naziv: nazivUredaja || 'Uređaj',
-    kreirano: new Date().toISOString()
+const pripremiPrijavuOpcije = (opcije) => ({
+  ...opcije,
+  challenge: b64urlDecode(opcije.challenge),
+  allowCredentials: (opcije.allowCredentials || []).map(c => ({ ...c, id: b64urlDecode(c.id) }))
+});
+
+const kredencijalUJson = (credential) => {
+  const jeRegistracija = !!credential.response.attestationObject;
+  return {
+    id: credential.id,
+    rawId: b64urlEncode(credential.rawId),
+    type: credential.type,
+    response: jeRegistracija
+      ? {
+          clientDataJSON: b64urlEncode(credential.response.clientDataJSON),
+          attestationObject: b64urlEncode(credential.response.attestationObject)
+        }
+      : {
+          clientDataJSON: b64urlEncode(credential.response.clientDataJSON),
+          authenticatorData: b64urlEncode(credential.response.authenticatorData),
+          signature: b64urlEncode(credential.response.signature),
+          userHandle: credential.response.userHandle ? b64urlEncode(credential.response.userHandle) : null
+        }
   };
+};
 
-  await setDoc(SIGURNOSNI_DOC(), { credentials: arrayUnion(zapis) }, { merge: true });
-  return zapis;
+const dohvatiJson = async (odgovor) => {
+  if (!odgovor.ok) {
+    let poruka = `Greška ${odgovor.status}`;
+    try {
+      const tijelo = await odgovor.json();
+      poruka = tijelo.detail || poruka;
+    } catch {
+      // ignoriraj - koristi generičku poruku
+    }
+    throw new Error(poruka);
+  }
+  return odgovor.json();
+};
+
+export async function registrirajNoviCredential(idToken, nazivUredaja) {
+  if (!BACKEND_URL) throw new Error('Backend adresa nije postavljena (VITE_GARMIN_BACKEND_URL).');
+
+  const opcije = await dohvatiJson(await fetch(`${BACKEND_URL}/faceid/register-options`, {
+    headers: { Authorization: `Bearer ${idToken}` }
+  }));
+
+  const credential = await navigator.credentials.create({ publicKey: pripremiKreiranjeOpcije(opcije) });
+
+  await dohvatiJson(await fetch(`${BACKEND_URL}/faceid/register-verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ credential: kredencijalUJson(credential), naziv: nazivUredaja })
+  }));
+}
+
+export async function prijaviSeFaceIdom() {
+  if (!BACKEND_URL) throw new Error('Backend adresa nije postavljena (VITE_GARMIN_BACKEND_URL).');
+
+  const opcije = await dohvatiJson(await fetch(`${BACKEND_URL}/faceid/login-options`));
+  const credential = await navigator.credentials.get({ publicKey: pripremiPrijavuOpcije(opcije) });
+
+  const rezultat = await dohvatiJson(await fetch(`${BACKEND_URL}/faceid/login-verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential: kredencijalUJson(credential) })
+  }));
+
+  return rezultat.token;
 }
 
 export async function ukloniCredential(zapis) {
-  await setDoc(SIGURNOSNI_DOC(), { credentials: arrayRemove(zapis) }, { merge: true });
+  const trenutni = await dohvatiRegistrirane();
+  const filtrirano = trenutni.filter(c => c.id !== zapis.id);
+  await setDoc(SIGURNOSNI_DOC(), { credentials: filtrirano }, { merge: true });
 }
 
+// Lokalna provjera prisutnosti (bez backend poziva) - koristi je samo Šifre vault
+// za brzo otključavanje na ovom uređaju, ne za login.
 export async function potvrdiCredential(registrirani) {
   if (!registrirani.length) return false;
 
   const rezultat = await navigator.credentials.get({
     publicKey: {
-      challenge: nasumicniChallenge(),
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
       allowCredentials: registrirani.map(c => ({ id: b64urlDecode(c.id), type: 'public-key' })),
       userVerification: 'required',
       timeout: 60000
