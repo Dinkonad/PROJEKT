@@ -1025,28 +1025,36 @@ form {
   }
 
   .kartice-red {
-    gap: 12px;
-    margin-bottom: 15px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .kartica.prodano {
+    grid-column: 1 / -1;
   }
 
   .kartica {
-    padding: 20px;
-    flex-direction: column;
-    text-align: center;
+    padding: 14px;
+    gap: 10px;
   }
 
   .ikona {
-    margin-right: 0;
-    margin-bottom: 10px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .ikona .material-icons {
+    font-size: 20px;
   }
 
   .podaci h3 {
     white-space: normal;
-    font-size: 15px;
+    font-size: 0.72rem;
   }
 
   .podaci .iznos {
-    font-size: 22px;
+    font-size: 1.05rem;
   }
 
   .tablica-okvir {
@@ -1151,27 +1159,6 @@ form {
 
   .kartice-container {
     margin-bottom: 20px;
-  }
-
-  .kartice-red {
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .kartica {
-    padding: 16px;
-  }
-
-  .podaci h3 {
-    font-size: 14px;
-  }
-
-  .podaci .iznos {
-    font-size: 18px;
-  }
-
-  .ikona .material-icons {
-    font-size: 28px;
   }
 
   .tablica th,

@@ -39,10 +39,12 @@
 
             <button class="gumb-prijava" @click="prijava">Prijava</button>
 
-            <button v-if="faceIdDostupan" class="gumb-faceid" :disabled="faceIdUTijeku" @click="prijavaFaceIdom">
+            <button v-if="faceIdDostupan" class="gumb-faceid" :disabled="faceIdUTijeku" @click="prijavaFaceIdom()">
               <span class="faceid-ikona">🔐</span>
               {{ faceIdUTijeku ? 'Potvrđujem...' : 'Prijavi se Face ID-om' }}
             </button>
+
+            <div v-if="faceIdDostupan" class="razdjelnik">ili unesi podatke</div>
 
             <button class="google-prijava" @click="prijavaGoogleom">
               <img 
@@ -129,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAuth } from '../store/auth';
@@ -140,7 +142,9 @@ import AdminPrijava from './ADashboard.vue';
 const router = useRouter();
 const { state, login, loginWithGoogle, signup, loginAsAdmin } = useAuth();
 
-const faceIdDostupan = ref(jePodrzano());
+const jeMobilniUredaj = () => window.matchMedia('(max-width: 768px)').matches;
+
+const faceIdDostupan = ref(jePodrzano() && jeMobilniUredaj());
 const faceIdUTijeku = ref(false);
 
 const korisnickoIme = ref('');
@@ -196,7 +200,7 @@ const prijava = async () => {
   }
 };
 
-const prijavaFaceIdom = async () => {
+const prijavaFaceIdom = async (automatski = false) => {
   greškaPrijave.value = '';
   faceIdUTijeku.value = true;
   try {
@@ -205,6 +209,7 @@ const prijavaFaceIdom = async () => {
     očistiPolja();
   } catch (error) {
     console.error('Greška pri Face ID prijavi:', error);
+    if (automatski) return;
     greškaPrijave.value = error.message?.includes('nije registriran')
       ? 'Face ID nije registriran na ovom računu - prijavi se lozinkom i registriraj ga u postavkama.'
       : 'Face ID prijava nije uspjela. Pokušaj ponovno ili koristi lozinku.';
@@ -212,6 +217,12 @@ const prijavaFaceIdom = async () => {
     faceIdUTijeku.value = false;
   }
 };
+
+onMounted(() => {
+  if (faceIdDostupan.value) {
+    prijavaFaceIdom(true);
+  }
+});
 
 const prijavaGoogleom = async () => {
   try {
@@ -401,6 +412,16 @@ const promijeniNačin = () => {
     width: 100%;
     max-width: 320px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .razdjelnik {
+    display: none;
+    text-align: center;
+    color: #5D8AA8;
+    font-size: 12px;
+    margin: 4px 0 14px;
   }
   
   h1 {
@@ -484,25 +505,77 @@ const promijeniNačin = () => {
   }
   
   @media (max-width: 820px) {
-    .prijava-kartica {
-      width: 95%;
-      height: auto;
+    .prijava-kontejner {
+      padding: 24px 16px;
     }
-    
+
+    .prijava-kartica {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      perspective: none;
+    }
+
+    .prijava-kartica.okretanje {
+      transform: none;
+    }
+
     .prijava-strana, .registracija-strana {
+      position: static;
       flex-direction: column;
       height: auto;
-      min-height: 500px;
+      min-height: 0;
+      transform: none !important;
+      backface-visibility: visible;
     }
-    
-    .bijela-strana, .crna-strana {
-      padding: 30px;
+
+    .prijava-kartica:not(.okretanje) .registracija-strana {
+      display: none;
+    }
+
+    .prijava-kartica.okretanje .prijava-strana {
+      display: none;
+    }
+
+    .crna-strana {
+      display: none;
+    }
+
+    .bijela-strana {
+      padding: 32px 24px;
+    }
+
+    .obrazac h1 {
+      order: -2;
+    }
+
+    .gumb-faceid {
+      order: -1;
+      margin-top: 4px;
+      background-color: #123458;
+      color: white;
+      border: none;
+      padding: 13px;
+      font-weight: 500;
+    }
+
+    .gumb-faceid:hover:not(:disabled) {
+      background-color: #1c4c80;
+    }
+
+    .razdjelnik {
+      display: block;
+      order: -1;
     }
   }
-  
+
   @media (max-width: 480px) {
     .obrazac {
       max-width: 100%;
+    }
+
+    .bijela-strana {
+      padding: 28px 20px;
     }
   }
 

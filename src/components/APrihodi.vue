@@ -220,8 +220,8 @@
           </thead>
           <tbody>
             <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
-              <td>{{ prihod.nazivEventa }}</td>
-              <td>
+              <td data-label="Naziv eventa">{{ prihod.nazivEventa }}</td>
+              <td data-label="Ime i prezime">
                 <div class="celija-stog">
                   <span>{{ prihod.imeIPrezime }}</span>
                   <span class="oznaka-red" v-if="suradniciZaPrihod(prihod).length">
@@ -234,14 +234,14 @@
                   </span>
                 </div>
               </td>
-              <td>
+              <td data-label="Datum">
                 <div class="celija-stog">
                   <span>{{ formatDatumRaspon(prihod) }}</span>
                   <span v-if="brojDana(prihod) > 1" class="broj-dana-oznaka">{{ brojDana(prihod) }} dana</span>
                 </div>
               </td>
-              <td>{{ formatCurrency(prihod.cijena) }}</td>
-              <td>
+              <td data-label="Cijena">{{ formatCurrency(prihod.cijena) }}</td>
+              <td data-label="Status">
                 <div v-if="prihod.placeno" class="status placeno">
                   <span class="material-icons">check_circle</span> Plaćeno
                 </div>
@@ -249,7 +249,7 @@
                   <span class="material-icons">payments</span> Označi kao plaćeno
                 </button>
               </td>
-             <td>
+             <td data-label="Akcija">
   <div class="akcija-gumbi">
     <button class="gumb-uredi" @click.stop="otvoriUredivanje(prihod)" :disabled="sprema">
       <span class="material-icons">edit</span>
@@ -2314,6 +2314,8 @@ const spremiUredivanje = async () => {
   background-color: var(--bg-card);
   border-radius: 6px;
   border: 1px solid var(--border-color);
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 /* ==================== FORMA ==================== */
@@ -2685,10 +2687,55 @@ input:checked + .klizac:before {
     margin-bottom: 20px;
   }
 
+  .tablica thead {
+    display: none;
+  }
+
+  .tablica, .tablica tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .tablica tr.red {
+    display: block;
+    background-color: var(--glass-bg-muted);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-small);
+    padding: 12px 14px;
+    margin: 12px;
+  }
+
+  .tablica tr.red:last-child {
+    margin-bottom: 12px;
+  }
+
   .tablica th,
   .tablica td {
-    padding: 12px 8px;
+    display: block;
+    width: auto;
+    padding: 7px 0;
     font-size: 14px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tablica td:last-child {
+    border-bottom: none;
+    padding-top: 10px;
+  }
+
+  .tablica td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+
+  .tablica td:last-child::before {
+    display: none;
   }
 
   .gumb-plati {
