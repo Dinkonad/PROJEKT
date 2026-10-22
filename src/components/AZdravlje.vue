@@ -5,6 +5,7 @@
       <div class="zaglavlje-akcije">
         <span v-if="uTijeku" class="zadnji-sync u-tijeku">
           <span class="material-icons spinning">sync</span> Sinkronizacija u tijeku...
+          <button type="button" class="gumb-resetiraj" @click="resetirajSync">Zaglavilo? Resetiraj</button>
         </span>
         <span v-else class="zadnji-sync">Zadnje osvježeno: {{ formatVrijemeSync(zadnjiSync?.vrijeme) }}</span>
         <button class="gumb-osvjezi" :disabled="uTijeku || osvjezavanje" @click="osvjeziSad">
@@ -513,6 +514,21 @@ const povuciPovijest = () => {
   if (!od) return;
   pokreniSync(`?since=${od}`);
 };
+
+const resetirajSync = async () => {
+  if (!confirm('Resetirati status sinkronizacije? Koristi samo ako je stvarno zaglavilo (ne radi ništa već dulje vrijeme).')) return;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const odgovor = await fetch(`${BACKEND_URL}/sync/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!odgovor.ok) throw new Error(`Greška ${odgovor.status}`);
+  } catch (error) {
+    console.error('Greška pri resetiranju sinkronizacije:', error);
+    alert('Reset nije uspio: ' + error.message);
+  }
+};
 </script>
 
 <style scoped>
@@ -598,6 +614,17 @@ const povuciPovijest = () => {
 
 .zadnji-sync.u-tijeku .material-icons {
   font-size: 18px;
+}
+
+.gumb-resetiraj {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
 }
 
 .spinning {
