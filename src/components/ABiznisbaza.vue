@@ -729,9 +729,12 @@ const obrisiPredlozak = async (predlozak) => {
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
   padding: 16px 20px;
   margin-bottom: 20px;
 }
@@ -772,9 +775,12 @@ const obrisiPredlozak = async (predlozak) => {
   align-items: center;
   margin-bottom: 20px;
   padding: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
 }
 
 .navigacija-mjeseca h3 {
@@ -812,9 +818,12 @@ const obrisiPredlozak = async (predlozak) => {
   display: flex;
   align-items: center;
   gap: 16px;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
   padding: 20px;
   animation: pojaviSe 0.35s ease both;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -822,7 +831,6 @@ const obrisiPredlozak = async (predlozak) => {
 
 .kartica:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 @keyframes pojaviSe {
@@ -1011,9 +1019,12 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 .dani-odabranog-dana {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
   padding: 20px;
   margin-bottom: 20px;
 }
@@ -1043,7 +1054,7 @@ const obrisiPredlozak = async (predlozak) => {
   gap: 14px;
   background-color: var(--bg-card-muted);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--radius-small);
   padding: 14px 16px;
 }
 
@@ -1111,8 +1122,12 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 .modal {
-  background: var(--bg-card);
-  border-radius: 10px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
   width: 90%;
   max-width: 480px;
   max-height: 90vh;
@@ -1125,7 +1140,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 .tjedni-pregled {
   background: var(--bg-card-muted);
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   padding: 12px 16px;
   margin-bottom: 16px;
   max-height: 220px;
@@ -1343,8 +1358,12 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 .modal-potvrda {
-  background: var(--bg-card);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
   width: 90%;
   max-width: 420px;
   overflow: hidden;

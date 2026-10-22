@@ -273,6 +273,10 @@ const promijeniNačin = () => {
     min-height: 100vh;
     width: 100%;
     background-color: #F1EFEC;
+    background-image:
+      radial-gradient(circle at 12% 10%, rgba(18, 52, 88, 0.12), transparent 42%),
+      radial-gradient(circle at 88% 18%, rgba(93, 138, 168, 0.16), transparent 42%),
+      radial-gradient(circle at 25% 92%, rgba(156, 122, 84, 0.12), transparent 45%);
     font-family: Arial, sans-serif;
     perspective: 1500px;
     position: relative;
@@ -362,15 +366,16 @@ const promijeniNačin = () => {
     height: 100%;
     backface-visibility: hidden;
     display: flex;
-    border-radius: 10px;
+    border-radius: 22px;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 20px 50px rgba(18, 52, 88, 0.18);
   }
-  
+
   .registracija-strana {
     transform: rotateY(180deg);
   }
-  
+
   .bijela-strana, .crna-strana {
     flex: 1;
     display: flex;
@@ -378,13 +383,17 @@ const promijeniNačin = () => {
     justify-content: center;
     padding: 40px;
   }
-  
+
   .bijela-strana {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.68);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
   }
-  
+
   .crna-strana {
-    background-color: #030303;
+    background-color: rgba(18, 52, 88, 0.82);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
     color: white;
   }
   

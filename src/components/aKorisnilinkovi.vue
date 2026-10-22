@@ -519,9 +519,9 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
-  background-color: white;
+  background-color: var(--bg-card);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .pretraga-input:focus {
@@ -531,10 +531,13 @@ onMounted(() => {
 }
 
 .dodaj-sekcija {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 30px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glass-shadow);
   margin-bottom: 40px;
 }
 
@@ -552,7 +555,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .naziv-unos:focus {
@@ -568,7 +571,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .url-unos:focus {
@@ -609,27 +612,36 @@ onMounted(() => {
 }
 
 .ucitavanje {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 60px 30px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .prazno {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 60px 30px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .nema-rezultata {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 60px 30px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .poruka p {
@@ -645,10 +657,13 @@ onMounted(() => {
 }
 
 .red {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glass-shadow);
   transition: all 0.3s ease;
   cursor: pointer;
   border-left: 4px solid var(--border-color);
@@ -657,7 +672,7 @@ onMounted(() => {
 
 .red:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 .red.tip-youtube-video { border-left-color: var(--text-heading); }
@@ -828,12 +843,15 @@ onMounted(() => {
 }
 
 .modal {
-  background-color: var(--bg-page);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 0;
   width: 400px;
   max-width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
 }
 
@@ -876,7 +894,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .naziv-input-modal:focus {

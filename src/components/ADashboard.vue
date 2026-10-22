@@ -676,7 +676,9 @@ onMounted(() => {
   top: 0;
   width: 250px;
   height: 100vh;
-  background-color: #123458;
+  background-color: rgba(18, 52, 88, 0.78);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   color: white;
   transition: left 0.3s ease;
   z-index: 1000;
@@ -942,11 +944,13 @@ onMounted(() => {
 }
 
 .sekcija {
-  background-color: var(--bg-card);
-  border-radius: 16px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-radius: var(--radius-card);
   padding: 40px;
-  box-shadow: 0 6px 20px var(--shadow-color);
-  border: 1px solid var(--border-color);
+  box-shadow: var(--glass-shadow);
+  border: 1px solid var(--glass-border);
 }
 
 .sekcija-zaglavlje {
@@ -1426,7 +1430,6 @@ onMounted(() => {
 
   .sekcija {
     padding: 20px;
-    border-radius: 12px;
   }
 
   .sekcija-zaglavlje h2 {
@@ -1484,7 +1487,6 @@ onMounted(() => {
 
   .sekcija {
     padding: 15px;
-    border-radius: 10px;
   }
 
   .sekcija-zaglavlje h2 {

@@ -5,15 +5,14 @@
       :key="stavka.to"
       :to="stavka.to"
       class="donja-stavka"
+      :aria-label="stavka.label"
       v-bind="stavka.exact ? { 'exact-active-class': 'aktivna' } : { 'active-class': 'aktivna' }"
     >
       <span class="material-icons">{{ stavka.icon }}</span>
-      <span class="donja-oznaka">{{ stavka.label }}</span>
     </router-link>
 
-    <button type="button" class="donja-stavka" :class="{ aktivna: viseOtvoreno }" @click="viseOtvoreno = true">
-      <span class="material-icons">more_horiz</span>
-      <span class="donja-oznaka">Više</span>
+    <button type="button" class="donja-stavka donja-profil" :class="{ aktivna: viseOtvoreno }" aria-label="Više" @click="viseOtvoreno = true">
+      <span class="donja-avatar">{{ korisnikInicijali }}</span>
     </button>
   </nav>
 
@@ -127,51 +126,72 @@ const ukloniFaceIdZapis = async (zapis) => {
 @media (max-width: 768px) {
   .donja-traka {
     display: flex;
+    align-items: center;
+    justify-content: space-around;
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 64px;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    background-color: var(--bg-card);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -4px 16px var(--shadow-color);
+    left: 14px;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0));
+    height: 58px;
+    padding: 0 6px;
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    box-shadow: var(--glass-shadow);
     z-index: 950;
   }
 
   .donja-stavka {
     flex: 1;
     min-width: 0;
+    height: 42px;
+    margin: 0 2px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    padding: 4px 2px;
     background: none;
     border: none;
+    border-radius: 999px;
     text-decoration: none;
     color: var(--text-muted);
-    font-family: 'Roboto', sans-serif;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s ease, background-color 0.2s ease;
   }
 
   .donja-stavka .material-icons {
-    font-size: 21px;
-  }
-
-  .donja-oznaka {
-    font-size: 9.5px;
-    font-weight: 500;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 24px;
   }
 
   .donja-stavka.aktivna {
     color: var(--accent);
+    background-color: var(--glass-bg-muted);
+  }
+
+  .donja-profil {
+    flex: 0 0 auto;
+    width: 40px;
+    margin: 0 2px;
+    padding: 0;
+  }
+
+  .donja-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .donja-profil.aktivna .donja-avatar {
+    box-shadow: 0 0 0 2px var(--accent);
   }
 
   .vise-prekrivac {
@@ -189,8 +209,12 @@ const ukloniFaceIdZapis = async (zapis) => {
     bottom: 0;
     max-height: 75vh;
     overflow-y: auto;
-    background-color: var(--bg-card);
-    border-radius: 16px 16px 0 0;
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
     padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0));
     box-shadow: 0 -8px 24px var(--shadow-color);
   }

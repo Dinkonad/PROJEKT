@@ -331,10 +331,13 @@ onUnmounted(() => {
 }
 
 .mapa-okvir {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow);
   border: 1px solid var(--border-color);
 }
 

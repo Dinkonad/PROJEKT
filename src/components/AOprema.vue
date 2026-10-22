@@ -574,9 +574,12 @@ const dodajNovuOpremu = async () => {
 
 .kartica {
   min-width: 0;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
   padding: 18px;
   display: flex;
   align-items: center;
@@ -635,9 +638,12 @@ const dodajNovuOpremu = async () => {
 .tablica-okvir {
   overflow-x: auto;
   margin-bottom: 30px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  background-color: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
 }
 
 .tablica {
@@ -794,12 +800,15 @@ const dodajNovuOpremu = async () => {
 }
 
 .modal-detalji, .modal-forma, .modal-potvrda {
-  background-color: var(--bg-card);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 0;
   width: 500px;
   max-width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
 }
 

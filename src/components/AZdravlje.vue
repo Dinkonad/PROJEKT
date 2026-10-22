@@ -645,9 +645,12 @@ const povuciPovijest = () => {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
   padding: 18px;
   animation: pojaviSe 0.35s ease both;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -763,11 +766,13 @@ const povuciPovijest = () => {
 
 /* ==================== SEKCIJE ==================== */
 .sekcija {
-  background-color: var(--bg-card);
-  border-radius: 16px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-radius: var(--radius-card);
   padding: 30px;
-  box-shadow: 0 6px 20px var(--shadow-color);
-  border: 1px solid var(--border-color);
+  box-shadow: var(--glass-shadow);
+  border: 1px solid var(--glass-border);
   margin-bottom: 25px;
 }
 
@@ -859,7 +864,7 @@ const povuciPovijest = () => {
   flex-direction: column;
   gap: 4px;
   background-color: var(--bg-card-muted);
-  border-radius: 10px;
+  border-radius: var(--radius-small);
   padding: 14px;
 }
 
@@ -935,7 +940,7 @@ const povuciPovijest = () => {
   display: flex;
   gap: 14px;
   background-color: var(--bg-card-muted);
-  border-radius: 12px;
+  border-radius: var(--radius-small);
   padding: 14px 16px;
   transition: transform 0.15s ease;
 }
@@ -1085,7 +1090,6 @@ const povuciPovijest = () => {
 
   .sekcija {
     padding: 18px;
-    border-radius: 12px;
   }
 
   .sekcija-zaglavlje h2 {

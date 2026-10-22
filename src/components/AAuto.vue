@@ -364,9 +364,12 @@ const potvrdiBrisanje = async () => {
   display: flex;
   align-items: center;
   gap: 14px;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
   padding: 18px;
   animation: pojaviSe 0.35s ease both;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -461,9 +464,9 @@ const potvrdiBrisanje = async () => {
 }
 
 .redak-unosa {
-  background: var(--bg-card);
+  background: var(--bg-card-muted);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--radius-small);
   padding: 14px 16px;
 }
 
@@ -579,8 +582,12 @@ const potvrdiBrisanje = async () => {
 }
 
 .modal {
-  background: var(--bg-card);
-  border-radius: 10px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
   width: 100%;
   max-width: 440px;
   max-height: 90vh;
@@ -685,8 +692,12 @@ const potvrdiBrisanje = async () => {
 }
 
 .modal-potvrda {
-  background: var(--bg-card);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
   width: 90%;
   max-width: 420px;
   overflow: hidden;

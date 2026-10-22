@@ -492,10 +492,13 @@ onMounted(() => {
 }
 
 .dodaj-sekcija {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 30px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glass-shadow);
   margin-bottom: 30px;
 }
 
@@ -519,7 +522,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .naslov-unos:focus {
@@ -535,7 +538,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
   resize: vertical;
   min-height: 100px;
 }
@@ -614,20 +617,26 @@ onMounted(() => {
 }
 
 .ucitavanje {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 60px 30px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .prazno,
 .nema-rezultata {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 60px 30px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .ikona {
@@ -655,22 +664,25 @@ onMounted(() => {
 }
 
 .red {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glass-shadow);
   transition: all 0.3s ease;
   border-left: 4px solid var(--accent);
 }
 
 .red:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 .red.realizovana {
   opacity: 0.7;
-  background-color: #f8f9fa;
+  background-color: var(--glass-bg-muted);
 }
 
 .sadrzaj-reda {
@@ -731,13 +743,16 @@ onMounted(() => {
 }
 
 .lightbox-modal {
-  background-color: var(--bg-page);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow);
   display: flex;
   flex-direction: column;
 }
@@ -788,17 +803,17 @@ onMounted(() => {
 }
 
 .lightbox-meta {
-  background-color: white;
+  background-color: var(--bg-card-muted);
   padding: 15px;
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   margin-bottom: 20px;
   border: 1px solid var(--border-color);
 }
 
 .lightbox-tekst {
-  background-color: white;
+  background-color: var(--bg-card-muted);
   padding: 25px;
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   font-size: 1.1rem;
   line-height: 1.7;
   color: var(--text-body);
@@ -838,7 +853,7 @@ onMounted(() => {
 }
 
 .gumb-realizovana {
-  background-color: white;
+  background-color: var(--bg-card);
   color: var(--text-heading);
   border: 1px solid var(--accent);
 }
@@ -917,14 +932,17 @@ onMounted(() => {
 }
 
 .modal {
-  background-color: var(--bg-page);
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   padding: 0;
   width: 500px;
   max-width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--glass-shadow);
 }
 
 .modal-zaglavlje {
@@ -977,7 +995,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
 }
 
 .naslov-input-modal:focus {
@@ -994,7 +1012,7 @@ onMounted(() => {
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
+  background-color: var(--bg-card);
   resize: vertical;
   min-height: 120px;
 }
