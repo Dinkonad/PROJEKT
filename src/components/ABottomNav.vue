@@ -141,26 +141,33 @@ const ukloniFaceIdZapis = async (zapis) => {
 
   .donja-stavka {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 2px;
+    padding: 4px 2px;
     background: none;
     border: none;
     text-decoration: none;
     color: var(--text-muted);
     font-family: 'Roboto', sans-serif;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .donja-stavka .material-icons {
-    font-size: 22px;
+    font-size: 21px;
   }
 
   .donja-oznaka {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .donja-stavka.aktivna {

@@ -19,7 +19,7 @@
           
           <div class="legenda">
             <div class="legenda-stavka">
-              <div class="legenda-oznaka" style="background-color: #123458;">📍</div>
+              <div class="legenda-oznaka" style="background-color: var(--text-heading);">📍</div>
               <span>Event lokacije ({{ prihodi.length }})</span>
             </div>
           </div>
@@ -297,36 +297,18 @@ onUnmounted(() => {
   margin: 0 auto;
   padding: 20px;
   font-family: 'Roboto', sans-serif;
-  color: #030303;
-  background-color: #F1EFEC;
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+  color: var(--text-body);
 }
 
 .naslov-sekcija {
-  text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .glavni-naslov {
-  color: #123458;
-  margin-bottom: 10px;
+  color: var(--text-heading);
+  margin-bottom: 8px;
   font-weight: 700;
-  font-size: 2rem;
-  position: relative;
-  display: inline-block;
-}
-
-.glavni-naslov::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100px;
-  height: 3px;
-  background-color: #123458;
-  border-radius: 2px;
+  font-size: 1.8rem;
 }
 
 @media (max-width: 768px) {
@@ -353,7 +335,7 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 @media (max-width: 768px) {
@@ -380,7 +362,7 @@ onUnmounted(() => {
 }
 
 .mapa-zaglavlje h3 {
-  color: #123458;
+  color: var(--text-heading);
   margin: 0;
   font-weight: 600;
   font-size: 1.1rem;
@@ -401,7 +383,7 @@ onUnmounted(() => {
 
 .prikazuj-sve-gumb {
   padding: 8px 12px;
-  background-color: #123458;
+  background-color: var(--text-heading);
   color: white;
   border: none;
   border-radius: 6px;
@@ -420,7 +402,7 @@ onUnmounted(() => {
 }
 
 .prikazuj-sve-gumb:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
 }
 
@@ -429,7 +411,7 @@ onUnmounted(() => {
   height: 600px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 @media (max-width: 1024px) {
@@ -472,8 +454,8 @@ onUnmounted(() => {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #D4C9BE;
-  border-top: 4px solid #123458;
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 15px;
@@ -494,7 +476,7 @@ onUnmounted(() => {
 }
 
 .ucitavanje p {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 500;
   margin: 0;
   font-size: 0.9rem;
@@ -638,7 +620,7 @@ onUnmounted(() => {
 :global(.popup-zaglavlje) {
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #123458;
+  border-bottom: 2px solid var(--accent);
 }
 
 @media (max-width: 768px) {
@@ -649,7 +631,7 @@ onUnmounted(() => {
 }
 
 :global(.popup-zaglavlje h4) {
-  color: #123458;
+  color: var(--text-heading);
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
@@ -675,7 +657,7 @@ onUnmounted(() => {
 }
 
 :global(.event-brojac) {
-  background-color: #123458;
+  background-color: var(--text-heading);
   color: white;
   padding: 2px 6px;
   border-radius: 10px;
@@ -689,7 +671,7 @@ onUnmounted(() => {
 
 :global(.event-naslov) {
   font-weight: 600;
-  color: #123458;
+  color: var(--text-heading);
   font-size: 0.9rem;
   margin-bottom: 4px;
 }

@@ -556,19 +556,24 @@ const potvrdiBrisanje = async () => {
 
 .redak-glavno {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
+  gap: 4px 12px;
   margin-bottom: 6px;
 }
 
 .redak-naziv {
   font-weight: 700;
   color: var(--text-heading);
+  overflow-wrap: anywhere;
 }
 
 .redak-korisnik {
   color: var(--text-muted);
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .redak-lozinka {
@@ -578,6 +583,12 @@ const potvrdiBrisanje = async () => {
   font-family: monospace;
   color: var(--text-body);
   margin-bottom: 6px;
+}
+
+.redak-lozinka span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .redak-napomena {
@@ -744,8 +755,30 @@ const potvrdiBrisanje = async () => {
 
 @media (max-width: 768px) {
   .sifre {
-    padding: 20px;
+    padding: 16px;
     padding-bottom: 100px;
+  }
+
+  .naslov {
+    font-size: 1.5rem;
+  }
+
+  .pin-kartica {
+    margin: 24px auto;
+    padding: 28px 18px;
+  }
+
+  .akcije-zaglavlje {
+    gap: 8px;
+  }
+
+  .gumb-dodaj, .gumb-zakljucaj {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .redak-unosa {
+    padding: 14px;
   }
 }
 </style>

@@ -1595,71 +1595,68 @@ const spremiUredivanje = async () => {
 
 /* ==================== KARTICE (summary) ==================== */
 .kartice {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 40px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
 }
 
 .kartica {
-  flex: 1;
-  min-width: 250px;
+  min-width: 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 18px;
+  box-shadow: 0 4px 12px var(--shadow-color);
   display: flex;
   align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  gap: 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: pojaviSe 0.35s ease both;
+}
+
+@keyframes pojaviSe {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .kartica:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-}
-
-.kartica.placeno {
-  background-color: #123458;
-  color: #F1EFEC;
-}
-
-.kartica.neplaceno {
-  background-color: #D4C9BE;
-  color: #123458;
-}
-
-.kartica.trosak {
-  background-color: #5D8AA8;
-  color: #F1EFEC;
-}
-
-.kartica.bratu {
-  background-color: #9C7A54;
-  color: #F1EFEC;
-}
-
-.kartica.neto {
-  background-color: #2E7D32;
-  color: #F1EFEC;
+  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 .ikona {
-  margin-right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-card-muted);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .ikona .material-icons {
-  font-size: 36px;
+  font-size: 22px;
+}
+
+.podaci {
+  min-width: 0;
 }
 
 .podaci h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .podaci .iznos {
   margin: 0;
-  font-size: 28px;
+  font-size: 1.2rem;
   font-weight: 700;
+  color: var(--text-heading);
 }
 
 /* ==================== PO OSOBAMA ==================== */
@@ -2558,14 +2555,6 @@ input:checked + .klizac:before {
     padding: 25px;
   }
 
-  .kartice {
-    flex-direction: column;
-  }
-
-  .kartica {
-    min-width: auto;
-  }
-
   .mjesecni-kartice {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
@@ -2643,28 +2632,40 @@ input:checked + .klizac:before {
   }
 
   .naslov {
-    font-size: 1.8rem;
-    margin-bottom: 30px;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
   }
 
   .kartice {
-    gap: 15px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .kartica.neto {
+    grid-column: 1 / -1;
   }
 
   .kartica {
-    padding: 20px;
-    flex-direction: column;
-    text-align: center;
+    padding: 14px;
+    gap: 10px;
   }
 
   .ikona {
-    margin-right: 0;
-    margin-bottom: 10px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .ikona .material-icons {
+    font-size: 20px;
+  }
+
+  .podaci h3 {
+    font-size: 0.72rem;
   }
 
   .podaci .iznos {
-    font-size: 24px;
+    font-size: 1.05rem;
   }
 
   .tablica-okvir {
@@ -2758,5 +2759,9 @@ input:checked + .klizac:before {
   .osoba-ime h3 {
     font-size: 14px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kartica { animation: none !important; transition: none !important; }
 }
 </style>

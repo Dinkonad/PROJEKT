@@ -235,7 +235,11 @@
             </div>
           </template>
         </div>
-        <router-view v-else></router-view>
+        <router-view v-else v-slot="{ Component }">
+          <transition name="stranica-fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </div>
     </div>
 

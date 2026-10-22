@@ -463,10 +463,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 30px;
   font-family: 'Roboto', sans-serif;
-  color: #030303;
-  background-color: #F1EFEC;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: var(--text-body);
 }
 
 .sadrzaj {
@@ -474,34 +471,19 @@ onMounted(() => {
 }
 
 .zaglavlje {
-  text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
 .naslov {
-  text-align: center;
-  color: #123458;
-  margin-bottom: 10px;
+  color: var(--text-heading);
+  margin-bottom: 8px;
   font-weight: 700;
-  font-size: 2.5rem;
-  position: relative;
-}
-
-.naslov::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 3px;
-  background-color: #123458;
-  border-radius: 2px;
+  font-size: 1.8rem;
 }
 
 .zaglavlje p {
-  color: #5D8AA8;
-  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-size: 1rem;
   margin: 0;
 }
 
@@ -532,7 +514,7 @@ onMounted(() => {
 
 .naslov-unos {
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -542,13 +524,13 @@ onMounted(() => {
 
 .naslov-unos:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
 .sadrzaj-textarea {
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -560,7 +542,7 @@ onMounted(() => {
 
 .sadrzaj-textarea:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
@@ -598,7 +580,7 @@ onMounted(() => {
 }
 
 .gumb-file {
-  background-color: #5D8AA8;
+  background-color: var(--text-muted);
   color: white;
 }
 
@@ -608,17 +590,17 @@ onMounted(() => {
 }
 
 .gumb-spremi {
-  background-color: #123458;
-  color: #F1EFEC;
+  background-color: var(--text-heading);
+  color: white;
 }
 
 .gumb-spremi:hover:not(:disabled) {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
 }
 
 .gumb-spremi:disabled {
-  background-color: #D4C9BE;
+  background-color: var(--bg-card-muted);
   cursor: not-allowed;
   transform: none;
 }
@@ -655,13 +637,13 @@ onMounted(() => {
 }
 
 .poruka p {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 1.1rem;
   margin: 0 0 10px 0;
 }
 
 .poruka small {
-  color: #5D8AA8;
+  color: var(--text-muted);
   opacity: 0.8;
   font-size: 0.9rem;
 }
@@ -678,7 +660,7 @@ onMounted(() => {
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  border-left: 4px solid #123458;
+  border-left: 4px solid var(--accent);
 }
 
 .red:hover {
@@ -705,7 +687,7 @@ onMounted(() => {
 }
 
 .datum {
-  color: #030303;
+  color: var(--text-body);
   font-size: 12px;
   opacity: 0.7;
 }
@@ -716,7 +698,7 @@ onMounted(() => {
 }
 
 .naslov-ideje {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
   font-size: 1.2rem;
   margin: 0 0 10px 0;
@@ -725,11 +707,11 @@ onMounted(() => {
 }
 
 .naslov-ideje:hover {
-  color: #1c4c80;
+  color: var(--accent-hover);
 }
 
 .kratki-pregled {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 0.95rem;
   line-height: 1.5;
 }
@@ -749,7 +731,7 @@ onMounted(() => {
 }
 
 .lightbox-modal {
-  background-color: #F1EFEC;
+  background-color: var(--bg-page);
   border-radius: 12px;
   width: 90%;
   max-width: 800px;
@@ -761,8 +743,8 @@ onMounted(() => {
 }
 
 .lightbox-zaglavlje {
-  background-color: #123458;
-  color: #F1EFEC;
+  background-color: var(--text-heading);
+  color: white;
   padding: 20px 30px;
   display: flex;
   justify-content: space-between;
@@ -781,7 +763,7 @@ onMounted(() => {
 .lightbox-zatvori {
   background: none;
   border: none;
-  color: #F1EFEC;
+  color: white;
   font-size: 2rem;
   cursor: pointer;
   padding: 0;
@@ -810,7 +792,7 @@ onMounted(() => {
   padding: 15px;
   border-radius: 8px;
   margin-bottom: 20px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 .lightbox-tekst {
@@ -819,15 +801,15 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 1.1rem;
   line-height: 1.7;
-  color: #030303;
+  color: var(--text-body);
   white-space: pre-wrap;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   min-height: 200px;
 }
 
 .meta-item {
   margin-bottom: 8px;
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -857,8 +839,8 @@ onMounted(() => {
 
 .gumb-realizovana {
   background-color: white;
-  color: #123458;
-  border: 1px solid #123458;
+  color: var(--text-heading);
+  border: 1px solid var(--accent);
 }
 
 .gumb-realizovana.aktivna {
@@ -868,7 +850,7 @@ onMounted(() => {
 }
 
 .gumb-realizovana:hover:not(:disabled) {
-  background-color: #123458;
+  background-color: var(--text-heading);
   color: white;
 }
 
@@ -882,17 +864,17 @@ onMounted(() => {
 }
 
 .gumb-uredi {
-  background-color: #123458;
+  background-color: var(--text-heading);
   color: white;
 }
 
 .gumb-uredi:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: scale(1.1);
 }
 
 .gumb-eksport {
-  background-color: #5D8AA8;
+  background-color: var(--text-muted);
   color: white;
   padding: 8px;
 }
@@ -909,7 +891,7 @@ onMounted(() => {
 }
 
 .gumb-brisi {
-  background-color: #E53935;
+  background-color: var(--danger);
   color: white;
   font-size: 18px;
   font-weight: bold;
@@ -917,7 +899,7 @@ onMounted(() => {
 }
 
 .gumb-brisi:hover {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
   transform: scale(1.1);
 }
 
@@ -935,7 +917,7 @@ onMounted(() => {
 }
 
 .modal {
-  background-color: #F1EFEC;
+  background-color: var(--bg-page);
   border-radius: 12px;
   padding: 0;
   width: 500px;
@@ -946,8 +928,8 @@ onMounted(() => {
 }
 
 .modal-zaglavlje {
-  background-color: #123458;
-  color: #F1EFEC;
+  background-color: var(--text-heading);
+  color: white;
   padding: 16px 24px;
   text-align: center;
 }
@@ -967,7 +949,7 @@ onMounted(() => {
 
 .modal-sadrzaj .upozorenje {
   font-size: 48px;
-  color: #E53935;
+  color: var(--danger);
   margin-bottom: 16px;
   display: block;
   text-align: center;
@@ -976,21 +958,21 @@ onMounted(() => {
 .modal-sadrzaj p {
   margin: 0;
   font-size: 18px;
-  color: #030303;
+  color: var(--text-body);
   text-align: center;
 }
 
 .modal-sadrzaj strong {
   display: block;
   margin-top: 10px;
-  color: #123458;
+  color: var(--text-heading);
   text-align: center;
 }
 
 .naslov-input-modal {
   width: 100%;
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -1000,14 +982,14 @@ onMounted(() => {
 
 .naslov-input-modal:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
 .sadrzaj-textarea-modal {
   width: 100%;
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -1019,7 +1001,7 @@ onMounted(() => {
 
 .sadrzaj-textarea-modal:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
@@ -1046,25 +1028,25 @@ onMounted(() => {
 }
 
 .gumb-odustani {
-  background-color: #D4C9BE;
-  color: #123458;
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
 }
 
 .gumb-odustani:hover {
-  background-color: #c5b7a9;
+  background-color: var(--border-color);
 }
 
 .gumb-potvrdi {
-  background-color: #E53935;
-  color: #F1EFEC;
+  background-color: var(--danger);
+  color: white;
 }
 
 .gumb-potvrdi:hover:not(:disabled) {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
 }
 
 .gumb-potvrdi:disabled {
-  background-color: #D4C9BE;
+  background-color: var(--bg-card-muted);
   cursor: not-allowed;
 }
 

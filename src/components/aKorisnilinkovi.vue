@@ -484,10 +484,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 30px;
   font-family: 'Roboto', sans-serif;
-  color: #030303;
-  background-color: #F1EFEC;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: var(--text-body);
 }
 
 .sadrzaj {
@@ -495,34 +492,19 @@ onMounted(() => {
 }
 
 .zaglavlje {
-  text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
 .naslov {
-  text-align: center;
-  color: #123458;
-  margin-bottom: 10px;
+  color: var(--text-heading);
+  margin-bottom: 8px;
   font-weight: 700;
-  font-size: 2.5rem;
-  position: relative;
-}
-
-.naslov::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 3px;
-  background-color: #123458;
-  border-radius: 2px;
+  font-size: 1.8rem;
 }
 
 .zaglavlje p {
-  color: #5D8AA8;
-  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-size: 1rem;
   margin: 0;
 }
 
@@ -533,7 +515,7 @@ onMounted(() => {
 .pretraga-input {
   width: 100%;
   padding: 15px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -544,7 +526,7 @@ onMounted(() => {
 
 .pretraga-input:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
@@ -565,7 +547,7 @@ onMounted(() => {
 
 .naziv-unos {
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -575,13 +557,13 @@ onMounted(() => {
 
 .naziv-unos:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
 .url-unos {
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -591,14 +573,14 @@ onMounted(() => {
 
 .url-unos:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
 .gumb-spremi {
   padding: 10px 20px;
-  background-color: #123458;
-  color: #F1EFEC;
+  background-color: var(--text-heading);
+  color: white;
   border: none;
   border-radius: 6px;
   font-weight: 500;
@@ -610,13 +592,13 @@ onMounted(() => {
 }
 
 .gumb-spremi:hover:not(:disabled) {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .gumb-spremi:disabled {
-  background-color: #D4C9BE;
+  background-color: var(--bg-card-muted);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -651,7 +633,7 @@ onMounted(() => {
 }
 
 .poruka p {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 1.1rem;
   margin: 0;
 }
@@ -669,7 +651,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
-  border-left: 4px solid #D4C9BE;
+  border-left: 4px solid var(--border-color);
   width: 100%;
 }
 
@@ -678,10 +660,10 @@ onMounted(() => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-.red.tip-youtube-video { border-left-color: #123458; }
+.red.tip-youtube-video { border-left-color: var(--text-heading); }
 .red.tip-instagram { border-left-color: #e4405f; }
 .red.tip-tiktok { border-left-color: #000000; }
-.red.tip-ostalo { border-left-color: #D4C9BE; }
+.red.tip-ostalo { border-left-color: var(--border-color); }
 
 .sadrzaj-reda {
   display: flex;
@@ -696,7 +678,7 @@ onMounted(() => {
   height: 90px;
   border-radius: 8px;
   overflow: hidden;
-  background-color: #F1EFEC;
+  background-color: var(--bg-page);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -711,11 +693,11 @@ onMounted(() => {
 .zamjena {
   width: 100%;
   height: 100%;
-  background-color: #D4C9BE;
+  background-color: var(--bg-card-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #123458;
+  color: var(--text-heading);
   font-weight: bold;
   font-size: 18px;
 }
@@ -738,24 +720,24 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-  color: #F1EFEC;
+  color: white;
   flex-shrink: 0;
 }
 
-.oznaka-youtube-video { background-color: #123458; }
+.oznaka-youtube-video { background-color: var(--text-heading); }
 .oznaka-instagram { background-color: #e4405f; }
 .oznaka-tiktok { background-color: #000000; }
-.oznaka-ostalo { background-color: #D4C9BE; color: #123458; }
+.oznaka-ostalo { background-color: var(--bg-card-muted); color: var(--text-heading); }
 
 .datum {
-  color: #030303;
+  color: var(--text-body);
   font-size: 12px;
   opacity: 0.7;
   flex-shrink: 0;
 }
 
 .naziv {
-  color: #123458;
+  color: var(--text-heading);
   font-weight: 600;
   font-size: 1.1rem;
   margin: 0 0 8px 0;
@@ -771,11 +753,11 @@ onMounted(() => {
 }
 
 .naziv:hover {
-  color: #1c4c80;
+  color: var(--accent-hover);
 }
 
 .url {
-  color: #5D8AA8;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 400;
   overflow: hidden;
@@ -793,7 +775,7 @@ onMounted(() => {
 .gumb-uredi {
   width: 32px;
   height: 32px;
-  background-color: #123458;
+  background-color: var(--text-heading);
   color: white;
   border: none;
   border-radius: 50%;
@@ -806,14 +788,14 @@ onMounted(() => {
 }
 
 .gumb-uredi:hover {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: scale(1.1);
 }
 
 .gumb-brisi {
   width: 32px;
   height: 32px;
-  background-color: #E53935;
+  background-color: var(--danger);
   color: white;
   border: none;
   border-radius: 50%;
@@ -828,7 +810,7 @@ onMounted(() => {
 }
 
 .gumb-brisi:hover {
-  background-color: #C62828;
+  background-color: var(--danger-hover);
   transform: scale(1.1);
 }
 
@@ -846,7 +828,7 @@ onMounted(() => {
 }
 
 .modal {
-  background-color: #F1EFEC;
+  background-color: var(--bg-page);
   border-radius: 12px;
   padding: 0;
   width: 400px;
@@ -856,8 +838,8 @@ onMounted(() => {
 }
 
 .modal-zaglavlje {
-  background-color: #123458;
-  color: #F1EFEC;
+  background-color: var(--text-heading);
+  color: white;
   padding: 16px 24px;
   text-align: center;
 }
@@ -875,7 +857,7 @@ onMounted(() => {
 
 .modal-sadrzaj .upozorenje {
   font-size: 48px;
-  color: #E53935;
+  color: var(--danger);
   margin-bottom: 16px;
   display: block;
 }
@@ -883,13 +865,13 @@ onMounted(() => {
 .modal-sadrzaj p {
   margin: 0 0 24px 0;
   font-size: 18px;
-  color: #030303;
+  color: var(--text-body);
 }
 
 .naziv-input-modal {
   width: 100%;
   padding: 12px;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
@@ -899,7 +881,7 @@ onMounted(() => {
 
 .naziv-input-modal:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--text-heading);
   box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
 }
 
@@ -921,25 +903,25 @@ onMounted(() => {
 }
 
 .gumb-odustani {
-  background-color: #D4C9BE;
-  color: #123458;
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
 }
 
 .gumb-odustani:hover {
-  background-color: #c5b7a9;
+  background-color: var(--border-color);
 }
 
 .gumb-potvrdi {
-  background-color: #123458;
-  color: #F1EFEC;
+  background-color: var(--text-heading);
+  color: white;
 }
 
 .gumb-potvrdi:hover:not(:disabled) {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
 }
 
 .gumb-potvrdi:disabled {
-  background-color: #D4C9BE;
+  background-color: var(--bg-card-muted);
   cursor: not-allowed;
 }
 

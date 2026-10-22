@@ -816,6 +816,18 @@ const obrisiPredlozak = async (predlozak) => {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
+  animation: pojaviSe 0.35s ease both;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kartica:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+@keyframes pojaviSe {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .kartica .ikona {
@@ -1389,8 +1401,50 @@ const obrisiPredlozak = async (predlozak) => {
 
 @media (max-width: 768px) {
   .biznisbaza {
-    padding: 20px;
+    padding: 16px;
     padding-bottom: 100px;
+  }
+
+  .naslov {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  .satnica-traka {
+    padding: 14px 16px;
+    gap: 8px 14px;
+  }
+
+  .gumb-satnica {
+    font-size: 0.8rem;
+    padding: 7px 12px;
+  }
+
+  .navigacija-mjeseca {
+    padding: 12px 14px;
+  }
+
+  .navigacija-mjeseca h3 {
+    font-size: 0.95rem;
+  }
+
+  .kartice {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kartica {
+    padding: 14px;
+    min-width: 0;
+  }
+
+  .kartica .podaci .iznos {
+    font-size: 1.1rem;
+  }
+
+  .gumb-dodaj, .gumb-tjedni-alati, .gumb-prebaci {
+    width: 100%;
+    justify-content: center;
   }
 
   .dan-kalendara {
@@ -1407,11 +1461,17 @@ const obrisiPredlozak = async (predlozak) => {
   }
 
   .redak-unosa {
-    grid-template-columns: 1fr;
-    row-gap: 8px;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "detalji detalji"
+      "brojevi akcije";
+    row-gap: 10px;
   }
 
+  .redak-detalji { grid-area: detalji; }
+
   .redak-brojevi {
+    grid-area: brojevi;
     align-items: flex-start;
     text-align: left;
     flex-direction: row;
@@ -1419,9 +1479,8 @@ const obrisiPredlozak = async (predlozak) => {
   }
 
   .redak-akcije {
+    grid-area: akcije;
     justify-content: flex-end;
-    border-top: 1px solid var(--border-color);
-    padding-top: 8px;
   }
 
   .akcije-zaglavlje {
@@ -1445,5 +1504,9 @@ const obrisiPredlozak = async (predlozak) => {
   .akcije-tjedna {
     flex-direction: column;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kartica { animation: none !important; transition: none !important; }
 }
 </style>

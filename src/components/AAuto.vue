@@ -55,7 +55,17 @@
           <div class="redak-glavno">
             <span :class="['oznaka-tipa', `tip-${unos.tip}`]">{{ nazivTipa(unos.tip) }}</span>
             <span class="redak-datum">{{ formatDatum(unos.datum) }}</span>
-            <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
+            <div class="redak-desno">
+              <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
+              <div class="redak-akcije">
+                <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="redak-detalji">
@@ -78,15 +88,6 @@
             <template v-else>
               <span v-if="unos.opis" class="redak-opis">{{ unos.opis }}</span>
             </template>
-          </div>
-
-          <div class="redak-akcije">
-            <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
-              <span class="material-icons">edit</span>
-            </button>
-            <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
-              <span class="material-icons">delete</span>
-            </button>
           </div>
         </div>
       </div>
@@ -367,6 +368,18 @@ const potvrdiBrisanje = async () => {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 18px;
+  animation: pojaviSe 0.35s ease both;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kartica:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+@keyframes pojaviSe {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .kartica .ikona {
@@ -481,10 +494,17 @@ const potvrdiBrisanje = async () => {
   font-size: 0.9rem;
 }
 
-.redak-iznos {
+.redak-desno {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.redak-iznos {
   color: var(--success);
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .redak-detalji {
@@ -524,10 +544,7 @@ const potvrdiBrisanje = async () => {
 
 .redak-akcije {
   display: flex;
-  justify-content: flex-end;
-  gap: 4px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 8px;
+  gap: 2px;
 }
 
 .gumb-akcija {
@@ -716,7 +733,23 @@ const potvrdiBrisanje = async () => {
   }
 
   .kartice {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .kartica {
+    flex-direction: column;
+    text-align: center;
+    padding: 14px 8px;
+    gap: 8px;
+  }
+
+  .kartica .podaci h3 {
+    font-size: 0.68rem;
+  }
+
+  .kartica .podaci .iznos {
+    font-size: 0.95rem;
   }
 
   .redak-glavno {
@@ -724,9 +757,11 @@ const potvrdiBrisanje = async () => {
   }
 
   .redak-iznos {
-    margin-left: 0;
-    flex-basis: 100%;
-    text-align: left;
+    font-size: 0.85rem;
+  }
+
+  .redak-desno {
+    gap: 6px;
   }
 
   .tab-navigacija {
@@ -757,26 +792,37 @@ const potvrdiBrisanje = async () => {
   }
 
   .kartice {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 
   .kartica {
-    padding: 12px;
-    gap: 10px;
+    padding: 10px 4px;
+    gap: 6px;
   }
 
   .kartica .ikona {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .kartica .ikona .material-icons {
+    font-size: 18px;
+  }
+
+  .kartica .podaci h3 {
+    font-size: 0.62rem;
   }
 
   .kartica .podaci .iznos {
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
 
   .redak-info, .redak-opis {
     font-size: 0.8rem;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kartica { animation: none !important; transition: none !important; }
 }
 </style>
