@@ -19,9 +19,14 @@
         @click="aktivniTab = 'osobe'">
         <span class="material-icons">people</span> Po osobama
       </button>
-      <button class="gumb-pdf" @click="izvezuPDF" :disabled="prihodi.length === 0">
-        <span class="material-icons">picture_as_pdf</span> Preuzmi PDF backup
-      </button>
+      <div class="akcije-desno">
+        <router-link to="/admin/karte" class="gumb-karta">
+          <span class="material-icons">map</span> Karta
+        </router-link>
+        <button class="gumb-pdf" @click="izvezuPDF" :disabled="prihodi.length === 0">
+          <span class="material-icons">picture_as_pdf</span> Preuzmi PDF backup
+        </button>
+      </div>
     </div>
 
     <div v-if="!ucitava" class="kartice">
@@ -1534,8 +1539,35 @@ const spremiUredivanje = async () => {
   border-bottom-color: var(--accent);
 }
 
-.gumb-pdf {
+.akcije-desno {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gumb-karta {
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.gumb-karta:hover {
+  background-color: var(--border-color);
+}
+
+.gumb-pdf {
   background-color: var(--accent);
   color: white;
   border: none;
@@ -2558,12 +2590,18 @@ input:checked + .klizac:before {
     font-size: 13px;
   }
 
-  .gumb-pdf {
+  .akcije-desno {
     margin-left: 0;
     width: 100%;
-    justify-content: center;
     margin-top: 8px;
     order: 3;
+    flex-direction: column;
+  }
+
+  .gumb-karta,
+  .gumb-pdf {
+    width: 100%;
+    justify-content: center;
   }
 
   .filteri-okvir {

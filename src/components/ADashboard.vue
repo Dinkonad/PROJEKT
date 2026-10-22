@@ -22,6 +22,20 @@
             {{ temaState.tamna ? 'Svijetla tema' : 'Tamna tema' }}
           </button>
 
+          <button v-if="faceIdCredentiali.length === 0" class="gumb-tema" @click="registrirajFaceId">
+            <span class="material-icons">face</span>
+            Registriraj Face ID
+          </button>
+          <div v-else class="faceid-lista">
+            <div v-for="zapis in faceIdCredentiali" :key="zapis.id" class="faceid-redak">
+              <span class="material-icons">verified_user</span>
+              <span class="faceid-naziv">{{ zapis.naziv }}</span>
+              <button class="faceid-ukloni" title="Ukloni" @click="ukloniFaceIdZapis(zapis)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          </div>
+
           <div class="odjava-sekcija">
             <button class="gumb-odjava" @click="odjaviKorisnika">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,38 +49,15 @@
         </div>
 
         <nav class="bocna-navigacija">
-       
-            <router-link to="/admin" class="nav-stavka" exact-active-class="aktivna">
-              Dashboard
-            </router-link>
-            <router-link to="/admin/prihodi" class="nav-stavka" active-class="aktivna">
-              Prihodi
-            </router-link>
-            <router-link to="/admin/oprema" class="nav-stavka" active-class="aktivna">
-              Oprema
-            </router-link>
-            <router-link to="/admin/cjenovnik" class="nav-stavka" active-class="aktivna">
-              Cjenovnik
-            </router-link>
-            <router-link to="/admin/upload" class="nav-stavka" active-class="aktivna">
-              Upload
-            </router-link>
-            <router-link to="/admin/karte" class="nav-stavka" active-class="aktivna">
-              Karta
-            </router-link>
-            <router-link to="/admin/kalendar" class="nav-stavka" active-class="aktivna">
-              Kalendar
-            </router-link>
-            <router-link to="/admin/aktivnosti" class="nav-stavka" active-class="aktivna">
-              Aktivnost
-            </router-link>
-            <router-link to="/admin/korisni-linkovi" class="nav-stavka" active-class="aktivna">
-              Linkovi
-            </router-link>
-            <router-link to="/admin/kreativna-zona" class="nav-stavka" active-class="aktivna">
-              Kreativna zona
-            </router-link>
-         
+          <router-link
+            v-for="stavka in navStavke"
+            :key="stavka.to"
+            :to="stavka.to"
+            class="nav-stavka"
+            v-bind="stavka.exact ? { 'exact-active-class': 'aktivna' } : { 'active-class': 'aktivna' }"
+          >
+            {{ stavka.label }}
+          </router-link>
         </nav>
       </div>
     </div>
@@ -247,6 +238,13 @@
         <router-view v-else></router-view>
       </div>
     </div>
+
+    <ABottomNav
+      :korisnik-email="korisnikEmail"
+      :tema-tamna="temaState.tamna"
+      @toggle-tema="toggleTemu"
+      @odjava="odjaviKorisnika"
+    />
   </div>
 </template>
 
@@ -256,6 +254,9 @@ import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
 import { useTheme } from '../store/theme';
 import { db } from '@/services/firebase.js';
+import { navStavke } from '@/config/navigacija.js';
+import ABottomNav from './ABottomNav.vue';
+import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
 import {
   collection,
   getDocs
@@ -268,6 +269,7 @@ const { state: temaState, toggleTemu } = useTheme();
 const bocnaTrakaOtvorena = ref(false);
 const prihodi = ref([]);
 const ucitavaPodatke = ref(true);
+const faceIdCredentiali = ref([]);
 
 const korisnikEmail = computed(() => 'naddinko@gmail.com');
 const korisnikInicijali = computed(() => korisnikEmail.value.charAt(0).toUpperCase());
@@ -622,8 +624,35 @@ const formatCurrency = (value) => {
   return `${parseFloat(value || 0).toFixed(2)} EUR`;
 };
 
+const registrirajFaceId = async () => {
+  if (!jePodrzano()) {
+    alert('Ovaj uređaj/preglednik ne podržava Face ID / Touch ID / Windows Hello.');
+    return;
+  }
+  const nazivUredaja = prompt('Naziv uređaja (npr. iPhone):', 'iPhone') || 'Uređaj';
+  try {
+    const zapis = await registrirajNoviCredential(korisnikEmail.value, nazivUredaja);
+    faceIdCredentiali.value.push(zapis);
+    alert('Face ID je registriran na ovom uređaju.');
+  } catch (error) {
+    console.error('Greška pri registraciji Face ID:', error);
+    alert('Registracija nije uspjela. Provjeri da stranica radi preko https (ili localhost) i da uređaj ima Face ID/Touch ID/Windows Hello.');
+  }
+};
+
+const ukloniFaceIdZapis = async (zapis) => {
+  if (!confirm(`Ukloniti Face ID za "${zapis.naziv}"?`)) return;
+  try {
+    await ukloniCredential(zapis);
+    faceIdCredentiali.value = faceIdCredentiali.value.filter(c => c.id !== zapis.id);
+  } catch (error) {
+    console.error('Greška pri uklanjanju Face ID zapisa:', error);
+  }
+};
+
 onMounted(() => {
   ucitajPodatke();
+  dohvatiRegistrirane().then(lista => { faceIdCredentiali.value = lista; });
 });
 </script>
 
@@ -747,6 +776,49 @@ onMounted(() => {
 
 .gumb-tema:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.faceid-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.faceid-redak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.faceid-redak .material-icons:first-child {
+  font-size: 16px;
+  color: #8FB2CC;
+}
+
+.faceid-naziv {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faceid-ukloni {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  padding: 2px;
+}
+
+.faceid-ukloni .material-icons {
+  font-size: 16px;
 }
 
 .gumb-odjava {
@@ -1377,13 +1449,18 @@ onMounted(() => {
     font-size: 1.8rem;
   }
 
-  .bocna-traka {
-    width: 100%;
-    left: -100%;
+  .bocna-traka,
+  .otvori-bocnu-traku,
+  .bocna-overlay {
+    display: none !important;
   }
 
-  .bocna-traka.otvorena {
-    left: 0;
+  .glavni-sadrzaj.pomjeren {
+    margin-left: 0;
+  }
+
+  .sadrzaj-omotac {
+    padding-bottom: 88px;
   }
 
   .traka-sadrzaj {

@@ -1,0 +1,270 @@
+<template>
+  <nav class="donja-traka">
+    <router-link
+      v-for="stavka in primarneStavke"
+      :key="stavka.to"
+      :to="stavka.to"
+      class="donja-stavka"
+      v-bind="stavka.exact ? { 'exact-active-class': 'aktivna' } : { 'active-class': 'aktivna' }"
+    >
+      <span class="material-icons">{{ stavka.icon }}</span>
+      <span class="donja-oznaka">{{ stavka.label }}</span>
+    </router-link>
+
+    <button type="button" class="donja-stavka" :class="{ aktivna: viseOtvoreno }" @click="viseOtvoreno = true">
+      <span class="material-icons">more_horiz</span>
+      <span class="donja-oznaka">Više</span>
+    </button>
+  </nav>
+
+  <Teleport to="body">
+    <div v-if="viseOtvoreno" class="vise-prekrivac" @click="viseOtvoreno = false">
+      <div class="vise-sheet" @click.stop>
+        <div class="vise-rucka"></div>
+
+        <div class="vise-profil">
+          <div class="vise-ikona">{{ korisnikInicijali }}</div>
+          <span class="vise-email">{{ korisnikEmail }}</span>
+        </div>
+
+        <router-link
+          v-for="stavka in sekundarneStavke"
+          :key="stavka.to"
+          :to="stavka.to"
+          class="vise-stavka"
+          active-class="aktivna"
+          @click="viseOtvoreno = false"
+        >
+          <span class="material-icons">{{ stavka.icon }}</span>
+          {{ stavka.label }}
+        </router-link>
+
+        <button type="button" class="vise-stavka" @click="$emit('toggle-tema'); viseOtvoreno = false">
+          <span class="material-icons">{{ temaTamna ? 'light_mode' : 'dark_mode' }}</span>
+          {{ temaTamna ? 'Svijetla tema' : 'Tamna tema' }}
+        </button>
+
+        <button v-if="faceIdCredentiali.length === 0" type="button" class="vise-stavka" @click="registrirajFaceId">
+          <span class="material-icons">face</span>
+          Registriraj Face ID
+        </button>
+        <div v-for="zapis in faceIdCredentiali" :key="zapis.id" class="vise-stavka vise-faceid-redak">
+          <span class="material-icons">verified_user</span>
+          <span class="vise-faceid-naziv">Face ID: {{ zapis.naziv }}</span>
+          <button type="button" class="vise-faceid-ukloni" title="Ukloni" @click="ukloniFaceIdZapis(zapis)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <button type="button" class="vise-stavka odjava" @click="$emit('odjava'); viseOtvoreno = false">
+          <span class="material-icons">logout</span>
+          Odjava
+        </button>
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { navStavke } from '@/config/navigacija.js';
+import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
+
+const props = defineProps({
+  korisnikEmail: { type: String, default: '' },
+  temaTamna: { type: Boolean, default: false }
+});
+defineEmits(['toggle-tema', 'odjava']);
+
+const viseOtvoreno = ref(false);
+const faceIdCredentiali = ref([]);
+const primarneStavke = computed(() => navStavke.filter(s => s.mobilePrimary));
+const sekundarneStavke = computed(() => navStavke.filter(s => !s.mobilePrimary));
+const korisnikInicijali = computed(() => (props.korisnikEmail || '?').charAt(0).toUpperCase());
+
+onMounted(() => {
+  dohvatiRegistrirane().then(lista => { faceIdCredentiali.value = lista; });
+});
+
+const registrirajFaceId = async () => {
+  if (!jePodrzano()) {
+    alert('Ovaj uređaj/preglednik ne podržava Face ID / Touch ID.');
+    return;
+  }
+  const nazivUredaja = prompt('Naziv uređaja (npr. iPhone):', 'iPhone') || 'Uređaj';
+  try {
+    const zapis = await registrirajNoviCredential(props.korisnikEmail, nazivUredaja);
+    faceIdCredentiali.value.push(zapis);
+    alert('Face ID je registriran na ovom uređaju.');
+  } catch (error) {
+    console.error('Greška pri registraciji Face ID:', error);
+    alert('Registracija nije uspjela. Provjeri da stranica radi preko https i da uređaj podržava Face ID/Touch ID.');
+  }
+};
+
+const ukloniFaceIdZapis = async (zapis) => {
+  if (!confirm(`Ukloniti Face ID za "${zapis.naziv}"?`)) return;
+  try {
+    await ukloniCredential(zapis);
+    faceIdCredentiali.value = faceIdCredentiali.value.filter(c => c.id !== zapis.id);
+  } catch (error) {
+    console.error('Greška pri uklanjanju Face ID zapisa:', error);
+  }
+};
+</script>
+
+<style scoped>
+.donja-traka {
+  display: none;
+}
+
+.vise-prekrivac {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .donja-traka {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 64px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 16px var(--shadow-color);
+    z-index: 950;
+  }
+
+  .donja-stavka {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-family: 'Roboto', sans-serif;
+    cursor: pointer;
+  }
+
+  .donja-stavka .material-icons {
+    font-size: 22px;
+  }
+
+  .donja-oznaka {
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .donja-stavka.aktivna {
+    color: var(--accent);
+  }
+
+  .vise-prekrivac {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(3, 3, 3, 0.5);
+    z-index: 1100;
+  }
+
+  .vise-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 75vh;
+    overflow-y: auto;
+    background-color: var(--bg-card);
+    border-radius: 16px 16px 0 0;
+    padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0));
+    box-shadow: 0 -8px 24px var(--shadow-color);
+  }
+
+  .vise-rucka {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--border-color);
+    margin: 4px auto 14px;
+  }
+
+  .vise-profil {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .vise-ikona {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .vise-email {
+    color: var(--text-heading);
+    font-weight: 500;
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+
+  .vise-stavka {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 8px;
+    background: none;
+    border: none;
+    text-decoration: none;
+    color: var(--text-heading);
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .vise-stavka.aktivna {
+    color: var(--accent);
+  }
+
+  .vise-stavka.odjava {
+    color: var(--danger);
+  }
+
+  .vise-faceid-redak {
+    cursor: default;
+  }
+
+  .vise-faceid-naziv {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .vise-faceid-ukloni {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    padding: 4px;
+  }
+}
+</style>

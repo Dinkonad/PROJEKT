@@ -6,10 +6,10 @@ import Dashboard from '../korisnik/Dashboard.vue';
 import AdminDashboard from '../components/ADashboard.vue';
 import PrihodiView from '../components/APrihodi.vue';
 import OpremaView from '../components/AOprema.vue';
-import CjenovnikView from '../components/ACjenovnik.vue';
-import aUpload from '../components/aUpload.vue';
-import aKalendar from '../components/aKalendar.vue';
-import aKorisnici from '../components/aKorisnici.vue';
+import ABiznisbaza from '../components/ABiznisbaza.vue';
+import ASifre from '../components/ASifre.vue';
+import AAuto from '../components/AAuto.vue';
+import AZdravlje from '../components/AZdravlje.vue';
 import aKarte from '../components/aKarte.vue';
 import aKorisnilinkovi from '../components/aKorisnilinkovi.vue';
 import aKreativnaideja from '../components/aKreativnaideja.vue';
@@ -49,33 +49,33 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
-        path: 'cjenovnik',
-        name: 'Cjenovnik',
-        component: CjenovnikView,
-        meta: { requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'aktivnosti',
-        name: 'Aktivnosti',
-        component: aKorisnici, 
-        meta: { requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'upload',
-        name: 'Upload',
-        component: aUpload,
-        meta: { requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'kalendar',
-        name: 'Kalendar',
-        component: aKalendar,
+        path: 'biznisbaza',
+        name: 'BiznisBaza',
+        component: ABiznisbaza,
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
         path: 'karte',
         name: 'Karte',
         component: aKarte,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'sifre',
+        name: 'Sifre',
+        component: ASifre,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'auto',
+        name: 'Auto',
+        component: AAuto,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'zdravlje',
+        name: 'Zdravlje',
+        component: AZdravlje,
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
