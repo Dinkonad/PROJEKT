@@ -8,6 +8,7 @@ export const navStavke = [
   { to: '/admin/sifre', label: 'Šifre', icon: 'key', mobilePrimary: true },
   { to: '/admin/oprema', label: 'Oprema', icon: 'camera_alt', mobilePrimary: false },
   { to: '/admin/auto', label: 'Auto', icon: 'directions_car', mobilePrimary: false },
+  { to: '/admin/kalendar', label: 'Kalendar', icon: 'calendar_month', mobilePrimary: false },
   { to: '/admin/korisni-linkovi', label: 'Linkovi', icon: 'link', mobilePrimary: false },
   { to: '/admin/kreativna-zona', label: 'Kreativna zona', icon: 'lightbulb', mobilePrimary: false }
 ];

@@ -25,6 +25,18 @@
         </div>
       </div>
 
+      <div v-if="iphoneEventi.length > 0" class="iphone-eventi">
+        <div class="iphone-eventi-zaglavlje">
+          <span class="material-icons">event</span> Iz iPhone kalendara "Biznis baza"
+        </div>
+        <div class="iphone-eventi-lista">
+          <div v-for="e in iphoneEventi" :key="e.id" class="iphone-event-redak">
+            <span class="iphone-event-datum">{{ formatKratkiDatumIso(e.dan) }}</span>
+            <span class="iphone-event-naslov">{{ e.naslov }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="navigacija-mjeseca">
         <button class="gumb-navigacije" @click="prethodniMjesec">&lt;</button>
         <h3>{{ nazivMjesecaGodina }}</h3>
@@ -285,7 +297,7 @@ import { db } from '@/services/firebase.js';
 import { preuzmiICS, preuzmiVisestrukiICS } from '@/utils/ics.js';
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, setDoc, getDoc,
-  onSnapshot, serverTimestamp
+  onSnapshot, serverTimestamp, query, where, orderBy, limit
 } from 'firebase/firestore';
 
 const ucitava = ref(true);
@@ -316,6 +328,9 @@ const prikazTekstaIzvjestaja = ref('');
 let unsubUnosi = null;
 let unsubPrebacivanja = null;
 let unsubPredlosci = null;
+let unsubIphoneEventi = null;
+
+const iphoneEventi = ref([]);
 
 const nazviMjeseci = [
   'Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj',
@@ -396,6 +411,7 @@ function izracunajSate(pocetno, zavrsno) {
 
 const formatSati = (v) => `${(parseFloat(v) || 0).toFixed(2)} h`;
 const formatCurrency = (v) => `${(parseFloat(v) || 0).toFixed(2)} EUR`;
+const formatKratkiDatumIso = (danStr) => new Date(danStr).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short' });
 const formatDugiDatum = (datumString) => new Date(datumString).toLocaleDateString('hr-HR', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 });
@@ -446,6 +462,21 @@ const postaviRealtimeListenere = () => {
   unsubPredlosci = onSnapshot(collection(db, 'biznisbaza-predlosci'), (snapshot) => {
     predlosci.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   });
+
+  const danasStr = new Date().toISOString().slice(0, 10);
+  const qIphoneEventi = query(
+    collection(db, 'kalendar-eventi'),
+    where('kalendar', '==', 'Biznis baza'),
+    orderBy('pocetak'),
+    limit(10)
+  );
+  unsubIphoneEventi = onSnapshot(qIphoneEventi, (snapshot) => {
+    iphoneEventi.value = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(e => e.dan >= danasStr);
+  }, (error) => {
+    console.error('Greška pri čitanju iPhone eventa:', error);
+  });
 };
 
 onMounted(async () => {
@@ -459,6 +490,7 @@ onBeforeUnmount(() => {
   if (unsubUnosi) unsubUnosi();
   if (unsubPrebacivanja) unsubPrebacivanja();
   if (unsubPredlosci) unsubPredlosci();
+  if (unsubIphoneEventi) unsubIphoneEventi();
 });
 
 const resetirajFormu = () => {
@@ -767,6 +799,55 @@ const obrisiPredlozak = async (predlozak) => {
 
 .gumb-satnica:hover {
   background-color: var(--border-color);
+}
+
+.iphone-eventi {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.iphone-eventi-zaglavlje {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.iphone-eventi-zaglavlje .material-icons {
+  font-size: 16px;
+}
+
+.iphone-eventi-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.iphone-event-redak {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.iphone-event-datum {
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 48px;
+  flex-shrink: 0;
+}
+
+.iphone-event-naslov {
+  color: var(--text-heading);
 }
 
 .navigacija-mjeseca {

@@ -13,6 +13,7 @@ import AZdravlje from '../components/AZdravlje.vue';
 import aKarte from '../components/aKarte.vue';
 import aKorisnilinkovi from '../components/aKorisnilinkovi.vue';
 import aKreativnaideja from '../components/aKreativnaideja.vue';
+import AKalendar from '../components/AKalendar.vue';
 
 const routes = [
   {
@@ -88,6 +89,12 @@ const routes = [
         path: 'kreativna-zona',
         name: 'KreativnaZona',
         component: aKreativnaideja,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'kalendar',
+        name: 'Kalendar',
+        component: AKalendar,
         meta: { requiresAuth: true, requiresAdmin: true }
       }
     ]
