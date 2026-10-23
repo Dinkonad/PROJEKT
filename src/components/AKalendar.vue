@@ -30,7 +30,7 @@
           <div v-for="e in grupa.eventi" :key="e.id" class="event-kartica">
             <div class="event-vrijeme">
               <span v-if="e.cijeliDan" class="event-cijeli-dan">Cijeli dan</span>
-              <span v-else>{{ formatSat(e.pocetak) }}</span>
+              <span v-else>{{ formatSat(e.pocetak) }} – {{ formatSat(e.kraj) }}</span>
             </div>
             <div class="event-podaci">
               <div class="event-naslov-red">
@@ -52,7 +52,6 @@ import { db, auth } from '@/services/firebase.js';
 import { collection, doc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 
 const BACKEND_URL = import.meta.env.VITE_GARMIN_BACKEND_URL || '';
-const IZOSTAVI_KALENDAR = 'Biznis baza';
 
 const ucitava = ref(true);
 const eventi = ref([]);
@@ -77,7 +76,7 @@ onMounted(() => {
   unsubEventi = onSnapshot(qEventi, (snap) => {
     eventi.value = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter(e => e.kalendar !== IZOSTAVI_KALENDAR && e.dan >= danasStr);
+      .filter(e => e.dan >= danasStr);
     ucitava.value = false;
   }, (error) => {
     console.error('Greška pri čitanju kalendar eventa:', error);
