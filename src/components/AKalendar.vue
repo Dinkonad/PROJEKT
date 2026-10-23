@@ -63,10 +63,15 @@ const porukaGreske = ref('');
 let unsubEventi = null;
 let unsubMeta = null;
 
+const danStringLokalno = (d) => {
+  const godina = d.getFullYear();
+  const mjesec = String(d.getMonth() + 1).padStart(2, '0');
+  const dan = String(d.getDate()).padStart(2, '0');
+  return `${godina}-${mjesec}-${dan}`;
+};
+
 onMounted(() => {
-  const danas = new Date();
-  danas.setHours(0, 0, 0, 0);
-  const danasStr = danas.toISOString().slice(0, 10);
+  const danasStr = danStringLokalno(new Date());
 
   const qEventi = query(collection(db, 'kalendar-eventi'), orderBy('pocetak'), limit(300));
   unsubEventi = onSnapshot(qEventi, (snap) => {
@@ -112,10 +117,11 @@ const formatNazivDana = (danStr) => {
   danas.setHours(0, 0, 0, 0);
   const sutra = new Date(danas);
   sutra.setDate(sutra.getDate() + 1);
-  const datum = new Date(danStr);
+  const [godina, mjesec, dan] = danStr.split('-').map(Number);
+  const datum = new Date(godina, mjesec - 1, dan);
 
-  if (datum.toISOString().slice(0, 10) === danas.toISOString().slice(0, 10)) return 'Danas';
-  if (datum.toISOString().slice(0, 10) === sutra.toISOString().slice(0, 10)) return 'Sutra';
+  if (danStringLokalno(datum) === danStringLokalno(danas)) return 'Danas';
+  if (danStringLokalno(datum) === danStringLokalno(sutra)) return 'Sutra';
   return datum.toLocaleDateString('hr-HR', { weekday: 'long', day: 'numeric', month: 'long' });
 };
 

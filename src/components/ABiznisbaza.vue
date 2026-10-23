@@ -463,7 +463,8 @@ const postaviRealtimeListenere = () => {
     predlosci.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   });
 
-  const danasStr = new Date().toISOString().slice(0, 10);
+  const danasDatum = new Date();
+  const danasStr = `${danasDatum.getFullYear()}-${String(danasDatum.getMonth() + 1).padStart(2, '0')}-${String(danasDatum.getDate()).padStart(2, '0')}`;
   const qIphoneEventi = query(
     collection(db, 'kalendar-eventi'),
     where('kalendar', '==', 'Biznis baza'),
