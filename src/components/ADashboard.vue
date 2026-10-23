@@ -1411,8 +1411,19 @@ onMounted(() => {
   }
 
   .grad-red {
-    grid-template-columns: 22px 1fr 60px 90px;
+    grid-template-columns: 22px minmax(0, 1fr) auto auto;
+    gap: 8px;
     font-size: 0.85rem;
+  }
+
+  .grad-naziv {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .grad-broj, .grad-dani {
+    font-size: 0.78rem;
   }
 
   .adrese-lista {
@@ -1420,8 +1431,13 @@ onMounted(() => {
   }
 
   .adresa-red {
-    grid-template-columns: 1fr 60px 60px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
     font-size: 0.8rem;
+  }
+
+  .adresa-broj, .adresa-dani {
+    font-size: 0.75rem;
   }
 
   .godina-select {
@@ -1498,15 +1514,13 @@ onMounted(() => {
   }
 
   .adresa-red {
-    grid-template-columns: 1fr 46px 46px;
     font-size: 0.72rem;
-    gap: 6px;
+    gap: 2px 6px;
   }
 
   .grad-red {
-    grid-template-columns: 20px 1fr 44px 70px;
     font-size: 0.78rem;
-    gap: 6px;
+    gap: 2px 6px;
   }
 
   .traka-sadrzaj {

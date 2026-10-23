@@ -76,14 +76,6 @@
       </div>
 
       <div class="tab-navigacija">
-        <button
-          v-for="t in tabovi"
-          :key="t.vrijednost"
-          :class="['tab-gumb', { aktivan: aktivniTab === t.vrijednost }]"
-          @click="aktivniTab = t.vrijednost"
-        >
-          {{ t.naziv }}
-        </button>
         <button class="gumb-dodaj" @click="otvoriModalUnos()">
           <span class="material-icons">add</span> Dodaj unos
         </button>
@@ -98,16 +90,14 @@
           <div class="redak-glavno">
             <span :class="['oznaka-tipa', `tip-${unos.tip}`]">{{ nazivTipa(unos.tip) }}</span>
             <span class="redak-datum">{{ formatDatum(unos.datum) }}</span>
-            <div class="redak-desno">
-              <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
-              <div class="redak-akcije">
-                <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
-                  <span class="material-icons">edit</span>
-                </button>
-                <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
-                  <span class="material-icons">delete</span>
-                </button>
-              </div>
+            <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
+            <div class="redak-akcije">
+              <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
+                <span class="material-icons">edit</span>
+              </button>
+              <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
+                <span class="material-icons">delete</span>
+              </button>
             </div>
           </div>
 
@@ -285,21 +275,12 @@ import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from 'fireb
 
 const ucitava = ref(true);
 const unosi = ref([]);
-const aktivniTab = ref('sve');
-
 const prikaziModalUnos = ref(false);
 const uredujeUnos = ref(null);
 const forma = ref(praznaForma());
 const unosZaBrisanje = ref(null);
 
 let unsub = null;
-
-const tabovi = [
-  { vrijednost: 'sve', naziv: 'Sve' },
-  { vrijednost: 'registracija', naziv: 'Registracija' },
-  { vrijednost: 'servis', naziv: 'Servis' },
-  { vrijednost: 'kilometraza', naziv: 'Gorivo' }
-];
 
 function praznaForma() {
   return {
@@ -316,8 +297,7 @@ const formatDatum = (datumString) => datumString ? new Date(datumString).toLocal
 
 const filtriraniUnosi = computed(() => {
   const bazniUnosi = unosi.value.filter(u => u.tip !== 'ocitanje-km');
-  const lista = aktivniTab.value === 'sve' ? bazniUnosi : bazniUnosi.filter(u => u.tip === aktivniTab.value);
-  return [...lista].sort((a, b) => b.datum.localeCompare(a.datum));
+  return [...bazniUnosi].sort((a, b) => b.datum.localeCompare(a.datum));
 });
 
 const potrosnjaUnosa = (unos) => {
@@ -725,32 +705,10 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .tab-navigacija {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 10px;
-}
-
-.tab-gumb {
-  background: none;
-  border: 1px solid transparent;
-  padding: 8px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.tab-gumb.aktivan {
-  background-color: var(--accent);
-  color: white;
+  margin: 25px 0;
 }
 
 .gumb-dodaj {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -785,40 +743,35 @@ const potvrdiBrisanjeOcitanja = async () => {
 .redak-glavno {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
 .oznaka-tipa {
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
   white-space: nowrap;
   color: white;
+  flex-shrink: 0;
 }
 
 .tip-registracija { background-color: var(--accent); }
-.tip-servis { background-color: var(--bg-card); color: var(--danger); border: 1px solid var(--danger); }
+.tip-servis { background-color: var(--danger); }
 .tip-kilometraza { background-color: var(--success); }
 
 .redak-datum {
-  color: var(--text-heading);
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.redak-desno {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .redak-iznos {
   color: var(--success);
   font-weight: 700;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
@@ -827,7 +780,6 @@ const potvrdiBrisanjeOcitanja = async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  margin-bottom: 8px;
 }
 
 .redak-info {
@@ -860,6 +812,8 @@ const potvrdiBrisanjeOcitanja = async () => {
 .redak-akcije {
   display: flex;
   gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .gumb-akcija {
@@ -867,9 +821,13 @@ const potvrdiBrisanjeOcitanja = async () => {
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  padding: 6px;
+  padding: 4px;
   border-radius: 6px;
   display: flex;
+}
+
+.gumb-akcija .material-icons {
+  font-size: 18px;
 }
 
 .gumb-akcija:hover {
@@ -1076,14 +1034,6 @@ const potvrdiBrisanjeOcitanja = async () => {
   }
 
   .redak-glavno {
-    gap: 8px;
-  }
-
-  .redak-iznos {
-    font-size: 0.85rem;
-  }
-
-  .redak-desno {
     gap: 6px;
   }
 
@@ -1104,23 +1054,9 @@ const potvrdiBrisanjeOcitanja = async () => {
     min-width: 24px;
   }
 
-  .tab-navigacija {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .tab-gumb {
-    text-align: center;
-  }
-
   .gumb-dodaj {
-    grid-column: 1 / -1;
-    margin-left: 0;
     width: 100%;
     justify-content: center;
-    order: 99;
-    margin-top: 4px;
   }
 
   .grupa-vrijeme {

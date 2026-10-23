@@ -8,20 +8,6 @@
     </div>
 
     <template v-else>
-      <div class="satnica-traka">
-        <span class="satnica-oznaka">Trenutna plaća</span>
-        <span class="satnica-iznos">{{ formatCurrency(trenutnaSatnica) }} / sat</span>
-        <button class="gumb-satnica" @click="otvoriModalSatnicu">
-          <span class="material-icons">edit</span> Promijeni plaću
-        </button>
-      </div>
-
-      <div class="navigacija-mjeseca">
-        <button class="gumb-navigacije" @click="prethodniMjesec">&lt;</button>
-        <h3>{{ nazivMjesecaGodina }}</h3>
-        <button class="gumb-navigacije" @click="sljedeciMjesec">&gt;</button>
-      </div>
-
       <div class="kartice">
         <div class="kartica sati">
           <div class="ikona"><span class="material-icons">schedule</span></div>
@@ -37,6 +23,12 @@
             <p class="iznos">{{ formatCurrency(ukupnoZaradaMjesec) }}</p>
           </div>
         </div>
+      </div>
+
+      <div class="navigacija-mjeseca">
+        <button class="gumb-navigacije" @click="prethodniMjesec">&lt;</button>
+        <h3>{{ nazivMjesecaGodina }}</h3>
+        <button class="gumb-navigacije" @click="sljedeciMjesec">&gt;</button>
       </div>
 
       <div class="akcije-zaglavlje">
@@ -117,6 +109,14 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="satnica-traka">
+        <span class="satnica-oznaka">Trenutna plaća</span>
+        <span class="satnica-iznos">{{ formatCurrency(trenutnaSatnica) }} / sat</span>
+        <button class="gumb-satnica" @click="otvoriModalSatnicu">
+          <span class="material-icons">edit</span> Promijeni plaću
+        </button>
       </div>
     </template>
 
@@ -564,7 +564,7 @@ const prebaciUPrihode = async () => {
     const zadnjiDan = new Date(godina, mjesecIndeks + 1, 0);
 
     await addDoc(collection(db, 'prihodi'), {
-      nazivEventa: `Rad - ${nazviMjeseci[mjesecIndeks]} ${godina}`,
+      nazivEventa: `Biznis-baza za ${nazviMjeseci[mjesecIndeks]} ${godina}`,
       cijena: Math.round(ukupnoZaradaMjesec.value * 100) / 100,
       datumSnimanja: uISO(prviDan),
       datumZavrsetak: uISO(zadnjiDan),

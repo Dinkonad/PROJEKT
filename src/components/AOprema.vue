@@ -101,11 +101,11 @@
               @click="prikaziDetalje(opremaItem)" 
               class="red" 
               :class="{ 'prodano-red': opremaItem.prodano }">
-            <td>{{ opremaItem.naziv }}</td>
-            <td>{{ formatCurrency(opremaItem.cijena) }}</td>
-            <td>{{ vlasnistvo(opremaItem.tip) }}</td>
-            <td>{{ formatDatum(opremaItem.datumKupnje) }}</td>
-            <td>
+            <td data-label="Naziv opreme">{{ opremaItem.naziv }}</td>
+            <td data-label="Cijena">{{ formatCurrency(opremaItem.cijena) }}</td>
+            <td data-label="Plaćeno">{{ vlasnistvo(opremaItem.tip) }}</td>
+            <td data-label="Datum kupnje">{{ formatDatum(opremaItem.datumKupnje) }}</td>
+            <td data-label="Status">
               <div v-if="opremaItem.prodano" class="status prodano">
                 <span class="material-icons">sell</span> Prodano
               </div>
@@ -113,7 +113,7 @@
                 <span class="material-icons">sell</span> Označi kao prodano
               </button>
             </td>
-            <td>
+            <td data-label="Akcija">
               <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(opremaItem)" :disabled="sprema">
                 <span class="material-icons">delete</span>
               </button>
@@ -1061,10 +1061,55 @@ form {
     margin-bottom: 20px;
   }
 
+  .tablica thead {
+    display: none;
+  }
+
+  .tablica, .tablica tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .tablica tr.red {
+    display: block;
+    background-color: var(--glass-bg-muted);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-small);
+    padding: 12px 14px;
+    margin: 12px;
+  }
+
+  .tablica tr.red:last-child {
+    margin-bottom: 12px;
+  }
+
   .tablica th,
   .tablica td {
-    padding: 12px 8px;
+    display: block;
+    width: auto;
+    padding: 7px 0;
     font-size: 14px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tablica td:last-child {
+    border-bottom: none;
+    padding-top: 10px;
+  }
+
+  .tablica td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+
+  .tablica td:last-child::before {
+    display: none;
   }
 
   .gumb-prodaj {
