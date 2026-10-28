@@ -8,12 +8,27 @@
     </div>
 
     <template v-else>
+      <div class="kartica-ukupno">
+        <div class="ikona"><span class="material-icons">account_balance_wallet</span></div>
+        <div class="podaci">
+          <h3>Ukupno potrošeno na auto</h3>
+          <p class="iznos">{{ formatCurrency(ukupnoPotroseno) }}</p>
+        </div>
+      </div>
+
       <div class="kartice">
         <div class="kartica">
           <div class="ikona"><span class="material-icons">speed</span></div>
           <div class="podaci">
             <h3>Zadnja kilometraža</h3>
             <p class="iznos">{{ zadnjaKilometraza !== null ? `${zadnjaKilometraza.toLocaleString('hr-HR')} km` : '-' }}</p>
+          </div>
+        </div>
+        <div class="kartica">
+          <div class="ikona"><span class="material-icons">local_gas_station</span></div>
+          <div class="podaci">
+            <h3>Ukupno gorivo</h3>
+            <p class="iznos">{{ formatCurrency(ukupnoGorivo) }}</p>
           </div>
         </div>
         <div class="kartica">
@@ -34,7 +49,7 @@
 
       <div class="sekcija-km">
         <div class="sekcija-km-zaglavlje">
-          <h2>Mjesečna kilometraža</h2>
+          <h2>Mjesečno stanje (km i gorivo)</h2>
           <button class="gumb-dodaj-km" @click="otvoriModalKm()">
             <span class="material-icons">add</span> Upiši stanje
           </button>
@@ -61,15 +76,22 @@
 
         <div v-if="ocitanjaKm.length" class="lista-ocitanja">
           <div v-for="o in [...ocitanjaKm].reverse()" :key="o.id" class="redak-ocitanje">
-            <span class="ocitanje-mjesec">{{ formatMjesecPuni(o.mjesec) }}</span>
-            <span class="ocitanje-km">{{ o.kilometraza.toLocaleString('hr-HR') }} km</span>
-            <div class="redak-akcije">
-              <button class="gumb-akcija" title="Uredi" @click="otvoriModalKm(o)">
-                <span class="material-icons">edit</span>
-              </button>
-              <button class="gumb-akcija obrisi" title="Obriši" @click="ocitanjeZaBrisanje = o">
-                <span class="material-icons">delete</span>
-              </button>
+            <div class="ocitanje-glavno">
+              <span class="ocitanje-mjesec">{{ formatMjesecPuni(o.mjesec) }}</span>
+              <span class="ocitanje-km">{{ o.kilometraza.toLocaleString('hr-HR') }} km</span>
+              <div class="redak-akcije">
+                <button class="gumb-akcija" title="Uredi" @click="otvoriModalKm(o)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="gumb-akcija obrisi" title="Obriši" @click="ocitanjeZaBrisanje = o">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
+            <div v-if="trosakGorivaOcitanja(o) !== null" class="ocitanje-gorivo">
+              <span class="material-icons">local_gas_station</span>
+              {{ formatCurrency(trosakGorivaOcitanja(o)) }} ({{ o.litreGoriva }} L × {{ o.cijenaPoLitri }} €)
+              <span v-if="potrosnjaOcitanja(o) !== null" class="redak-potrosnja">{{ potrosnjaOcitanja(o).toFixed(1) }} L/100km</span>
             </div>
           </div>
         </div>
@@ -242,6 +264,19 @@
             <label>Kilometraža (stanje na kraju mjeseca):</label>
             <input v-model.number="formaKm.kilometraza" type="number" min="0" required>
           </div>
+          <div class="grupa-polja grupa-vrijeme">
+            <div>
+              <label>Potrošeno goriva (L):</label>
+              <input v-model.number="formaKm.litreGoriva" type="number" step="0.01" min="0" placeholder="Npr. 85">
+            </div>
+            <div>
+              <label>Cijena goriva (EUR/L):</label>
+              <input v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" placeholder="Npr. 1.45">
+            </div>
+          </div>
+          <div class="pregled-izracuna" v-if="trosakGorivaForme !== null">
+            <span>{{ formatCurrency(trosakGorivaForme) }} goriva ovaj mjesec</span>
+          </div>
 
           <div class="akcije-forme">
             <button type="button" class="gumb-odustati" @click="zatvoriModalKm">Odustani</button>
@@ -363,6 +398,28 @@ const zadnjaKilometraza = computed(() => {
 const ukupnoServisi = computed(() => unosi.value.filter(u => u.tip === 'servis').reduce((s, u) => s + (parseFloat(u.iznos) || 0), 0));
 const ukupnoRegistracije = computed(() => unosi.value.filter(u => u.tip === 'registracija').reduce((s, u) => s + (parseFloat(u.iznos) || 0), 0));
 
+const trosakGorivaOcitanja = (ocitanje) => {
+  if (!ocitanje || !ocitanje.litreGoriva || !ocitanje.cijenaPoLitri) return null;
+  return ocitanje.litreGoriva * ocitanje.cijenaPoLitri;
+};
+
+const potrosnjaOcitanja = (ocitanje) => {
+  if (!ocitanje || !ocitanje.litreGoriva) return null;
+  const lista = ocitanjaKm.value;
+  const indeks = lista.findIndex(o => o.id === ocitanje.id);
+  if (indeks <= 0) return null;
+  const prijasnji = lista[indeks - 1];
+  const km = ocitanje.kilometraza - prijasnji.kilometraza;
+  if (km <= 0) return null;
+  return (ocitanje.litreGoriva / km) * 100;
+};
+
+const ukupnoGorivo = computed(() =>
+  ocitanjaKm.value.reduce((s, o) => s + (trosakGorivaOcitanja(o) || 0), 0)
+);
+
+const ukupnoPotroseno = computed(() => ukupnoGorivo.value + ukupnoServisi.value + ukupnoRegistracije.value);
+
 onMounted(() => {
   unsub = onSnapshot(collection(db, 'auto'), (snapshot) => {
     unosi.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -428,8 +485,13 @@ const potvrdiBrisanje = async () => {
 
 const prikaziModalKm = ref(false);
 const uredujeOcitanje = ref(null);
-const formaKm = ref({ mjesec: '', kilometraza: null });
+const formaKm = ref({ mjesec: '', kilometraza: null, litreGoriva: null, cijenaPoLitri: null });
 const ocitanjeZaBrisanje = ref(null);
+
+const trosakGorivaForme = computed(() => {
+  if (!formaKm.value.litreGoriva || !formaKm.value.cijenaPoLitri) return null;
+  return formaKm.value.litreGoriva * formaKm.value.cijenaPoLitri;
+});
 
 const trenutniMjesec = () => {
   const d = new Date();
@@ -439,8 +501,8 @@ const trenutniMjesec = () => {
 const otvoriModalKm = (ocitanje = null) => {
   uredujeOcitanje.value = ocitanje;
   formaKm.value = ocitanje
-    ? { mjesec: ocitanje.mjesec, kilometraza: ocitanje.kilometraza }
-    : { mjesec: trenutniMjesec(), kilometraza: null };
+    ? { mjesec: ocitanje.mjesec, kilometraza: ocitanje.kilometraza, litreGoriva: ocitanje.litreGoriva ?? null, cijenaPoLitri: ocitanje.cijenaPoLitri ?? null }
+    : { mjesec: trenutniMjesec(), kilometraza: null, litreGoriva: null, cijenaPoLitri: null };
   prikaziModalKm.value = true;
 };
 
@@ -454,6 +516,8 @@ const spremiOcitanje = async () => {
     tip: 'ocitanje-km',
     mjesec: formaKm.value.mjesec,
     kilometraza: formaKm.value.kilometraza,
+    litreGoriva: formaKm.value.litreGoriva || null,
+    cijenaPoLitri: formaKm.value.cijenaPoLitri || null,
     datum: `${formaKm.value.mjesec}-01`
   };
 
@@ -510,6 +574,50 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.kartica-ukupno {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border-radius: var(--radius-card);
+  box-shadow: 0 6px 18px rgba(18, 52, 88, 0.35);
+  padding: 12px 22px;
+  margin-bottom: 16px;
+  color: white;
+}
+
+.kartica-ukupno .ikona {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.22);
+  color: white;
+  flex-shrink: 0;
+}
+
+.kartica-ukupno .ikona .material-icons {
+  font-size: 20px;
+}
+
+.kartica-ukupno .podaci h3 {
+  margin: 0 0 2px;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kartica-ukupno .podaci .iznos {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: white;
 }
 
 .kartice {
@@ -683,12 +791,18 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .redak-ocitanje {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-small);
   padding: 10px 12px;
+}
+
+.ocitanje-glavno {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ocitanje-mjesec {
@@ -701,6 +815,19 @@ const potvrdiBrisanjeOcitanja = async () => {
 .ocitanje-km {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.ocitanje-gorivo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.ocitanje-gorivo .material-icons {
+  font-size: 15px;
+  color: var(--accent);
 }
 
 .tab-navigacija {
@@ -1014,7 +1141,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   }
 
   .kartice {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 

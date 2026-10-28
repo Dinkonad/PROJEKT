@@ -80,6 +80,51 @@
           </div>
 
           <template v-else>
+            <div class="pozdrav-traka">
+              <h1 class="pozdrav-naslov">{{ pozdravTekst }}</h1>
+              <span class="pozdrav-datum">{{ danasnjiDatumTekst }}</span>
+            </div>
+
+            <div class="pregled-grid">
+              <router-link to="/admin/kalendar" class="pregled-kartica">
+                <div class="pregled-ikona pregled-kalendar"><span class="material-icons">event</span></div>
+                <div class="pregled-podaci">
+                  <h3>Kalendar</h3>
+                  <p class="pregled-glavno" v-if="sljedeciEvent">{{ sljedeciEvent.naslov }}</p>
+                  <p class="pregled-glavno" v-else>Nema nadolazećih eventa</p>
+                  <span v-if="sljedeciEvent" class="pregled-sub">{{ sljedeciEventOznaka }}<template v-if="eventiOvajTjedan > 1"> · još {{ eventiOvajTjedan - 1 }} ovaj tjedan</template></span>
+                </div>
+              </router-link>
+
+              <router-link to="/admin/biznisbaza" class="pregled-kartica">
+                <div class="pregled-ikona pregled-biznisbaza"><span class="material-icons">event_available</span></div>
+                <div class="pregled-podaci">
+                  <h3>BiznisBaza</h3>
+                  <p class="pregled-glavno">{{ formatCurrency(biznisBazaOvajMjesecZarada) }}</p>
+                  <span class="pregled-sub">{{ biznisBazaOvajMjesecSati.toFixed(1) }} h ovaj mjesec</span>
+                </div>
+              </router-link>
+
+              <router-link to="/admin/zdravlje" class="pregled-kartica">
+                <div class="pregled-ikona pregled-zdravlje"><span class="material-icons">monitor_heart</span></div>
+                <div class="pregled-podaci">
+                  <h3>Zdravlje</h3>
+                  <p class="pregled-glavno" v-if="zadnjiZdravljeDan">{{ (zadnjiZdravljeDan.steps || 0).toLocaleString('hr-HR') }} koraka</p>
+                  <p class="pregled-glavno" v-else>Nema podataka</p>
+                  <span v-if="zadnjiZdravljeDan?.sleep_seconds" class="pregled-sub">San {{ formatSatiZdravlje(zadnjiZdravljeDan.sleep_seconds) }}</span>
+                </div>
+              </router-link>
+
+              <router-link to="/admin/auto" class="pregled-kartica">
+                <div class="pregled-ikona pregled-auto"><span class="material-icons">directions_car</span></div>
+                <div class="pregled-podaci">
+                  <h3>Auto</h3>
+                  <p class="pregled-glavno">{{ formatCurrency(autoOvajMjesecTrosak) }}</p>
+                  <span class="pregled-sub" :class="{ upozorenje: !autoOvajMjesecUpisano }">{{ autoOvajMjesecUpisano ? 'troška ovaj mjesec' : 'nisi upisao stanje ovaj mjesec' }}</span>
+                </div>
+              </router-link>
+            </div>
+
             <div class="sekcija-dvostupci">
               <div class="sekcija uvid-kartica">
                 <div class="sekcija-zaglavlje"><h2>{{ nazivOvogMjeseca }}</h2></div>
@@ -272,6 +317,10 @@ const { state: temaState, toggleTemu } = useTheme();
 
 const bocnaTrakaOtvorena = ref(false);
 const prihodi = ref([]);
+const kalendarEventi = ref([]);
+const biznisBazaUnosi = ref([]);
+const zdravljeDaniList = ref([]);
+const autoUnosi = ref([]);
 const ucitavaPodatke = ref(true);
 const faceIdCredentiali = ref([]);
 
@@ -294,14 +343,112 @@ const odjaviKorisnika = async () => {
 const ucitajPodatke = async () => {
   ucitavaPodatke.value = true;
   try {
-    const prihodiSnap = await getDocs(collection(db, 'prihodi'));
+    const [prihodiSnap, kalendarSnap, biznisBazaSnap, zdravljeSnap, autoSnap] = await Promise.all([
+      getDocs(collection(db, 'prihodi')),
+      getDocs(collection(db, 'kalendar-eventi')),
+      getDocs(collection(db, 'raspored-aktivnosti')),
+      getDocs(collection(db, 'zdravlje-dani')),
+      getDocs(collection(db, 'auto')),
+    ]);
     prihodi.value = prihodiSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    kalendarEventi.value = kalendarSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    biznisBazaUnosi.value = biznisBazaSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    zdravljeDaniList.value = zdravljeSnap.docs
+      .map(d => ({ datum: d.id, ...d.data() }))
+      .sort((a, b) => b.datum.localeCompare(a.datum));
+    autoUnosi.value = autoSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (error) {
     console.error('Greška pri učitavanju podataka za dashboard:', error);
   } finally {
     ucitavaPodatke.value = false;
   }
 };
+
+// ==================== PREGLED (Kalendar / BiznisBaza / Zdravlje / Auto) ====================
+const danStringLokalno = (d) => {
+  const godina = d.getFullYear();
+  const mjesec = String(d.getMonth() + 1).padStart(2, '0');
+  const dan = String(d.getDate()).padStart(2, '0');
+  return `${godina}-${mjesec}-${dan}`;
+};
+
+const pozdravTekst = computed(() => {
+  const sat = new Date().getHours();
+  if (sat < 5) return 'Laku noć 🌙';
+  if (sat < 11) return 'Dobro jutro 👋';
+  if (sat < 18) return 'Dobar dan 👋';
+  return 'Dobra večer 👋';
+});
+
+const danasnjiDatumTekst = computed(() =>
+  new Date().toLocaleDateString('hr-HR', { weekday: 'long', day: 'numeric', month: 'long' })
+);
+
+const eventiOvajTjedan = computed(() => {
+  const danasStr = danStringLokalno(new Date());
+  const zaTjedanDana = new Date();
+  zaTjedanDana.setDate(zaTjedanDana.getDate() + 7);
+  const zaTjedanStr = danStringLokalno(zaTjedanDana);
+  return kalendarEventi.value.filter(e => e.dan >= danasStr && e.dan <= zaTjedanStr).length;
+});
+
+const sljedeciEvent = computed(() => {
+  const danasStr = danStringLokalno(new Date());
+  const buduci = kalendarEventi.value
+    .filter(e => e.dan >= danasStr)
+    .sort((a, b) => (a.dan === b.dan ? (a.pocetak || '').localeCompare(b.pocetak || '') : a.dan.localeCompare(b.dan)));
+  return buduci[0] || null;
+});
+
+const sljedeciEventOznaka = computed(() => {
+  if (!sljedeciEvent.value) return '';
+  const danasStr = danStringLokalno(new Date());
+  const sutraDatum = new Date();
+  sutraDatum.setDate(sutraDatum.getDate() + 1);
+  const sutraStr = danStringLokalno(sutraDatum);
+  if (sljedeciEvent.value.dan === danasStr) return 'Danas';
+  if (sljedeciEvent.value.dan === sutraStr) return 'Sutra';
+  return new Date(sljedeciEvent.value.dan).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long' });
+});
+
+const trenutniMjesecPrefiks = computed(() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+});
+
+const biznisBazaOvajMjesecUnosi = computed(() =>
+  biznisBazaUnosi.value.filter(u => u.datum && u.datum.startsWith(trenutniMjesecPrefiks.value))
+);
+const biznisBazaOvajMjesecSati = computed(() =>
+  biznisBazaOvajMjesecUnosi.value.reduce((s, u) => s + (parseFloat(u.satiRada) || 0), 0)
+);
+const biznisBazaOvajMjesecZarada = computed(() =>
+  biznisBazaOvajMjesecUnosi.value.reduce((s, u) => s + (parseFloat(u.zarada) || 0), 0)
+);
+
+const zadnjiZdravljeDan = computed(() => zdravljeDaniList.value[0] || null);
+
+const formatSatiZdravlje = (sekunde) => {
+  if (!sekunde) return '-';
+  const h = Math.floor(sekunde / 3600);
+  const m = Math.round((sekunde % 3600) / 60);
+  return `${h}h ${m}min`;
+};
+
+const autoOvajMjesecTrosak = computed(() => {
+  const mjesecPrefiks = trenutniMjesecPrefiks.value;
+  const troskovi = autoUnosi.value
+    .filter(u => (u.tip === 'servis' || u.tip === 'registracija') && u.datum && u.datum.startsWith(mjesecPrefiks))
+    .reduce((s, u) => s + (parseFloat(u.iznos) || 0), 0);
+  const gorivo = autoUnosi.value
+    .filter(u => u.tip === 'ocitanje-km' && u.mjesec === mjesecPrefiks && u.litreGoriva && u.cijenaPoLitri)
+    .reduce((s, u) => s + (u.litreGoriva * u.cijenaPoLitri), 0);
+  return troskovi + gorivo;
+});
+
+const autoOvajMjesecUpisano = computed(() =>
+  autoUnosi.value.some(u => u.tip === 'ocitanje-km' && u.mjesec === trenutniMjesecPrefiks.value)
+);
 
 // ==================== OVAJ MJESEC VS ISTI MJESEC PROŠLE GODINE ====================
 const nazviMjeseci = [
@@ -1004,6 +1151,119 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
+}
+
+/* ==================== POZDRAVNA TRAKA ==================== */
+.pozdrav-traka {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pozdrav-naslov {
+  margin: 0;
+  color: var(--text-heading);
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.pozdrav-datum {
+  color: var(--text-muted);
+  font-size: 1rem;
+  text-transform: capitalize;
+}
+
+/* ==================== PREGLED (Kalendar / BiznisBaza / Zdravlje / Auto) ==================== */
+.pregled-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.pregled-kartica {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  padding: 18px;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pregled-kartica:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+.pregled-ikona {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: var(--bg-card-muted);
+  color: var(--accent);
+}
+
+.pregled-kalendar {
+  background-color: color-mix(in srgb, var(--accent-soft) 20%, transparent);
+  color: var(--accent-soft);
+}
+
+.pregled-biznisbaza {
+  background-color: color-mix(in srgb, var(--success) 18%, transparent);
+  color: var(--success);
+}
+
+.pregled-zdravlje {
+  background-color: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.pregled-auto {
+  background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.pregled-podaci {
+  min-width: 0;
+}
+
+.pregled-podaci h3 {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pregled-glavno {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pregled-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pregled-sub.upozorenje {
+  color: var(--danger);
+  font-weight: 500;
 }
 
 /* ==================== UVID KARTICE (Ovaj mjesec / Oprema / Vjernost) ==================== */
