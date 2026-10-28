@@ -1061,6 +1061,9 @@ onMounted(() => {
   flex: 1;
   transition: margin-left 0.3s ease;
   overflow-y: auto;
+  /* na iPhoneu (viewport-fit=cover + black-translucent) sadržaj se crta ispod
+     statusne trake/dynamic islanda - ovo ga spusti ispod njih */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .glavni-sadrzaj.pomjeren {
