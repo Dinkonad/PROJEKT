@@ -14,6 +14,7 @@ import aKarte from '../components/aKarte.vue';
 import aKorisnilinkovi from '../components/aKorisnilinkovi.vue';
 import aKreativnaideja from '../components/aKreativnaideja.vue';
 import AKalendar from '../components/AKalendar.vue';
+import AMreze from '../components/AMreze.vue';
 
 const routes = [
   {
@@ -96,6 +97,17 @@ const routes = [
         name: 'Kalendar',
         component: AKalendar,
         meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'drustvene-mreze',
+        name: 'DrustveneMreze',
+        component: AMreze,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        // stari link iz prve verzije
+        path: 'youtube',
+        redirect: '/admin/drustvene-mreze'
       }
     ]
   }
