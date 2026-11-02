@@ -49,14 +49,65 @@
 
       <div class="sekcija-km">
         <div class="sekcija-km-zaglavlje">
-          <h2>Mjesečno stanje (km i gorivo)</h2>
+          <h2>Mjesečno stanje goriva</h2>
           <button class="gumb-dodaj-km" @click="otvoriModalKm()">
             <span class="material-icons">add</span> Upiši stanje
           </button>
         </div>
 
+        <template v-if="statistikaGoriva">
+          <div class="kartice kartice-statistika">
+            <div class="kartica">
+              <div class="ikona"><span class="material-icons">local_gas_station</span></div>
+              <div class="podaci">
+                <h3>Prosječna potrošnja</h3>
+                <p class="iznos">{{ statistikaGoriva.prosjecnoL100 !== null ? `${formatBroj(statistikaGoriva.prosjecnoL100, 1)} L/100km` : '-' }}</p>
+              </div>
+            </div>
+            <div class="kartica">
+              <div class="ikona"><span class="material-icons">payments</span></div>
+              <div class="podaci">
+                <h3>Trošak po kilometru</h3>
+                <p class="iznos">{{ statistikaGoriva.trosakPoKm !== null ? `${formatBroj(statistikaGoriva.trosakPoKm, 3)} €/km` : '-' }}</p>
+              </div>
+            </div>
+            <div class="kartica">
+              <div class="ikona"><span class="material-icons">calendar_month</span></div>
+              <div class="podaci">
+                <h3>Gorivo mjesečno (prosjek)</h3>
+                <p class="iznos">{{ statistikaGoriva.prosjecniTrosak !== null ? formatCurrency(statistikaGoriva.prosjecniTrosak) : '-' }}</p>
+              </div>
+            </div>
+            <div class="kartica">
+              <div class="ikona"><span class="material-icons">route</span></div>
+              <div class="podaci">
+                <h3>Kilometara mjesečno (prosjek)</h3>
+                <p class="iznos">{{ statistikaGoriva.prosjecniKm !== null ? `${formatBroj(statistikaGoriva.prosjecniKm, 0)} km` : '-' }}</p>
+              </div>
+            </div>
+            <div class="kartica">
+              <div class="ikona"><span class="material-icons">event</span></div>
+              <div class="podaci">
+                <h3>Zadnji mjesec</h3>
+                <p class="iznos">{{ statistikaGoriva.zadnji.trosak !== null ? formatCurrency(statistikaGoriva.zadnji.trosak) : '-' }}</p>
+                <span class="podnaslov">{{ formatLitre(statistikaGoriva.zadnji.litre) }} L · {{ formatMjesecPuni(statistikaGoriva.zadnji.mjesec) }}</span>
+              </div>
+            </div>
+            <div class="kartica">
+              <div class="ikona"><span class="material-icons">trending_up</span></div>
+              <div class="podaci">
+                <h3>Najskuplji mjesec</h3>
+                <p class="iznos">{{ statistikaGoriva.najskuplji ? formatCurrency(statistikaGoriva.najskuplji.trosak) : '-' }}</p>
+                <span v-if="statistikaGoriva.najskuplji" class="podnaslov">{{ formatMjesecPuni(statistikaGoriva.najskuplji.mjesec) }}</span>
+              </div>
+            </div>
+          </div>
+          <p class="napomena-statistika">Prosjeci se računaju iz mjeseci u kojima postoji razlika između dva unosa (prvi unos se ne računa). Trenutno: {{ statistikaGoriva.brojMjeseci }} mj.</p>
+        </template>
+
         <div v-if="tockeGrafa.length === 0" class="prazno-km">
-          <p>Upiši stanje kilometara da se prikaže graf.</p>
+          <p v-if="ocitanjaKm.length === 0">Na kraju mjeseca upiši stanje brojača litara - razlika između dva mjeseca je potrošnja.</p>
+          <p v-else>Graf kilometraže se prikazuje kad upišeš stanje.</p>
         </div>
         <div v-else-if="tockeGrafa.length === 1" class="prazno-km">
           <p>{{ tockeGrafa[0].naziv }}: <strong>{{ tockeGrafa[0].kilometraza.toLocaleString('hr-HR') }} km</strong>. Upiši još jedan mjesec da se prikaže graf.</p>
@@ -78,7 +129,7 @@
           <div v-for="o in [...ocitanjaKm].reverse()" :key="o.id" class="redak-ocitanje">
             <div class="ocitanje-glavno">
               <span class="ocitanje-mjesec">{{ formatMjesecPuni(o.mjesec) }}</span>
-              <span class="ocitanje-km">{{ o.kilometraza.toLocaleString('hr-HR') }} km</span>
+              <span v-if="typeof o.kilometraza === 'number'" class="ocitanje-km">{{ o.kilometraza.toLocaleString('hr-HR') }} km</span>
               <div class="redak-akcije">
                 <button class="gumb-akcija" title="Uredi" @click="otvoriModalKm(o)">
                   <span class="material-icons">edit</span>
@@ -88,7 +139,22 @@
                 </button>
               </div>
             </div>
-            <div v-if="trosakGorivaOcitanja(o) !== null" class="ocitanje-gorivo">
+            <div v-if="jeNovoOcitanje(o)" class="ocitanje-gorivo" :class="{ 'ocitanje-greska': izracunZa(o)?.neispravno }">
+              <span class="material-icons">local_gas_station</span>
+              <template v-if="izracunZa(o)?.neispravno">
+                Brojač ({{ o.brojacLitara }} L) je manji od prethodnog ({{ izracunZa(o).prethodniBrojac }} L) - provjeri unos
+              </template>
+              <template v-else-if="izracunZa(o)">
+                <strong>{{ formatLitre(izracunZa(o).potroseno) }} L</strong>
+                <span v-if="izracunZa(o).prvi">(prvi unos: cijeli brojač)</span>
+                <span v-else>({{ izracunZa(o).prethodniBrojac }} → {{ o.brojacLitara }})</span>
+                <template v-if="izracunZa(o).trosak !== null">
+                  × {{ o.cijenaPoLitri }} € = <strong>{{ formatCurrency(izracunZa(o).trosak) }}</strong>
+                </template>
+                <span v-if="potrosnjaOcitanja(o) !== null" class="redak-potrosnja">{{ potrosnjaOcitanja(o).toFixed(1) }} L/100km</span>
+              </template>
+            </div>
+            <div v-else-if="trosakGorivaOcitanja(o) !== null" class="ocitanje-gorivo">
               <span class="material-icons">local_gas_station</span>
               {{ formatCurrency(trosakGorivaOcitanja(o)) }} ({{ o.litreGoriva }} L × {{ o.cijenaPoLitri }} €)
               <span v-if="potrosnjaOcitanja(o) !== null" class="redak-potrosnja">{{ potrosnjaOcitanja(o).toFixed(1) }} L/100km</span>
@@ -252,7 +318,7 @@
     <div v-if="prikaziModalKm" class="prekrivka-modala" @click="zatvoriModalKm">
       <div class="modal" @click.stop>
         <div class="zaglavlje-modala">
-          <h3>{{ uredujeOcitanje ? 'Uredi stanje' : 'Upiši stanje kilometara' }}</h3>
+          <h3>{{ uredujeOcitanje ? 'Uredi stanje' : 'Upiši stanje goriva' }}</h3>
           <button class="gumb-zatvaranja" @click="zatvoriModalKm">&times;</button>
         </div>
         <form class="forma" @submit.prevent="spremiOcitanje">
@@ -260,23 +326,57 @@
             <label>Mjesec:</label>
             <input v-model="formaKm.mjesec" type="month" required>
           </div>
-          <div class="grupa-polja">
-            <label>Kilometraža (stanje na kraju mjeseca):</label>
-            <input v-model.number="formaKm.kilometraza" type="number" min="0" required>
-          </div>
-          <div class="grupa-polja grupa-vrijeme">
-            <div>
-              <label>Potrošeno goriva (L):</label>
-              <input v-model.number="formaKm.litreGoriva" type="number" step="0.01" min="0" placeholder="Npr. 85">
+          <template v-if="formaKm.nacin === 'novi'">
+            <div class="grupa-polja">
+              <label>Kilometraža (stanje na kraju mjeseca):</label>
+              <input v-model.number="formaKm.kilometraza" type="number" min="0" inputmode="numeric" placeholder="Npr. 120500" required>
             </div>
-            <div>
+            <div class="grupa-polja">
+              <label>Stanje brojača litara (zbirno, na kraju mjeseca):</label>
+              <input v-model.number="formaKm.brojacLitara" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Npr. 475" required>
+            </div>
+            <div class="grupa-polja">
               <label>Cijena goriva (EUR/L):</label>
-              <input v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" placeholder="Npr. 1.45">
+              <input v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" inputmode="decimal" placeholder="Npr. 1.45" required>
             </div>
-          </div>
-          <div class="pregled-izracuna" v-if="trosakGorivaForme !== null">
-            <span>{{ formatCurrency(trosakGorivaForme) }} goriva ovaj mjesec</span>
-          </div>
+            <div v-if="pregledNovog" class="pregled-izracuna" :class="{ 'pregled-greska': pregledNovog.neispravno }">
+              <span v-if="pregledNovog.neispravno">
+                Brojač je manji od prethodnog ({{ pregledNovog.prethodniBrojac }} L) - provjeri unos
+              </span>
+              <span v-else-if="pregledNovog.prvi">
+                Prvi unos: cijeli brojač {{ formaKm.brojacLitara }} L
+                <template v-if="pregledNovog.trosak !== null"> × {{ formaKm.cijenaPoLitri }} € = {{ formatCurrency(pregledNovog.trosak) }}</template>
+              </span>
+              <span v-else>
+                Potrošnja mjeseca: {{ formaKm.brojacLitara }} − {{ pregledNovog.prethodniBrojac }} = {{ formatLitre(pregledNovog.potroseno) }} L
+                <template v-if="pregledNovog.trosak !== null"> × {{ formaKm.cijenaPoLitri }} € = {{ formatCurrency(pregledNovog.trosak) }}</template>
+              </span>
+              <span v-if="pregledLper100 !== null">
+                Prijeđeno {{ formaKm.kilometraza - pregledNovog.prethodniKm }} km, potrošnja {{ pregledLper100.toFixed(1) }} L/100km
+              </span>
+            </div>
+          </template>
+
+          <!-- stari unosi (od prije novog načina) uređuju se kao i do sada -->
+          <template v-else>
+            <div class="grupa-polja">
+              <label>Kilometraža (stanje na kraju mjeseca):</label>
+              <input v-model.number="formaKm.kilometraza" type="number" min="0" required>
+            </div>
+            <div class="grupa-polja grupa-vrijeme">
+              <div>
+                <label>Potrošeno goriva (L):</label>
+                <input v-model.number="formaKm.litreGoriva" type="number" step="0.01" min="0" placeholder="Npr. 85">
+              </div>
+              <div>
+                <label>Cijena goriva (EUR/L):</label>
+                <input v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" placeholder="Npr. 1.45">
+              </div>
+            </div>
+            <div class="pregled-izracuna" v-if="trosakGorivaForme !== null">
+              <span>{{ formatCurrency(trosakGorivaForme) }} goriva ovaj mjesec</span>
+            </div>
+          </template>
 
           <div class="akcije-forme">
             <button type="button" class="gumb-odustati" @click="zatvoriModalKm">Odustani</button>
@@ -307,6 +407,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { jeNovoOcitanje, poredajOcitanja, izracunPotrosnje } from '@/utils/gorivo.js';
 
 const ucitava = ref(true);
 const unosi = ref([]);
@@ -347,16 +448,19 @@ const pregledPotrosnje = computed(() => {
   return potrosnjaUnosa(forma.value);
 });
 
-const ocitanjaKm = computed(() =>
-  unosi.value.filter(u => u.tip === 'ocitanje-km').sort((a, b) => a.mjesec.localeCompare(b.mjesec))
-);
+const ocitanjaKm = computed(() => poredajOcitanja(unosi.value.filter(u => u.tip === 'ocitanje-km')));
+
+// potrošnja po mjesecima iz zbirnog brojača litara (razlika između uzastopnih unosa)
+const izracunNovih = computed(() => izracunPotrosnje(ocitanjaKm.value));
+const izracunZa = (ocitanje) => izracunNovih.value.get(ocitanje.id) || null;
+const formatLitre = (v) => (v === null || v === undefined ? '-' : Number(v).toLocaleString('hr-HR', { maximumFractionDigits: 2 }));
 
 const SVG_SIRINA = 600;
 const SVG_VISINA = 160;
 const SVG_PADDING = 16;
 
 const tockeGrafa = computed(() => {
-  const lista = ocitanjaKm.value.slice(-12);
+  const lista = ocitanjaKm.value.filter(o => typeof o.kilometraza === 'number').slice(-12);
   const n = lista.length;
   if (n === 0) return [];
   const vrijednosti = lista.map(o => o.kilometraza);
@@ -399,16 +503,29 @@ const ukupnoServisi = computed(() => unosi.value.filter(u => u.tip === 'servis')
 const ukupnoRegistracije = computed(() => unosi.value.filter(u => u.tip === 'registracija').reduce((s, u) => s + (parseFloat(u.iznos) || 0), 0));
 
 const trosakGorivaOcitanja = (ocitanje) => {
-  if (!ocitanje || !ocitanje.litreGoriva || !ocitanje.cijenaPoLitri) return null;
+  if (!ocitanje) return null;
+  if (jeNovoOcitanje(ocitanje)) return izracunZa(ocitanje)?.trosak ?? null;
+  if (!ocitanje.litreGoriva || !ocitanje.cijenaPoLitri) return null;
   return ocitanje.litreGoriva * ocitanje.cijenaPoLitri;
 };
 
 const potrosnjaOcitanja = (ocitanje) => {
-  if (!ocitanje || !ocitanje.litreGoriva) return null;
+  if (!ocitanje) return null;
+
+  if (jeNovoOcitanje(ocitanje)) {
+    const izracun = izracunZa(ocitanje);
+    if (!izracun || izracun.prvi || izracun.neispravno) return null;
+    if (typeof ocitanje.kilometraza !== 'number' || izracun.prethodniKm === null) return null;
+    const km = ocitanje.kilometraza - izracun.prethodniKm;
+    return km > 0 ? (izracun.potroseno / km) * 100 : null;
+  }
+
+  if (!ocitanje.litreGoriva) return null;
   const lista = ocitanjaKm.value;
   const indeks = lista.findIndex(o => o.id === ocitanje.id);
   if (indeks <= 0) return null;
   const prijasnji = lista[indeks - 1];
+  if (typeof ocitanje.kilometraza !== 'number' || typeof prijasnji.kilometraza !== 'number') return null;
   const km = ocitanje.kilometraza - prijasnji.kilometraza;
   if (km <= 0) return null;
   return (ocitanje.litreGoriva / km) * 100;
@@ -417,6 +534,49 @@ const potrosnjaOcitanja = (ocitanje) => {
 const ukupnoGorivo = computed(() =>
   ocitanjaKm.value.reduce((s, o) => s + (trosakGorivaOcitanja(o) || 0), 0)
 );
+
+const formatBroj = (v, decimale = 1) =>
+  Number(v).toLocaleString('hr-HR', { minimumFractionDigits: decimale, maximumFractionDigits: decimale });
+
+// po mjesecima: litre, prijeđeni km (ako su poznati) i trošak - samo za unose s razlikom prema prethodnom
+const mjeseciPotrosnje = computed(() => {
+  const lista = ocitanjaKm.value;
+  return lista.map((o, i) => {
+    let litre = null;
+    let km = null;
+    if (jeNovoOcitanje(o)) {
+      const izracun = izracunZa(o);
+      if (!izracun || izracun.prvi || izracun.neispravno) return null;
+      litre = izracun.potroseno;
+      if (typeof o.kilometraza === 'number' && izracun.prethodniKm !== null) km = o.kilometraza - izracun.prethodniKm;
+    } else {
+      litre = o.litreGoriva || null;
+      const prije = lista[i - 1];
+      if (prije && typeof o.kilometraza === 'number' && typeof prije.kilometraza === 'number') km = o.kilometraza - prije.kilometraza;
+    }
+    if (litre === null) return null;
+    return { mjesec: o.mjesec, litre, km: km > 0 ? km : null, trosak: trosakGorivaOcitanja(o) };
+  }).filter(Boolean);
+});
+
+const statistikaGoriva = computed(() => {
+  const m = mjeseciPotrosnje.value;
+  if (!m.length) return null;
+  const zbroj = (arr, polje) => arr.reduce((s, x) => s + x[polje], 0);
+  const sTroskom = m.filter(x => x.trosak !== null);
+  const sKm = m.filter(x => x.km !== null);
+  const sKmITroskom = sKm.filter(x => x.trosak !== null);
+  const najskuplji = sTroskom.length ? sTroskom.reduce((a, b) => (b.trosak > a.trosak ? b : a)) : null;
+  return {
+    brojMjeseci: m.length,
+    prosjecnoL100: sKm.length ? (zbroj(sKm, 'litre') / zbroj(sKm, 'km')) * 100 : null,
+    trosakPoKm: sKmITroskom.length ? zbroj(sKmITroskom, 'trosak') / zbroj(sKmITroskom, 'km') : null,
+    prosjecniTrosak: sTroskom.length ? zbroj(sTroskom, 'trosak') / sTroskom.length : null,
+    prosjecniKm: sKm.length ? zbroj(sKm, 'km') / sKm.length : null,
+    zadnji: m[m.length - 1],
+    najskuplji
+  };
+});
 
 const ukupnoPotroseno = computed(() => ukupnoGorivo.value + ukupnoServisi.value + ukupnoRegistracije.value);
 
@@ -485,12 +645,36 @@ const potvrdiBrisanje = async () => {
 
 const prikaziModalKm = ref(false);
 const uredujeOcitanje = ref(null);
-const formaKm = ref({ mjesec: '', kilometraza: null, litreGoriva: null, cijenaPoLitri: null });
+const formaKm = ref({ nacin: 'novi', mjesec: '', brojacLitara: null, kilometraza: null, litreGoriva: null, cijenaPoLitri: null });
 const ocitanjeZaBrisanje = ref(null);
 
 const trosakGorivaForme = computed(() => {
   if (!formaKm.value.litreGoriva || !formaKm.value.cijenaPoLitri) return null;
   return formaKm.value.litreGoriva * formaKm.value.cijenaPoLitri;
+});
+
+// uživo pregled u formi: što će ovaj unos izračunati s obzirom na prethodni
+const pregledNovog = computed(() => {
+  const f = formaKm.value;
+  if (f.nacin !== 'novi' || typeof f.brojacLitara !== 'number' || !f.mjesec) return null;
+  const ostali = ocitanjaKm.value.filter(o => o.id !== uredujeOcitanje.value?.id);
+  const probni = {
+    id: '__forma__',
+    tip: 'ocitanje-km',
+    mjesec: f.mjesec,
+    brojacLitara: f.brojacLitara,
+    cijenaPoLitri: f.cijenaPoLitri,
+    kilometraza: typeof f.kilometraza === 'number' ? f.kilometraza : null,
+    kreirano: uredujeOcitanje.value?.kreirano ?? Number.MAX_SAFE_INTEGER
+  };
+  return izracunPotrosnje([...ostali, probni]).get('__forma__') || null;
+});
+
+const pregledLper100 = computed(() => {
+  const p = pregledNovog.value;
+  const km = formaKm.value.kilometraza;
+  if (!p || p.prvi || p.neispravno || p.prethodniKm === null || typeof km !== 'number') return null;
+  return km > p.prethodniKm ? (p.potroseno / (km - p.prethodniKm)) * 100 : null;
 });
 
 const trenutniMjesec = () => {
@@ -500,9 +684,25 @@ const trenutniMjesec = () => {
 
 const otvoriModalKm = (ocitanje = null) => {
   uredujeOcitanje.value = ocitanje;
-  formaKm.value = ocitanje
-    ? { mjesec: ocitanje.mjesec, kilometraza: ocitanje.kilometraza, litreGoriva: ocitanje.litreGoriva ?? null, cijenaPoLitri: ocitanje.cijenaPoLitri ?? null }
-    : { mjesec: trenutniMjesec(), kilometraza: null, litreGoriva: null, cijenaPoLitri: null };
+  if (!ocitanje) {
+    // zadnja upisana cijena je dobar prijedlog za sljedeći mjesec
+    const zadnjeNovo = [...ocitanjaKm.value].reverse().find(jeNovoOcitanje);
+    formaKm.value = {
+      nacin: 'novi', mjesec: trenutniMjesec(), brojacLitara: null, kilometraza: null, litreGoriva: null,
+      cijenaPoLitri: zadnjeNovo?.cijenaPoLitri ?? null
+    };
+  } else if (jeNovoOcitanje(ocitanje)) {
+    formaKm.value = {
+      nacin: 'novi', mjesec: ocitanje.mjesec, brojacLitara: ocitanje.brojacLitara,
+      kilometraza: typeof ocitanje.kilometraza === 'number' ? ocitanje.kilometraza : null,
+      litreGoriva: null, cijenaPoLitri: ocitanje.cijenaPoLitri ?? null
+    };
+  } else {
+    formaKm.value = {
+      nacin: 'stari', mjesec: ocitanje.mjesec, brojacLitara: null, kilometraza: ocitanje.kilometraza,
+      litreGoriva: ocitanje.litreGoriva ?? null, cijenaPoLitri: ocitanje.cijenaPoLitri ?? null
+    };
+  }
   prikaziModalKm.value = true;
 };
 
@@ -512,14 +712,33 @@ const zatvoriModalKm = () => {
 };
 
 const spremiOcitanje = async () => {
-  const podaci = {
-    tip: 'ocitanje-km',
-    mjesec: formaKm.value.mjesec,
-    kilometraza: formaKm.value.kilometraza,
-    litreGoriva: formaKm.value.litreGoriva || null,
-    cijenaPoLitri: formaKm.value.cijenaPoLitri || null,
-    datum: `${formaKm.value.mjesec}-01`
-  };
+  const f = formaKm.value;
+  let podaci;
+
+  if (f.nacin === 'novi') {
+    if (pregledNovog.value?.neispravno) {
+      alert('Brojač litara je manji od prethodnog unosa - provjeri broj.');
+      return;
+    }
+    podaci = {
+      tip: 'ocitanje-km',
+      mjesec: f.mjesec,
+      brojacLitara: f.brojacLitara,
+      cijenaPoLitri: f.cijenaPoLitri || null,
+      kilometraza: f.kilometraza,
+      datum: `${f.mjesec}-01`
+    };
+    if (!uredujeOcitanje.value) podaci.kreirano = Date.now();
+  } else {
+    podaci = {
+      tip: 'ocitanje-km',
+      mjesec: f.mjesec,
+      kilometraza: f.kilometraza,
+      litreGoriva: f.litreGoriva || null,
+      cijenaPoLitri: f.cijenaPoLitri || null,
+      datum: `${f.mjesec}-01`
+    };
+  }
 
   try {
     if (uredujeOcitanje.value) {
@@ -671,6 +890,23 @@ const potvrdiBrisanjeOcitanja = async () => {
   font-weight: 500;
 }
 
+.kartice-statistika {
+  margin-bottom: 8px;
+}
+
+.napomena-statistika {
+  margin: 0 0 18px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.kartica .podnaslov {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 .kartica .podaci .iznos {
   margin: 0;
   font-size: 1.2rem;
@@ -763,7 +999,7 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .graf-oznaka {
   flex: 1;
-  min-width: 32px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -801,8 +1037,9 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .ocitanje-glavno {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
 }
 
 .ocitanje-mjesec {
@@ -819,8 +1056,9 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .ocitanje-gorivo {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 6px;
   color: var(--text-muted);
   font-size: 0.8rem;
 }
@@ -869,8 +1107,9 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .redak-glavno {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   margin-bottom: 8px;
 }
 
@@ -1053,9 +1292,25 @@ const potvrdiBrisanjeOcitanja = async () => {
   min-width: 0;
 }
 
+.pregled-izracuna.pregled-greska {
+  background: rgba(229, 57, 53, 0.12);
+  color: var(--danger);
+}
+
+.ocitanje-greska {
+  color: var(--danger);
+}
+
+.ocitanje-greska .material-icons {
+  color: var(--danger);
+}
+
 .pregled-izracuna {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
   background: var(--bg-card-muted);
   border-radius: 8px;
   padding: 12px 16px;
@@ -1189,6 +1444,54 @@ const potvrdiBrisanjeOcitanja = async () => {
   .grupa-vrijeme {
     flex-direction: column;
     gap: 16px;
+  }
+
+  /* iOS Safari automatski zumira stranicu kad se fokusira polje s fontom < 16px */
+  .grupa-polja input,
+  .grupa-polja select,
+  .grupa-polja textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .modal {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
+  /* prsti: gumbi za uredi/obriši bili su samo 26x26 px */
+  .gumb-akcija {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gumb-akcija .material-icons {
+    font-size: 22px;
+  }
+
+  .gumb-dodaj-km,
+  .gumb-dodaj,
+  .gumb-odustati,
+  .gumb-spremiti,
+  .gumb-potvrditi {
+    min-height: 44px;
+  }
+
+  /* 12 mjeseci oznaka ne stane u širinu: pokaži iznose samo u listi ispod, a mjesec svaki treći */
+  .graf-oznaka .dan-iznos {
+    display: none;
+  }
+
+  .graf-oznaka .dan-naziv {
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+
+  .graf-oznaka:not(:nth-child(3n + 1)) .dan-naziv {
+    visibility: hidden;
   }
 }
 
