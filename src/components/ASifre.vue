@@ -1,6 +1,13 @@
 <template>
-  <div class="sifre">
-    <h1 class="naslov">Šifre</h1>
+  <div class="sifre stranica">
+    <AZaglavljeStranice naslov="Šifre">
+      <button v-if="otkljucano" class="gumb-sekundarni" @click="zakljucajVault">
+          <span class="material-icons">lock</span> Zaključaj
+        </button>
+      <button v-if="otkljucano" class="gumb-dodaj" @click="otvoriModalUnos()">
+          <span class="material-icons">add</span> Dodaj šifru
+        </button>
+    </AZaglavljeStranice>
 
     <div v-if="ucitavaProvjera" class="loading-container">
       <span class="material-icons spinning">sync</span>
@@ -13,8 +20,8 @@
       <h2>Postavi PIN za vault</h2>
       <p class="pin-opis">Ovaj PIN štiti tvoje šifre (odvojen je od Face ID-a). Ne sprema se nigdje - ako ga zaboraviš, stare šifre se ne mogu dešifrirati.</p>
       <form class="pin-forma" @submit.prevent="postaviPin">
-        <input v-model="noviPin" type="password" inputmode="numeric" placeholder="Novi PIN (min. 4 znamenke)" minlength="4" required>
-        <input v-model="potvrdaPin" type="password" inputmode="numeric" placeholder="Potvrdi PIN" minlength="4" required>
+        <input autocomplete="off" v-model="noviPin" type="password" inputmode="numeric" placeholder="Novi PIN (min. 4 znamenke)" minlength="4" required>
+        <input autocomplete="off" v-model="potvrdaPin" type="password" inputmode="numeric" placeholder="Potvrdi PIN" minlength="4" required>
         <p v-if="pinGreska" class="pin-greska">{{ pinGreska }}</p>
         <button type="submit" class="gumb-pin">Postavi PIN</button>
       </form>
@@ -37,7 +44,7 @@
       <span class="material-icons pin-ikona">lock</span>
       <h2>Vault je zaključan</h2>
       <form class="pin-forma" @submit.prevent="otkljucajVault">
-        <input v-model="unosPin" type="password" inputmode="numeric" placeholder="Unesi PIN" required autofocus>
+        <input autocomplete="off" v-model="unosPin" type="password" inputmode="numeric" placeholder="Unesi PIN" required autofocus>
         <p v-if="pinGreska" class="pin-greska">{{ pinGreska }}</p>
         <button type="submit" class="gumb-pin">Otključaj</button>
       </form>
@@ -46,14 +53,6 @@
 
     <!-- ==================== VAULT ==================== -->
     <template v-else>
-      <div class="akcije-zaglavlje">
-        <button class="gumb-dodaj" @click="otvoriModalUnos()">
-          <span class="material-icons">add</span> Dodaj šifru
-        </button>
-        <button class="gumb-zakljucaj" @click="zakljucajVault">
-          <span class="material-icons">lock</span> Zaključaj
-        </button>
-      </div>
 
       <button v-if="imaZapamcenPinNaUredaju" class="gumb-zaboravi-pin" @click="zaboraviPinNaUredaju">
         Zaboravi brzo Face ID otključavanje na ovom uređaju
@@ -80,10 +79,10 @@
           </div>
           <div v-if="dekriptirano[unos.id]?.napomena" class="redak-napomena">{{ dekriptirano[unos.id].napomena }}</div>
           <div class="redak-akcije">
-            <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
+            <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
               <span class="material-icons">edit</span>
             </button>
-            <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
+            <button aria-label="Obriši" class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
               <span class="material-icons">delete</span>
             </button>
           </div>
@@ -93,27 +92,27 @@
 
     <!-- ==================== MODAL: DODAJ/UREDI ŠIFRU ==================== -->
     <div v-if="prikaziModalUnos" class="prekrivka-modala" @click="zatvoriModalUnos">
-      <div class="modal" @click.stop>
+      <div class="modal" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h3>{{ uredujeUnos ? 'Uredi šifru' : 'Dodaj šifru' }}</h3>
-          <button class="gumb-zatvaranja" @click="zatvoriModalUnos">&times;</button>
+          <button aria-label="Zatvori" class="gumb-zatvaranja" @click="zatvoriModalUnos">&times;</button>
         </div>
         <form class="forma" @submit.prevent="spremiUnos">
           <div class="grupa-polja">
-            <label>Platforma / naziv:</label>
-            <input v-model="forma.naziv" type="text" required placeholder="Npr. Gmail">
+            <label for="asifre-polje-1">Platforma / naziv:</label>
+            <input autocomplete="off" id="asifre-polje-1" v-model="forma.naziv" type="text" required placeholder="Npr. Gmail">
           </div>
           <div class="grupa-polja">
-            <label>Korisničko ime / email:</label>
-            <input v-model="forma.korisnickoIme" type="text">
+            <label for="asifre-polje-2">Korisničko ime / email:</label>
+            <input autocomplete="off" id="asifre-polje-2" v-model="forma.korisnickoIme" type="text">
           </div>
           <div class="grupa-polja">
-            <label>Lozinka:</label>
-            <input v-model="forma.lozinka" type="text">
+            <label for="asifre-polje-3">Lozinka:</label>
+            <input autocomplete="off" id="asifre-polje-3" v-model="forma.lozinka" type="text">
           </div>
           <div class="grupa-polja">
-            <label>Napomena:</label>
-            <input v-model="forma.napomena" type="text">
+            <label for="asifre-polje-4">Napomena:</label>
+            <input autocomplete="off" id="asifre-polje-4" v-model="forma.napomena" type="text">
           </div>
           <div class="akcije-forme">
             <button type="button" class="gumb-odustati" @click="zatvoriModalUnos">Odustani</button>
@@ -125,7 +124,7 @@
 
     <!-- ==================== MODAL: POTVRDA BRISANJA ==================== -->
     <div v-if="unosZaBrisanje" class="prekrivka-modala" @click="unosZaBrisanje = null">
-      <div class="modal-potvrda" @click.stop>
+      <div class="modal-potvrda" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala"><h2>Potvrda brisanja</h2></div>
         <div class="sadrzaj-potvrde">
           <span class="material-icons upozorenje">warning</span>
@@ -141,6 +140,8 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { enkriptiraj, dekriptiraj } from '@/services/crypto.js';
@@ -366,7 +367,7 @@ const spremiUnos = async () => {
     zatvoriModalUnos();
   } catch (error) {
     console.error('Greška pri spremanju šifre:', error);
-    alert('Greška pri spremanju šifre.');
+    obavijesti('Greška pri spremanju šifre.');
   }
 };
 
@@ -384,16 +385,7 @@ const potvrdiBrisanje = async () => {
 
 <style scoped>
 .sifre {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.naslov {
-  color: var(--text-heading);
-  font-weight: 700;
-  margin-bottom: 30px;
+  font-family: var(--font-sans);
 }
 
 .loading-container {
@@ -466,7 +458,7 @@ const potvrdiBrisanje = async () => {
 
 .gumb-pin {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   border: none;
   border-radius: 8px;
   padding: 12px;
@@ -503,39 +495,6 @@ const potvrdiBrisanje = async () => {
   cursor: pointer;
   font-size: 0.8rem;
   text-decoration: underline;
-}
-
-.akcije-zaglavlje {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.gumb-dodaj {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.gumb-zakljucaj {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--bg-card-muted);
-  color: var(--text-heading);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-  margin-left: auto;
 }
 
 .prazno {
@@ -649,12 +608,13 @@ const potvrdiBrisanje = async () => {
   width: 90%;
   max-width: 440px;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
 }
 
 .zaglavlje-modala {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -721,7 +681,7 @@ const potvrdiBrisanje = async () => {
 
 .gumb-spremiti {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .modal-potvrda {
@@ -765,22 +725,9 @@ const potvrdiBrisanje = async () => {
 }
 
 @media (max-width: 768px) {
-  .sifre {
-    padding: 16px;
-    padding-bottom: 100px;
-  }
-
-  .naslov {
-    font-size: 1.5rem;
-  }
-
   .pin-kartica {
     margin: 24px auto;
     padding: 28px 18px;
-  }
-
-  .akcije-zaglavlje {
-    gap: 8px;
   }
 
   .gumb-dodaj, .gumb-zakljucaj {
@@ -790,6 +737,15 @@ const potvrdiBrisanje = async () => {
 
   .redak-unosa {
     padding: 14px;
+  }
+}
+
+/* iOS zumira polja s fontom manjim od 16px */
+@media (max-width: 768px) {
+  .pin-forma input,
+  .grupa-polja input {
+    font-size: 16px;
+    min-height: 44px;
   }
 }
 </style>

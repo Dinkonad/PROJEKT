@@ -1,8 +1,6 @@
 <template>
-  <div class="karta">
-    <div class="naslov-sekcija">
-      <h2 class="glavni-naslov">Karta</h2>
-    </div>
+  <div class="karta stranica">
+    <AZaglavljeStranice naslov="Karta" />
     
     <div class="sadrzaj">
       <div class="mapa-okvir">
@@ -35,6 +33,7 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/services/firebase';
@@ -290,40 +289,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
 .karta {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-body);
 }
 
-.naslov-sekcija {
-  margin-bottom: 24px;
-}
-
-.glavni-naslov {
-  color: var(--text-heading);
-  margin-bottom: 8px;
-  font-weight: 700;
-  font-size: 1.8rem;
-}
-
 @media (max-width: 768px) {
-  .karta {
-    padding: 15px;
-    margin: 10px;
-  }
-  
-  .glavni-naslov {
-    font-size: 1.5rem;
-  }
-  
-  .naslov-sekcija {
-    margin-bottom: 20px;
-  }
 }
 
 .sadrzaj {
@@ -392,7 +363,7 @@ onUnmounted(() => {
   border-radius: 6px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   font-weight: 500;
 }
 
@@ -419,19 +390,22 @@ onUnmounted(() => {
 
 @media (max-width: 1024px) {
   .mapa-wrapper {
-    height: 450px;
+    height: 62dvh;
+    min-height: 320px;
   }
 }
 
 @media (max-width: 768px) {
   .mapa-wrapper {
-    height: 400px;
+    height: 62dvh;
+    min-height: 320px;
   }
 }
 
 @media (max-width: 480px) {
   .mapa-wrapper {
-    height: 300px;
+    height: 62dvh;
+    min-height: 320px;
   }
 }
 
@@ -608,7 +582,7 @@ onUnmounted(() => {
 }
 
 :global(.popup-sadrzaj) {
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   min-width: 280px;
   max-width: 350px;
 }
@@ -705,5 +679,14 @@ onUnmounted(() => {
 :global(.custom-popup .leaflet-popup-content-wrapper) {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* kontrole zumiranja karte (Leaflet) su na mobitelu premale za prst */
+@media (max-width: 768px) {
+  :deep(.leaflet-bar a) {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+  }
 }
 </style>

@@ -1,6 +1,16 @@
 <template>
-  <div class="prihodi">
-    <h1 class="naslov">Prikaz svih prihoda</h1>
+  <div class="prihodi stranica">
+    <AZaglavljeStranice naslov="Prihodi">
+      <router-link v-if="!ucitava" to="/admin/karte" class="gumb-sekundarni">
+          <span class="material-icons">map</span> Karta
+        </router-link>
+      <button v-if="!ucitava" class="gumb-sekundarni" @click="izvezuPDF" :disabled="prihodi.length === 0">
+          <span class="material-icons">picture_as_pdf</span> PDF
+        </button>
+      <button v-if="!ucitava" class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
+          <span class="material-icons">add</span> Dodaj prihod
+        </button>
+    </AZaglavljeStranice>
 
     <div v-if="ucitava" class="loading-container">
       <span class="material-icons spinning">sync</span>
@@ -8,25 +18,20 @@
     </div>
 
     <!-- Tab navigacija -->
-    <div v-if="!ucitava" class="tab-navigacija">
+    <div v-if="!ucitava" class="tabovi" role="tablist">
       <button
-        :class="['tab-gumb', { aktivan: aktivniTab === 'prihodi' }]"
+        :class="['tab', { aktivan: aktivniTab === 'prihodi' }]"
+        role="tab"
         @click="aktivniTab = 'prihodi'">
         <span class="material-icons">receipt_long</span> Svi prihodi
       </button>
       <button
-        :class="['tab-gumb', { aktivan: aktivniTab === 'osobe' }]"
+        :class="['tab', { aktivan: aktivniTab === 'osobe' }]"
+        role="tab"
         @click="aktivniTab = 'osobe'">
         <span class="material-icons">people</span> Po osobama
       </button>
-      <div class="akcije-desno">
-        <router-link to="/admin/karte" class="gumb-karta">
-          <span class="material-icons">map</span> Karta
-        </router-link>
-        <button class="gumb-pdf" @click="izvezuPDF" :disabled="prihodi.length === 0">
-          <span class="material-icons">picture_as_pdf</span> Preuzmi PDF backup
-        </button>
-      </div>
+      
     </div>
 
     <div v-if="!ucitava" class="kartice">
@@ -191,11 +196,6 @@
         </div>
       </div>
 
-      <div v-if="!ucitava" class="dodaj-okvir">
-        <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
-          <span class="material-icons">add</span> Dodaj novi prihod
-        </button>
-      </div>
 
       <div v-if="!ucitava" class="tablica-okvir">
         <div class="filter-info" v-if="odabranaGodina || odabraniMjesec">
@@ -251,10 +251,10 @@
               </td>
              <td data-label="Akcija">
   <div class="akcija-gumbi">
-    <button class="gumb-uredi" @click.stop="otvoriUredivanje(prihod)" :disabled="sprema">
+    <button aria-label="Uredi" class="gumb-uredi" @click.stop="otvoriUredivanje(prihod)" :disabled="sprema">
       <span class="material-icons">edit</span>
     </button>
-    <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
+    <button aria-label="Obriši" class="gumb-brisi" @click.stop="potvrdiZaBrisanje(prihod)" :disabled="sprema">
       <span class="material-icons">delete</span>
     </button>
   </div>
@@ -275,10 +275,10 @@
 
     <Transition name="fade">
       <div class="pozadina" v-if="detalji" @click="detalji = null">
-        <div class="modal-detalji" @click.stop>
+        <div class="modal-detalji" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Detalji prihoda</h2>
-            <button class="gumb-zatvori" @click="detalji = null">
+            <button aria-label="Zatvori" class="gumb-zatvori" @click="detalji = null">
               <span class="material-icons">close</span>
             </button>
           </div>
@@ -340,17 +340,17 @@
 
     <Transition name="fade">
       <div class="pozadina" v-if="prikaziFormu" @click="prikaziFormu = false">
-        <div class="modal-forma" @click.stop>
+        <div class="modal-forma" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Novi prihod</h2>
-            <button class="gumb-zatvori" @click="prikaziFormu = false">
+            <button aria-label="Zatvori" class="gumb-zatvori" @click="prikaziFormu = false">
               <span class="material-icons">close</span>
             </button>
           </div>
           <form @submit.prevent="dodajNoviPrihod">
             <div class="forma-grupa">
               <label for="nazivEventa">Naziv eventa:</label>
-              <input type="text" id="nazivEventa" v-model="noviPrihod.nazivEventa" required placeholder="Npr. Vjenčanje, Rođendan, Konferencija...">
+              <input autocomplete="off" type="text" id="nazivEventa" v-model="noviPrihod.nazivEventa" required placeholder="Npr. Vjenčanje, Rođendan, Konferencija...">
             </div>
 
             <div class="forma-grupa">
@@ -459,7 +459,7 @@
 
             <div class="forma-grupa">
               <label for="datumSnimanja">Datum snimanja (početak):</label>
-              <input type="date" id="datumSnimanja" v-model="noviPrihod.datumSnimanja" required>
+              <input autocomplete="off" type="date" id="datumSnimanja" v-model="noviPrihod.datumSnimanja" required>
             </div>
 
             <div class="forma-grupa checkbox">
@@ -472,17 +472,17 @@
 
             <div class="forma-grupa" v-if="viseDanaNoviPrihod">
               <label for="datumZavrsetak">Datum završetka:</label>
-              <input type="date" id="datumZavrsetak" v-model="noviPrihod.datumZavrsetak" :min="noviPrihod.datumSnimanja" required>
+              <input autocomplete="off" type="date" id="datumZavrsetak" v-model="noviPrihod.datumZavrsetak" :min="noviPrihod.datumSnimanja" required>
             </div>
 
             <div class="forma-grupa">
               <label for="cijena">Cijena (EUR):</label>
-              <input type="number" id="cijena" v-model="noviPrihod.cijena" step="1.00" min="0" required>
+              <input autocomplete="off" type="number" id="cijena" v-model="noviPrihod.cijena" step="1.00" min="0" required>
             </div>
 
             <div class="forma-grupa">
               <label for="putniTrosak">Putni trošak (EUR):</label>
-              <input type="number" id="putniTrosak" v-model="noviPrihod.putniTrosak" step="1.00" min="0" placeholder="0.00">
+              <input autocomplete="off" type="number" id="putniTrosak" v-model="noviPrihod.putniTrosak" step="1.00" min="0" placeholder="0.00">
             </div>
 
             <div class="forma-grupa checkbox">
@@ -495,7 +495,7 @@
 
             <div class="forma-grupa" v-if="daoBratuNoviPrihod">
               <label for="danoBratu">Koliko si dao bratu (EUR):</label>
-              <input type="number" id="danoBratu" v-model="noviPrihod.danoBratu" step="1.00" min="0" placeholder="0.00">
+              <input autocomplete="off" type="number" id="danoBratu" v-model="noviPrihod.danoBratu" step="1.00" min="0" placeholder="0.00">
               <small class="napomena">Ovaj iznos ide isključivo bratu - ne računa se nigdje kao tvoja zarada.</small>
             </div>
 
@@ -523,7 +523,7 @@
 
     <Transition name="fade">
       <div class="pozadina" v-if="brisanjeIndeks !== null" @click="brisanjeIndeks = null">
-        <div class="modal-potvrda" @click.stop>
+        <div class="modal-potvrda" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Potvrda brisanja</h2>
           </div>
@@ -540,17 +540,17 @@
     </Transition>
     <Transition name="fade">
   <div class="pozadina" v-if="uredivanjePrihod" @click="uredivanjePrihod = null">
-    <div class="modal-forma" @click.stop>
+    <div class="modal-forma" role="dialog" aria-modal="true" @click.stop>
       <div class="modal-zaglavlje">
         <h2>Uredi prihod</h2>
-        <button class="gumb-zatvori" @click="uredivanjePrihod = null">
+        <button aria-label="Zatvori" class="gumb-zatvori" @click="uredivanjePrihod = null">
           <span class="material-icons">close</span>
         </button>
       </div>
       <form @submit.prevent="spremiUredivanje">
         <div class="forma-grupa">
-          <label>Naziv eventa:</label>
-          <input type="text" v-model="uredivanjePrihod.nazivEventa" required placeholder="Npr. Vjenčanje, Rođendan...">
+          <label for="aprihodi-polje-1">Naziv eventa:</label>
+          <input autocomplete="off" id="aprihodi-polje-1" type="text" v-model="uredivanjePrihod.nazivEventa" required placeholder="Npr. Vjenčanje, Rođendan...">
         </div>
         <div class="forma-grupa">
           <label>Ime i prezime:</label>
@@ -617,24 +617,24 @@
           </div>
         </div>
         <div class="forma-grupa">
-          <label>Adresa lokacije:</label>
-          <input type="text" v-model="uredivanjePrihod.lokacija" required>
+          <label for="aprihodi-polje-2">Adresa lokacije:</label>
+          <input autocomplete="off" id="aprihodi-polje-2" type="text" v-model="uredivanjePrihod.lokacija" required>
         </div>
         <div class="forma-grupa">
-          <label>Datum snimanja (početak):</label>
-          <input type="date" v-model="uredivanjePrihod.datumSnimanja" required>
+          <label for="aprihodi-polje-3">Datum snimanja (početak):</label>
+          <input autocomplete="off" id="aprihodi-polje-3" type="date" v-model="uredivanjePrihod.datumSnimanja" required>
         </div>
         <div class="forma-grupa">
-          <label>Datum završetka (ostavi prazno ako je jedan dan):</label>
-          <input type="date" v-model="uredivanjePrihod.datumZavrsetak" :min="uredivanjePrihod.datumSnimanja">
+          <label for="aprihodi-polje-4">Datum završetka (ostavi prazno ako je jedan dan):</label>
+          <input autocomplete="off" id="aprihodi-polje-4" type="date" v-model="uredivanjePrihod.datumZavrsetak" :min="uredivanjePrihod.datumSnimanja">
         </div>
         <div class="forma-grupa">
-          <label>Cijena (EUR):</label>
-          <input type="number" v-model="uredivanjePrihod.cijena" step="1.00" min="0" required>
+          <label for="aprihodi-polje-5">Cijena (EUR):</label>
+          <input autocomplete="off" id="aprihodi-polje-5" type="number" v-model="uredivanjePrihod.cijena" step="1.00" min="0" required>
         </div>
         <div class="forma-grupa">
-          <label>Putni trošak (EUR):</label>
-          <input type="number" v-model="uredivanjePrihod.putniTrosak" step="1.00" min="0">
+          <label for="aprihodi-polje-6">Putni trošak (EUR):</label>
+          <input autocomplete="off" id="aprihodi-polje-6" type="number" v-model="uredivanjePrihod.putniTrosak" step="1.00" min="0">
         </div>
         <div class="forma-grupa checkbox">
           <label class="prekidac">
@@ -644,13 +644,13 @@
           </label>
         </div>
         <div class="forma-grupa" v-if="daoBratuUredi">
-          <label>Koliko si dao bratu (EUR):</label>
-          <input type="number" v-model="uredivanjePrihod.danoBratu" step="1.00" min="0">
+          <label for="aprihodi-polje-7">Koliko si dao bratu (EUR):</label>
+          <input autocomplete="off" id="aprihodi-polje-7" type="number" v-model="uredivanjePrihod.danoBratu" step="1.00" min="0">
           <small class="napomena">Ovaj iznos ide isključivo bratu - ne računa se nigdje kao tvoja zarada.</small>
         </div>
         <div class="forma-grupa">
-          <label>Opis snimanja:</label>
-          <textarea v-model="uredivanjePrihod.opisSnimanja" placeholder="Detalji o snimanju..."></textarea>
+          <label for="aprihodi-polje-8">Opis snimanja:</label>
+          <textarea id="aprihodi-polje-8" v-model="uredivanjePrihod.opisSnimanja" placeholder="Detalji o snimanju..."></textarea>
         </div>
         <div class="forma-grupa checkbox">
           <label class="prekidac">
@@ -671,6 +671,7 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase.js';
 import jsPDF from 'jspdf';
@@ -1159,7 +1160,6 @@ onMounted(() => {
   ucitajPrihodeiFirestore();
 });
 
-
 const formatCurrency = (value) => {
   return `${parseFloat(value).toFixed(2)} EUR`;
 };
@@ -1419,7 +1419,6 @@ const dodajNoviPrihod = async () => {
   }
 };
 
-
 const otvoriUredivanje = (prihod) => {
   uredivanjePrihod.value = { ...prihod, suradnici: suradniciZaPrihod(prihod) };
   uredivanjeSuradnikUnos.value = '';
@@ -1450,9 +1449,6 @@ const spremiUredivanje = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
 .loading-container {
   text-align: center;
   padding: 50px;
@@ -1469,23 +1465,10 @@ const spremiUredivanje = async () => {
 }
 
 .prihodi {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-body);
-  background-color: var(--bg-page);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.naslov {
-  text-align: center;
-  color: var(--text-heading);
-  margin-bottom: 40px;
-  font-weight: 700;
-  position: relative;
-}
 .akcija-gumbi {
   display: flex;
   flex-direction: row;
@@ -1505,126 +1488,14 @@ const spremiUredivanje = async () => {
 }
 
 /* ==================== TAB NAVIGACIJA ==================== */
-.tab-navigacija {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 0;
-}
-
-.tab-gumb {
-  background: none;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-family: 'Roboto', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.2s ease;
-}
-
-.tab-gumb:hover {
-  color: var(--text-heading);
-}
-
-.tab-gumb.aktivan {
-  color: var(--text-heading);
-  border-bottom-color: var(--accent);
-}
-
-.akcije-desno {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.gumb-karta {
-  background-color: var(--bg-card-muted);
-  color: var(--text-heading);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-family: 'Roboto', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  transition: background-color 0.2s ease;
-}
-
-.gumb-karta:hover {
-  background-color: var(--border-color);
-}
-
-.gumb-pdf {
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-family: 'Roboto', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s ease;
-  align-self: center;
-}
-
 .gumb-pdf:hover:not(:disabled) {
   background-color: var(--accent-hover);
 }
 
-.gumb-pdf:disabled {
-  background-color: var(--gray-muted);
-  cursor: not-allowed;
-}
-
 /* ==================== KARTICE (summary) ==================== */
-.kartice {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 16px;
-  margin-bottom: 30px;
-}
-
-.kartica {
-  min-width: 0;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: 18px;
-  box-shadow: var(--glass-shadow);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  animation: pojaviSe 0.35s ease both;
-}
-
 @keyframes pojaviSe {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.kartica:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 .ikona {
@@ -1677,7 +1548,7 @@ const spremiUredivanje = async () => {
   border-radius: var(--radius-card);
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
 }
 
 .osoba-kartica:hover {
@@ -1801,7 +1672,7 @@ const spremiUredivanje = async () => {
   border-radius: 6px;
   background-color: var(--bg-card);
   color: var(--text-heading);
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   cursor: pointer;
   transition: border-color 0.3s ease;
@@ -1857,7 +1728,7 @@ const spremiUredivanje = async () => {
   border-radius: var(--radius-card);
   padding: 20px;
   box-shadow: var(--glass-shadow);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   cursor: pointer;
   border: 2px solid transparent;
 }
@@ -1995,7 +1866,7 @@ const spremiUredivanje = async () => {
 
 .tablica th {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
   padding: 16px;
   text-align: left;
   font-weight: 500;
@@ -2152,7 +2023,7 @@ const spremiUredivanje = async () => {
 
 .gumb-plati {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -2204,34 +2075,6 @@ const spremiUredivanje = async () => {
 }
 
 /* ==================== DODAJ GUMB ==================== */
-.dodaj-okvir {
-  display: flex;
-  justify-content: center;
-  margin: 30px 0;
-}
-
-.gumb-dodaj {
-  background-color: var(--accent);
-  color: #F1EFEC;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.gumb-dodaj:hover {
-  background-color: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-}
-
 /* ==================== MODALI ==================== */
 .pozadina {
   position: fixed;
@@ -2261,7 +2104,7 @@ const spremiUredivanje = async () => {
 
 .modal-zaglavlje {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -2343,7 +2186,7 @@ form {
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-card);
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -2392,7 +2235,7 @@ form {
   padding: 12px 16px;
   cursor: pointer;
   border-bottom: 1px solid var(--bg-card-muted);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 
 .dropdown-item:hover,
@@ -2492,7 +2335,7 @@ input:checked + .klizac:before {
   border-radius: 6px;
   border: none;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   cursor: pointer;
 }
 
@@ -2507,7 +2350,7 @@ input:checked + .klizac:before {
 
 .gumb-spremi, .gumb-potvrdi {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
 }
 
 .gumb-spremi:hover, .gumb-potvrdi:hover {
@@ -2553,6 +2396,7 @@ input:checked + .klizac:before {
 
 .modal-forma {
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
 }
 
@@ -2566,10 +2410,6 @@ input:checked + .klizac:before {
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 1024px) {
-  .prihodi {
-    padding: 25px;
-  }
-
   .mjesecni-kartice {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
@@ -2580,34 +2420,7 @@ input:checked + .klizac:before {
 }
 
 @media (max-width: 768px) {
-  .prihodi {
-    padding: 20px;
-  }
-
-  .tab-navigacija {
-    gap: 5px;
-    flex-wrap: wrap;
-  }
-
-  .tab-gumb {
-    padding: 8px 14px;
-    font-size: 13px;
-  }
-
-  .akcije-desno {
-    margin-left: 0;
-    width: 100%;
-    margin-top: 8px;
-    order: 3;
-    flex-direction: column;
-  }
-
   .gumb-karta,
-  .gumb-pdf {
-    width: 100%;
-    justify-content: center;
-  }
-
   .filteri-okvir {
     flex-direction: column;
     align-items: stretch;
@@ -2646,24 +2459,8 @@ input:checked + .klizac:before {
     gap: 8px;
   }
 
-  .naslov {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
-  }
-
-  .kartice {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
   .kartica.neto {
     grid-column: 1 / -1;
-  }
-
-  .kartica {
-    padding: 14px;
-    gap: 10px;
   }
 
   .ikona {
@@ -2762,16 +2559,6 @@ input:checked + .klizac:before {
 }
 
 @media (max-width: 480px) {
-  .prihodi {
-    padding: 15px;
-  }
-
-  .tab-gumb {
-    padding: 8px 10px;
-    font-size: 12px;
-    gap: 4px;
-  }
-
   .filter-grupa select {
     font-size: 14px;
     padding: 8px 12px;
@@ -2822,6 +2609,5 @@ input:checked + .klizac:before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kartica { animation: none !important; transition: none !important; }
 }
 </style>

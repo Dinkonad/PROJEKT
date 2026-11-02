@@ -4,9 +4,12 @@
       <component :is="Component" />
     </transition>
   </router-view>
+  <AObavijesti />
 </template>
 
 <script setup>
+import AObavijesti from './components/AObavijesti.vue';
+
 defineOptions({ name: 'App' });
 </script>
 

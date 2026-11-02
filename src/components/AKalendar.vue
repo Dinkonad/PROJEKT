@@ -1,15 +1,11 @@
 <template>
-  <div class="kalendar-stranica">
-    <div class="zaglavlje">
-      <h1 class="naslov">Kalendar</h1>
-      <div class="zaglavlje-akcije">
-        <span class="zadnja-sink">{{ zadnjaSinkronizacijaTekst }}</span>
-        <button class="gumb-osvjezi" :disabled="osvjezavanje" @click="osvjeziSad">
+  <div class="kalendar-stranica stranica">
+    <AZaglavljeStranice naslov="Kalendar" :podnaslov="zadnjaSinkronizacijaTekst">
+      <button class="gumb-primarni" :disabled="osvjezavanje" @click="osvjeziSad">
           <span class="material-icons" :class="{ spinning: osvjezavanje }">sync</span>
           Osvježi sad
         </button>
-      </div>
-    </div>
+    </AZaglavljeStranice>
 
     <p v-if="porukaGreske" class="poruka-greska">{{ porukaGreske }}</p>
 
@@ -47,6 +43,7 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db, auth } from '@/services/firebase.js';
 import { collection, doc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
@@ -165,55 +162,7 @@ const osvjeziSad = async () => {
 
 <style scoped>
 .kalendar-stranica {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.zaglavlje {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 25px;
-}
-
-.naslov {
-  color: var(--text-heading);
-  font-weight: 700;
-  margin: 0;
-}
-
-.zaglavlje-akcije {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.zadnja-sink {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.gumb-osvjezi {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.gumb-osvjezi:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  font-family: var(--font-sans);
 }
 
 .spinning {
@@ -311,7 +260,7 @@ const osvjeziSad = async () => {
 
 .event-kalendar-oznaka {
   color: white;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 20px;
@@ -332,31 +281,6 @@ const osvjeziSad = async () => {
 }
 
 @media (max-width: 768px) {
-  .kalendar-stranica {
-    padding: 16px;
-    padding-bottom: 100px;
-  }
-
-  .zaglavlje {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .zaglavlje-akcije {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .zadnja-sink {
-    text-align: center;
-  }
-
-  .gumb-osvjezi {
-    width: 100%;
-    justify-content: center;
-  }
-
   .sekcija {
     padding: 16px;
   }

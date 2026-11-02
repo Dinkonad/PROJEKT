@@ -1,6 +1,10 @@
 <template>
-  <div class="auto">
-    <h1 class="naslov">Auto</h1>
+  <div class="auto stranica">
+    <AZaglavljeStranice naslov="Auto">
+      <button class="gumb-dodaj" @click="otvoriModalUnos()">
+          <span class="material-icons">add</span> Dodaj unos
+        </button>
+    </AZaglavljeStranice>
 
     <div v-if="ucitava" class="loading-container">
       <span class="material-icons spinning">sync</span>
@@ -50,7 +54,7 @@
       <div class="sekcija-km">
         <div class="sekcija-km-zaglavlje">
           <h2>Mjesečno stanje goriva</h2>
-          <button class="gumb-dodaj-km" @click="otvoriModalKm()">
+          <button class="gumb-primarni" @click="otvoriModalKm()">
             <span class="material-icons">add</span> Upiši stanje
           </button>
         </div>
@@ -131,10 +135,10 @@
               <span class="ocitanje-mjesec">{{ formatMjesecPuni(o.mjesec) }}</span>
               <span v-if="typeof o.kilometraza === 'number'" class="ocitanje-km">{{ o.kilometraza.toLocaleString('hr-HR') }} km</span>
               <div class="redak-akcije">
-                <button class="gumb-akcija" title="Uredi" @click="otvoriModalKm(o)">
+                <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalKm(o)">
                   <span class="material-icons">edit</span>
                 </button>
-                <button class="gumb-akcija obrisi" title="Obriši" @click="ocitanjeZaBrisanje = o">
+                <button aria-label="Obriši" class="gumb-akcija obrisi" title="Obriši" @click="ocitanjeZaBrisanje = o">
                   <span class="material-icons">delete</span>
                 </button>
               </div>
@@ -163,11 +167,6 @@
         </div>
       </div>
 
-      <div class="tab-navigacija">
-        <button class="gumb-dodaj" @click="otvoriModalUnos()">
-          <span class="material-icons">add</span> Dodaj unos
-        </button>
-      </div>
 
       <div v-if="filtriraniUnosi.length === 0" class="prazno">
         <p>Nema unosa</p>
@@ -180,10 +179,10 @@
             <span class="redak-datum">{{ formatDatum(unos.datum) }}</span>
             <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
             <div class="redak-akcije">
-              <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
+              <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
                 <span class="material-icons">edit</span>
               </button>
-              <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
+              <button aria-label="Obriši" class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
                 <span class="material-icons">delete</span>
               </button>
             </div>
@@ -216,74 +215,74 @@
 
     <!-- ==================== MODAL: DODAJ/UREDI UNOS ==================== -->
     <div v-if="prikaziModalUnos" class="prekrivka-modala" @click="zatvoriModalUnos">
-      <div class="modal" @click.stop>
+      <div class="modal" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h3>{{ uredujeUnos ? 'Uredi unos' : 'Dodaj unos' }}</h3>
-          <button class="gumb-zatvaranja" @click="zatvoriModalUnos">&times;</button>
+          <button aria-label="Zatvori" class="gumb-zatvaranja" @click="zatvoriModalUnos">&times;</button>
         </div>
         <form class="forma" @submit.prevent="spremiUnos">
           <div class="grupa-polja">
-            <label>Vrsta:</label>
-            <select v-model="forma.tip">
+            <label for="aauto-polje-1">Vrsta:</label>
+            <select id="aauto-polje-1" v-model="forma.tip">
               <option value="registracija">Registracija</option>
               <option value="servis">Servis</option>
               <option value="kilometraza">Gorivo / potrošnja</option>
             </select>
           </div>
           <div class="grupa-polja">
-            <label>Datum:</label>
-            <input v-model="forma.datum" type="date" required>
+            <label for="aauto-polje-2">Datum:</label>
+            <input autocomplete="off" id="aauto-polje-2" v-model="forma.datum" type="date" required>
           </div>
 
           <template v-if="forma.tip === 'registracija'">
             <div class="grupa-polja">
-              <label>Iznos (EUR):</label>
-              <input v-model.number="forma.iznos" type="number" step="0.01" min="0" required>
+              <label for="aauto-polje-3">Iznos (EUR):</label>
+              <input autocomplete="off" id="aauto-polje-3" v-model.number="forma.iznos" type="number" step="0.01" min="0" required>
             </div>
             <div class="grupa-polja">
-              <label>Opis (napomena):</label>
-              <textarea v-model="forma.opis" rows="3" placeholder="Npr. tehnički pregled, osiguranje..."></textarea>
+              <label for="aauto-polje-4">Opis (napomena):</label>
+              <textarea id="aauto-polje-4" v-model="forma.opis" rows="3" placeholder="Npr. tehnički pregled, osiguranje..."></textarea>
             </div>
           </template>
 
           <template v-else-if="forma.tip === 'servis'">
             <div class="grupa-polja">
-              <label>Iznos (EUR):</label>
-              <input v-model.number="forma.iznos" type="number" step="0.01" min="0" required>
+              <label for="aauto-polje-5">Iznos (EUR):</label>
+              <input autocomplete="off" id="aauto-polje-5" v-model.number="forma.iznos" type="number" step="0.01" min="0" required>
             </div>
             <div class="grupa-polja">
-              <label>Ime osobe / servisa:</label>
-              <input v-model="forma.imeOsobe" type="text" placeholder="Npr. Marko, Auto servis Horvat">
+              <label for="aauto-polje-6">Ime osobe / servisa:</label>
+              <input autocomplete="off" id="aauto-polje-6" v-model="forma.imeOsobe" type="text" placeholder="Npr. Marko, Auto servis Horvat">
             </div>
             <div class="grupa-polja">
-              <label>Lokacija:</label>
-              <input v-model="forma.lokacija" type="text" placeholder="Npr. Pula">
+              <label for="aauto-polje-7">Lokacija:</label>
+              <input autocomplete="off" id="aauto-polje-7" v-model="forma.lokacija" type="text" placeholder="Npr. Pula">
             </div>
             <div class="grupa-polja">
-              <label>Opis (što se radilo):</label>
-              <textarea v-model="forma.opis" rows="3" placeholder="Npr. zamjena ulja i filtera, kočione pločice..."></textarea>
+              <label for="aauto-polje-8">Opis (što se radilo):</label>
+              <textarea id="aauto-polje-8" v-model="forma.opis" rows="3" placeholder="Npr. zamjena ulja i filtera, kočione pločice..."></textarea>
             </div>
           </template>
 
           <template v-else>
             <div class="grupa-polja grupa-vrijeme">
               <div>
-                <label>Početna kilometraža:</label>
-                <input v-model.number="forma.pocetnaKilometraza" type="number" min="0" required>
+                <label for="aauto-polje-9">Početna kilometraža:</label>
+                <input autocomplete="off" id="aauto-polje-9" v-model.number="forma.pocetnaKilometraza" type="number" min="0" required>
               </div>
               <div>
-                <label>Konačna kilometraža:</label>
-                <input v-model.number="forma.konacnaKilometraza" type="number" min="0" placeholder="Upiši kad stigneš">
+                <label for="aauto-polje-10">Konačna kilometraža:</label>
+                <input autocomplete="off" id="aauto-polje-10" v-model.number="forma.konacnaKilometraza" type="number" min="0" placeholder="Upiši kad stigneš">
               </div>
             </div>
             <div class="grupa-polja grupa-vrijeme">
               <div>
-                <label>Početna potrošnja (L):</label>
-                <input v-model.number="forma.pocetnaPotrosnja" type="number" step="0.01" min="0" required placeholder="Npr. 80">
+                <label for="aauto-polje-11">Početna potrošnja (L):</label>
+                <input autocomplete="off" id="aauto-polje-11" v-model.number="forma.pocetnaPotrosnja" type="number" step="0.01" min="0" required placeholder="Npr. 80">
               </div>
               <div>
-                <label>Konačna potrošnja (L):</label>
-                <input v-model.number="forma.konacnaPotrosnja" type="number" step="0.01" min="0" placeholder="Npr. 93">
+                <label for="aauto-polje-12">Konačna potrošnja (L):</label>
+                <input autocomplete="off" id="aauto-polje-12" v-model.number="forma.konacnaPotrosnja" type="number" step="0.01" min="0" placeholder="Npr. 93">
               </div>
             </div>
             <div class="pregled-izracuna" v-if="pregledPotrosnje !== null">
@@ -301,7 +300,7 @@
 
     <!-- ==================== MODAL: POTVRDA BRISANJA ==================== -->
     <div v-if="unosZaBrisanje" class="prekrivka-modala" @click="unosZaBrisanje = null">
-      <div class="modal-potvrda" @click.stop>
+      <div class="modal-potvrda" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala"><h2>Potvrda brisanja</h2></div>
         <div class="sadrzaj-potvrde">
           <span class="material-icons upozorenje">warning</span>
@@ -316,28 +315,28 @@
 
     <!-- ==================== MODAL: DODAJ/UREDI MJESEČNU KILOMETRAŽU ==================== -->
     <div v-if="prikaziModalKm" class="prekrivka-modala" @click="zatvoriModalKm">
-      <div class="modal" @click.stop>
+      <div class="modal" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h3>{{ uredujeOcitanje ? 'Uredi stanje' : 'Upiši stanje goriva' }}</h3>
-          <button class="gumb-zatvaranja" @click="zatvoriModalKm">&times;</button>
+          <button aria-label="Zatvori" class="gumb-zatvaranja" @click="zatvoriModalKm">&times;</button>
         </div>
         <form class="forma" @submit.prevent="spremiOcitanje">
           <div class="grupa-polja">
-            <label>Mjesec:</label>
-            <input v-model="formaKm.mjesec" type="month" required>
+            <label for="aauto-polje-13">Mjesec:</label>
+            <input autocomplete="off" id="aauto-polje-13" v-model="formaKm.mjesec" type="month" required>
           </div>
           <template v-if="formaKm.nacin === 'novi'">
             <div class="grupa-polja">
-              <label>Kilometraža (stanje na kraju mjeseca):</label>
-              <input v-model.number="formaKm.kilometraza" type="number" min="0" inputmode="numeric" placeholder="Npr. 120500" required>
+              <label for="aauto-polje-14">Kilometraža (stanje na kraju mjeseca):</label>
+              <input autocomplete="off" id="aauto-polje-14" v-model.number="formaKm.kilometraza" type="number" min="0" inputmode="numeric" placeholder="Npr. 120500" required>
             </div>
             <div class="grupa-polja">
-              <label>Stanje brojača litara (zbirno, na kraju mjeseca):</label>
-              <input v-model.number="formaKm.brojacLitara" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Npr. 475" required>
+              <label for="aauto-polje-15">Stanje brojača litara (zbirno, na kraju mjeseca):</label>
+              <input autocomplete="off" id="aauto-polje-15" v-model.number="formaKm.brojacLitara" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Npr. 475" required>
             </div>
             <div class="grupa-polja">
-              <label>Cijena goriva (EUR/L):</label>
-              <input v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" inputmode="decimal" placeholder="Npr. 1.45" required>
+              <label for="aauto-polje-16">Cijena goriva (EUR/L):</label>
+              <input autocomplete="off" id="aauto-polje-16" v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" inputmode="decimal" placeholder="Npr. 1.45" required>
             </div>
             <div v-if="pregledNovog" class="pregled-izracuna" :class="{ 'pregled-greska': pregledNovog.neispravno }">
               <span v-if="pregledNovog.neispravno">
@@ -360,17 +359,17 @@
           <!-- stari unosi (od prije novog načina) uređuju se kao i do sada -->
           <template v-else>
             <div class="grupa-polja">
-              <label>Kilometraža (stanje na kraju mjeseca):</label>
-              <input v-model.number="formaKm.kilometraza" type="number" min="0" required>
+              <label for="aauto-polje-17">Kilometraža (stanje na kraju mjeseca):</label>
+              <input autocomplete="off" id="aauto-polje-17" v-model.number="formaKm.kilometraza" type="number" min="0" required>
             </div>
             <div class="grupa-polja grupa-vrijeme">
               <div>
-                <label>Potrošeno goriva (L):</label>
-                <input v-model.number="formaKm.litreGoriva" type="number" step="0.01" min="0" placeholder="Npr. 85">
+                <label for="aauto-polje-18">Potrošeno goriva (L):</label>
+                <input autocomplete="off" id="aauto-polje-18" v-model.number="formaKm.litreGoriva" type="number" step="0.01" min="0" placeholder="Npr. 85">
               </div>
               <div>
-                <label>Cijena goriva (EUR/L):</label>
-                <input v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" placeholder="Npr. 1.45">
+                <label for="aauto-polje-19">Cijena goriva (EUR/L):</label>
+                <input autocomplete="off" id="aauto-polje-19" v-model.number="formaKm.cijenaPoLitri" type="number" step="0.001" min="0" placeholder="Npr. 1.45">
               </div>
             </div>
             <div class="pregled-izracuna" v-if="trosakGorivaForme !== null">
@@ -388,7 +387,7 @@
 
     <!-- ==================== MODAL: POTVRDA BRISANJA OČITANJA ==================== -->
     <div v-if="ocitanjeZaBrisanje" class="prekrivka-modala" @click="ocitanjeZaBrisanje = null">
-      <div class="modal-potvrda" @click.stop>
+      <div class="modal-potvrda" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala"><h2>Potvrda brisanja</h2></div>
         <div class="sadrzaj-potvrde">
           <span class="material-icons upozorenje">warning</span>
@@ -404,6 +403,8 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
@@ -628,7 +629,7 @@ const spremiUnos = async () => {
     zatvoriModalUnos();
   } catch (error) {
     console.error('Greška pri spremanju unosa:', error);
-    alert('Greška pri spremanju unosa.');
+    obavijesti('Greška pri spremanju unosa.');
   }
 };
 
@@ -717,7 +718,7 @@ const spremiOcitanje = async () => {
 
   if (f.nacin === 'novi') {
     if (pregledNovog.value?.neispravno) {
-      alert('Brojač litara je manji od prethodnog unosa - provjeri broj.');
+      obavijesti('Brojač litara je manji od prethodnog unosa - provjeri broj.');
       return;
     }
     podaci = {
@@ -749,7 +750,7 @@ const spremiOcitanje = async () => {
     zatvoriModalKm();
   } catch (error) {
     console.error('Greška pri spremanju očitanja:', error);
-    alert('Greška pri spremanju očitanja kilometraže.');
+    obavijesti('Greška pri spremanju očitanja kilometraže.');
   }
 };
 
@@ -767,16 +768,7 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 <style scoped>
 .auto {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.naslov {
-  color: var(--text-heading);
-  font-weight: 700;
-  margin-bottom: 30px;
+  font-family: var(--font-sans);
 }
 
 .loading-container {
@@ -804,7 +796,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   box-shadow: 0 6px 18px rgba(18, 52, 88, 0.35);
   padding: 12px 22px;
   margin-bottom: 16px;
-  color: white;
+  color: var(--on-accent);
 }
 
 .kartica-ukupno .ikona {
@@ -815,7 +807,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   align-items: center;
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.22);
-  color: white;
+  color: var(--on-accent);
   flex-shrink: 0;
 }
 
@@ -836,34 +828,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   margin: 0;
   font-size: 1.35rem;
   font-weight: 800;
-  color: white;
-}
-
-.kartice {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 25px;
-}
-
-.kartica {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--glass-shadow);
-  padding: 18px;
-  animation: pojaviSe 0.35s ease both;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.kartica:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px var(--shadow-color);
+  color: var(--on-accent);
 }
 
 @keyframes pojaviSe {
@@ -871,27 +836,15 @@ const potvrdiBrisanjeOcitanja = async () => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.kartica .ikona {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-card-muted);
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.kartica .podaci h3 {
-  margin: 0 0 4px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
 .kartice-statistika {
-  margin-bottom: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .kartice-statistika {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .napomena-statistika {
@@ -905,13 +858,6 @@ const potvrdiBrisanjeOcitanja = async () => {
   margin-top: 2px;
   font-size: 0.72rem;
   color: var(--text-muted);
-}
-
-.kartica .podaci .iznos {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-heading);
 }
 
 .sekcija-km {
@@ -938,21 +884,6 @@ const potvrdiBrisanjeOcitanja = async () => {
   color: var(--text-heading);
   font-size: 1.1rem;
   font-weight: 600;
-}
-
-.gumb-dodaj-km {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
 }
 
 .gumb-dodaj-km .material-icons {
@@ -1007,7 +938,7 @@ const potvrdiBrisanjeOcitanja = async () => {
 }
 
 .dan-iznos {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-heading);
   white-space: nowrap;
@@ -1068,24 +999,6 @@ const potvrdiBrisanjeOcitanja = async () => {
   color: var(--accent);
 }
 
-.tab-navigacija {
-  display: flex;
-  margin: 25px 0;
-}
-
-.gumb-dodaj {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
 .prazno {
   text-align: center;
   padding: 40px 0;
@@ -1116,7 +1029,7 @@ const potvrdiBrisanjeOcitanja = async () => {
 .oznaka-tipa {
   padding: 3px 8px;
   border-radius: 20px;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 600;
   white-space: nowrap;
   color: white;
@@ -1227,12 +1140,13 @@ const potvrdiBrisanjeOcitanja = async () => {
   width: 100%;
   max-width: 440px;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
 }
 
 .zaglavlje-modala {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -1276,7 +1190,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-page);
   color: var(--text-body);
   resize: vertical;
@@ -1340,7 +1254,7 @@ const potvrdiBrisanjeOcitanja = async () => {
 
 .gumb-spremiti {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .modal-potvrda {
@@ -1384,37 +1298,9 @@ const potvrdiBrisanjeOcitanja = async () => {
 }
 
 @media (max-width: 900px) {
-  .auto {
-    padding: 24px;
-  }
 }
 
 @media (max-width: 768px) {
-  .auto {
-    padding: 20px;
-    padding-bottom: 100px;
-  }
-
-  .kartice {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .kartica {
-    flex-direction: column;
-    text-align: center;
-    padding: 14px 8px;
-    gap: 8px;
-  }
-
-  .kartica .podaci h3 {
-    font-size: 0.68rem;
-  }
-
-  .kartica .podaci .iznos {
-    font-size: 0.95rem;
-  }
-
   .redak-glavno {
     gap: 6px;
   }
@@ -1428,17 +1314,8 @@ const potvrdiBrisanjeOcitanja = async () => {
     align-items: stretch;
   }
 
-  .gumb-dodaj-km {
-    justify-content: center;
-  }
-
   .dan-stupac {
     min-width: 24px;
-  }
-
-  .gumb-dodaj {
-    width: 100%;
-    justify-content: center;
   }
 
   .grupa-vrijeme {
@@ -1486,7 +1363,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   }
 
   .graf-oznaka .dan-naziv {
-    font-size: 0.62rem;
+    font-size: 0.7rem;
     white-space: nowrap;
   }
 
@@ -1496,47 +1373,11 @@ const potvrdiBrisanjeOcitanja = async () => {
 }
 
 @media (max-width: 480px) {
-  .auto {
-    padding: 14px;
-    padding-bottom: 100px;
-  }
-
-  .naslov {
-    font-size: 1.5rem;
-  }
-
-  .kartice {
-    gap: 8px;
-  }
-
-  .kartica {
-    padding: 10px 4px;
-    gap: 6px;
-  }
-
-  .kartica .ikona {
-    width: 32px;
-    height: 32px;
-  }
-
-  .kartica .ikona .material-icons {
-    font-size: 18px;
-  }
-
-  .kartica .podaci h3 {
-    font-size: 0.62rem;
-  }
-
-  .kartica .podaci .iznos {
-    font-size: 0.85rem;
-  }
-
   .redak-info, .redak-opis {
     font-size: 0.8rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kartica { animation: none !important; transition: none !important; }
 }
 </style>

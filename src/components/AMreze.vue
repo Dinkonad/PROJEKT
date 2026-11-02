@@ -1,6 +1,6 @@
 <template>
-  <div class="mreze">
-    <h1 class="naslov">Društvene mreže</h1>
+  <div class="mreze stranica">
+    <AZaglavljeStranice naslov="Društvene mreže" />
 
     <!-- ==================== KARTICE (TABOVI) ==================== -->
     <div class="tabovi" role="tablist">
@@ -126,6 +126,7 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import YoutubePanel from '@/components/mreze/YoutubePanel.vue';
@@ -169,16 +170,7 @@ onMounted(async () => {
 
 <style scoped>
 .mreze {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.naslov {
-  color: var(--text-heading);
-  font-weight: 700;
-  margin-bottom: 20px;
+  font-family: var(--font-sans);
 }
 
 h2 {
@@ -193,46 +185,8 @@ h2 {
 }
 
 /* ==================== TABOVI ==================== */
-.tabovi {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 20px;
-  scrollbar-width: none;
-}
-
 .tabovi::-webkit-scrollbar {
   display: none;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-  color: var(--text-heading);
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.tab .material-icons {
-  font-size: 18px;
-}
-
-.tab.aktivan {
-  background-color: var(--accent);
-  border-color: var(--accent);
-  color: white;
 }
 
 .tab-ok {
@@ -261,7 +215,7 @@ h2 {
   box-shadow: 0 6px 18px rgba(18, 52, 88, 0.35);
   padding: 22px 24px;
   margin-bottom: 18px;
-  color: white;
+  color: var(--on-accent);
 }
 
 .hero-ikona {
@@ -306,14 +260,6 @@ h2 {
 }
 
 /* ==================== KARTICE / SEKCIJE ==================== */
-.kartice {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.kartica,
 .sekcija {
   background-color: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
@@ -323,48 +269,9 @@ h2 {
   box-shadow: var(--glass-shadow);
 }
 
-.kartica {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-}
-
 .sekcija {
   padding: 20px;
   margin-bottom: 20px;
-}
-
-.kartica .ikona {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-card-muted);
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.kartica .podaci {
-  min-width: 0;
-}
-
-.kartica .podaci h3 {
-  margin: 0 0 4px;
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.kartica .podaci .iznos {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--text-heading);
 }
 
 /* ==================== UDIO ==================== */
@@ -573,7 +480,7 @@ h2 {
   cursor: pointer;
   min-height: 44px;
   background-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
   font-family: inherit;
 }
 
@@ -583,10 +490,6 @@ h2 {
 }
 
 @media (max-width: 768px) {
-  .mreze {
-    padding: 20px 16px 100px;
-  }
-
   .hero {
     padding: 18px;
   }

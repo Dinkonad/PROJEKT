@@ -1,7 +1,11 @@
 
 <template>
-  <div class="oprema">
-    <h1 class="naslov">Evidencija opreme</h1>
+  <div class="oprema stranica">
+    <AZaglavljeStranice naslov="Oprema">
+      <button v-if="!ucitava" class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
+        <span class="material-icons">add</span> Dodaj opremu
+      </button>
+    </AZaglavljeStranice>
     
     <div v-if="ucitava" class="loading-container">
       <span class="material-icons spinning">sync</span>
@@ -9,7 +13,7 @@
     </div>
     
     <div v-else class="kartice-container">
-      <div class="kartice-red">
+      <div class="kartice">
         <div class="kartica sveukupno">
           <div class="ikona">
             <span class="material-icons">history</span>
@@ -41,7 +45,7 @@
         </div>
       </div>
       
-      <div class="kartice-red">
+      <div class="kartice">
         <div class="kartica neplaceno">
           <div class="ikona">
             <span class="material-icons">person</span>
@@ -114,7 +118,7 @@
               </button>
             </td>
             <td data-label="Akcija">
-              <button class="gumb-brisi" @click.stop="potvrdiZaBrisanje(opremaItem)" :disabled="sprema">
+              <button aria-label="Obriši" class="gumb-brisi" @click.stop="potvrdiZaBrisanje(opremaItem)" :disabled="sprema">
                 <span class="material-icons">delete</span>
               </button>
             </td>
@@ -122,19 +126,14 @@
         </tbody>
       </table>
     </div>
-    
-    <div v-if="!ucitava" class="dodaj-okvir">
-      <button class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
-        <span class="material-icons">add</span> Dodaj novu opremu
-      </button>
-    </div>
+
     
     <Transition name="fade">
       <div class="pozadina" v-if="detalji" @click="detalji = null">
-        <div class="modal-detalji" @click.stop>
+        <div class="modal-detalji" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Detalji opreme</h2>
-            <button class="gumb-zatvori" @click="detalji = null">
+            <button aria-label="Zatvori" class="gumb-zatvori" @click="detalji = null">
               <span class="material-icons">close</span>
             </button>
           </div>
@@ -181,22 +180,22 @@
     
     <Transition name="fade">
       <div class="pozadina" v-if="prikaziFormu" @click="prikaziFormu = false">
-        <div class="modal-forma" @click.stop>
+        <div class="modal-forma" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Nova oprema</h2>
-            <button class="gumb-zatvori" @click="prikaziFormu = false">
+            <button aria-label="Zatvori" class="gumb-zatvori" @click="prikaziFormu = false">
               <span class="material-icons">close</span>
             </button>
           </div>
           <form @submit.prevent="dodajNovuOpremu">
             <div class="forma-grupa">
               <label for="naziv">Naziv opreme:</label>
-              <input type="text" id="naziv" v-model="novaOprema.naziv" required placeholder="Npr. Fotoaparat, Objektiv, Stativ...">
+              <input autocomplete="off" type="text" id="naziv" v-model="novaOprema.naziv" required placeholder="Npr. Fotoaparat, Objektiv, Stativ...">
             </div>
             
             <div class="forma-grupa">
               <label for="cijena">Cijena (EUR):</label>
-              <input type="number" id="cijena" v-model="novaOprema.cijena" step="1.00" min="0" required>
+              <input autocomplete="off" type="number" id="cijena" v-model="novaOprema.cijena" step="1.00" min="0" required>
             </div>
             
             <div class="forma-grupa">
@@ -211,7 +210,7 @@
             
             <div class="forma-grupa">
               <label for="datumKupnje">Datum kupnje:</label>
-              <input type="date" id="datumKupnje" v-model="novaOprema.datumKupnje" required>
+              <input autocomplete="off" type="date" id="datumKupnje" v-model="novaOprema.datumKupnje" required>
             </div>
             
             <div class="forma-grupa">
@@ -230,22 +229,22 @@
     
     <Transition name="fade">
       <div class="pozadina" v-if="prodajaIndex !== null" @click="prodajaIndex = null">
-        <div class="modal-forma" @click.stop>
+        <div class="modal-forma" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Označite kao prodano</h2>
-            <button class="gumb-zatvori" @click="prodajaIndex = null">
+            <button aria-label="Zatvori" class="gumb-zatvori" @click="prodajaIndex = null">
               <span class="material-icons">close</span>
             </button>
           </div>
           <form @submit.prevent="oznaciKaoProdano">
             <div class="forma-grupa">
               <label for="prodajnaCijena">Prodajna cijena (EUR):</label>
-              <input type="number" id="prodajnaCijena" v-model="prodajaPodaci.prodajnaCijena" step="1.00" min="0" required>
+              <input autocomplete="off" type="number" id="prodajnaCijena" v-model="prodajaPodaci.prodajnaCijena" step="1.00" min="0" required>
             </div>
             
             <div class="forma-grupa">
               <label for="datumProdaje">Datum prodaje:</label>
-              <input type="date" id="datumProdaje" v-model="prodajaPodaci.datumProdaje" required>
+              <input autocomplete="off" type="date" id="datumProdaje" v-model="prodajaPodaci.datumProdaje" required>
             </div>
             
             <div class="forma-gumbi">
@@ -259,7 +258,7 @@
     
     <Transition name="fade">
       <div class="pozadina" v-if="brisanjeIndeks !== null" @click="brisanjeIndeks = null">
-        <div class="modal-potvrda" @click.stop>
+        <div class="modal-potvrda" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Potvrda brisanja</h2>
           </div>
@@ -278,6 +277,7 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase.js';
 import { 
@@ -524,8 +524,7 @@ const dodajNovuOpremu = async () => {
     };
     
     await dodajOpremuUFirestore(opremaData);
-    
-  
+
     novaOprema.value = {
       naziv: '',
       cijena: 0,
@@ -542,60 +541,15 @@ const dodajNovuOpremu = async () => {
 </script>
 
 
-
 <style scoped>
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
 .oprema {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-body);
-}
-
-.naslov {
-  color: var(--text-heading);
-  margin-bottom: 30px;
-  font-weight: 700;
-}
-
-.kartice-container {
-  margin-bottom: 25px;
-}
-
-.kartice-red {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.kartica {
-  min-width: 0;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--glass-shadow);
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  animation: pojaviSe 0.35s ease both;
 }
 
 @keyframes pojaviSe {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.kartica:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 .ikona {
@@ -653,7 +607,7 @@ const dodajNovuOpremu = async () => {
 
 .tablica th {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
   padding: 16px;
   text-align: left;
   font-weight: 500;
@@ -758,34 +712,6 @@ const dodajNovuOpremu = async () => {
   background-color: var(--danger-hover);
 }
 
-.dodaj-okvir {
-  display: flex;
-  justify-content: center;
-  margin: 30px 0;
-}
-
-.gumb-dodaj {
-  background-color: var(--accent);
-  color: #F1EFEC;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.gumb-dodaj:hover {
-  background-color: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-}
-
 .pozadina {
   position: fixed;
   top: 0;
@@ -814,7 +740,7 @@ const dodajNovuOpremu = async () => {
 
 .modal-zaglavlje {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -894,7 +820,7 @@ form {
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-card);
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -936,7 +862,7 @@ form {
 
 .gumb-spremi {
   background-color: var(--accent);
-  color: #F1EFEC;
+  color: var(--on-accent);
   border: none;
   padding: 12px 24px;
   border-radius: 6px;
@@ -996,47 +922,11 @@ form {
 }
 
 @media (max-width: 1024px) {
-  .oprema {
-    padding: 25px;
-  }
-
-  .kartice-red {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .kartica {
-    min-width: auto;
-  }
 }
 
 @media (max-width: 768px) {
-  .oprema {
-    padding: 20px;
-  }
-
-  .naslov {
-    font-size: 1.8rem;
-    margin-bottom: 30px;
-  }
-
-  .kartice-container {
-    margin-bottom: 25px;
-  }
-
-  .kartice-red {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
   .kartica.prodano {
     grid-column: 1 / -1;
-  }
-
-  .kartica {
-    padding: 14px;
-    gap: 10px;
   }
 
   .ikona {
@@ -1193,19 +1083,6 @@ form {
 }
 
 @media (max-width: 480px) {
-  .oprema {
-    padding: 15px;
-  }
-
-  .naslov {
-    font-size: 1.5rem;
-    margin-bottom: 25px;
-  }
-
-  .kartice-container {
-    margin-bottom: 20px;
-  }
-
   .tablica th,
   .tablica td {
     padding: 8px 6px;
@@ -1227,11 +1104,6 @@ form {
 
   .gumb-brisi .material-icons {
     font-size: 16px;
-  }
-
-  .gumb-dodaj {
-    padding: 10px 20px;
-    font-size: 14px;
   }
 
   .modal-detalji, .modal-forma, .modal-potvrda {
@@ -1319,6 +1191,5 @@ form {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kartica { animation: none !important; transition: none !important; }
 }
 </style>

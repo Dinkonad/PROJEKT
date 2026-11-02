@@ -12,12 +12,12 @@
     --text-heading: #123458;
     --text-body: #030303;
     --text-body-alt: #333333;
-    --text-muted: #5D8AA8;
+    --text-muted: #3F6A8A;
     --border-color: #D4C9BE;
     --accent: #123458;
     --accent-hover: #1c4c80;
-    --accent-soft: #5D8AA8;
-    --accent-soft-hover: #4a7491;
+    --accent-soft: #4B7896;
+    --accent-soft-hover: #3E6682;
     --success: #2E7D32;
     --danger: #E53935;
     --danger-hover: #C62828;
@@ -34,6 +34,26 @@
     --glass-bg-muted: rgba(241, 239, 236, 0.55);
     --glass-border: rgba(255, 255, 255, 0.55);
     --glass-shadow: 0 8px 32px rgba(18, 52, 88, 0.1);
+
+    /* ==================== TIPOGRAFIJA, FOKUS, DODIR ==================== */
+    --font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --focus-ring: var(--accent);
+    --on-accent: #ffffff; /* tekst na --accent pozadini */
+    --touch: 44px; /* najmanja površina za prst na mobitelu */
+
+    /* razmaci - jedna ljestvica za cijelu aplikaciju */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 32px;
+    --space-card: 18px;       /* unutarnji razmak kartice */
+    --space-section: 24px;    /* razmak između blokova na stranici */
+    --stranica-sirina: 1120px;
+
+    color-scheme: light;
   }
 
   [data-theme="dark"] {
@@ -59,10 +79,21 @@
     --glass-bg-muted: rgba(40, 56, 74, 0.5);
     --glass-border: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+
+    --on-accent: #0c131a;
+
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: rgba(18, 52, 88, 0.12);
   }
 
   body {
-    font-family: sans-serif;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
     background-color: var(--bg-page);
     background-image:
       radial-gradient(circle at 10% 8%, rgba(18, 52, 88, 0.08), transparent 42%),
@@ -90,4 +121,339 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-card);
     box-shadow: var(--glass-shadow);
+  }
+
+  /* ==================== ZAJEDNIČKA PRAVILA ZA CIJELU APLIKACIJU ==================== */
+
+  /* polja i gumbi na iPhoneu inače koriste sistemski font umjesto fonta aplikacije */
+  button, input, select, textarea {
+    font-family: inherit;
+  }
+
+  /* vidljiv fokus za tipkovnicu - samo kad ga treba (ne pri kliku mišem) */
+  :where(a, button, [role='button'], summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  :where(input, select, textarea):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  /* bez čekanja od 300 ms i bez zumiranja dvostrukim dodirom na kontrolama */
+  :where(a, button, [role='button'], input, select, textarea, label, summary) {
+    touch-action: manipulation;
+  }
+
+  /* modali i izbornici ne smiju povući stranicu iza sebe dok se skrolaju */
+  .modal, .modal-potvrda, .modal-siroki, .lightbox-modal, .vise-sheet, .bocna-traka-sadrzaj,
+  .prekrivka-modala, .pozadina, .lightbox-pozadina {
+    overscroll-behavior: contain;
+  }
+
+  /* naslovi stranica - isti raspon veličine svugdje */
+  .naslov {
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 1.9rem);
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* iznosi i brojevi poravnati u stupce (jednaka širina znamenki) */
+  .iznos, .redak-zarada, .redak-sati, .tjedni-ukupno, .vp-broj, .vp-ukupno, .broj-dana,
+  .pregled-izracuna, .ocitanje-km, td, th, input[type='number'] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* osnovni izgled zajedničkih gumba - stranice ga po potrebi nadjačavaju svojim stilom */
+  :where(.gumb-dodaj, .gumb-spremiti, .gumb-odustati, .gumb-potvrditi) {
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+  }
+
+  :where(.gumb-dodaj, .gumb-spremiti, .gumb-odustati, .gumb-potvrditi):active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  :where(.gumb-dodaj, .gumb-spremiti, .gumb-odustati, .gumb-potvrditi):disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  @media (pointer: coarse) {
+    :where(.gumb-dodaj, .gumb-spremiti, .gumb-odustati, .gumb-potvrditi) {
+      min-height: var(--touch);
+    }
+  }
+
+  /* tekst samo za čitače ekrana */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* korisnik koji je isključio animacije u sustavu ih ne dobiva nigdje u aplikaciji */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* ==================== OKVIR STRANICE ==================== */
+  /* Svaka admin stranica ima isti korijen: ista širina, isti razmak od vrha i isto poravnanje. */
+  .stranica {
+    max-width: var(--stranica-sirina);
+    margin: 0 auto;
+    padding: var(--space-7) 0 48px;
+  }
+
+  @media (max-width: 768px) {
+    .stranica {
+      padding: var(--space-1) 0 calc(100px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  /* ==================== KARTICE (brojke) ==================== */
+  .kartice {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-section);
+  }
+
+  .kartica {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-card);
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--glass-shadow);
+    animation: pojaviSe 0.35s ease both;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .kartica:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px var(--shadow-color);
+  }
+
+  .kartica .ikona {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background-color: var(--bg-card-muted);
+    color: var(--accent);
+  }
+
+  .kartica .podaci {
+    min-width: 0;
+  }
+
+  .kartica .podaci h3 {
+    margin: 0 0 var(--space-1);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .kartica .podaci .iznos {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-heading);
+  }
+
+  @keyframes pojaviSe {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    .kartice {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .kartica {
+      flex-direction: column;
+      text-align: center;
+      padding: 14px 8px;
+      gap: var(--space-2);
+    }
+
+
+    .kartica .podaci .iznos {
+      font-size: 0.95rem;
+    }
+
+    /* kartica koja ostane sama u zadnjem redu ide preko cijele širine */
+    .kartice > .kartica:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* ==================== GUMBI ==================== */
+  /* primarni (glavna radnja stranice), sekundarni (pomoćne radnje) i uspjeh (npr. "Prebaci") */
+  .gumb-dodaj,
+  .gumb-primarni,
+  .gumb-sekundarni,
+  .gumb-uspjeh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-small);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .gumb-dodaj,
+  .gumb-primarni {
+    background-color: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 2px 6px var(--shadow-color);
+  }
+
+  .gumb-dodaj:hover:not(:disabled),
+  .gumb-primarni:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+  }
+
+  .gumb-sekundarni {
+    background-color: var(--bg-card-muted);
+    color: var(--text-heading);
+    border-color: var(--border-color);
+  }
+
+  .gumb-sekundarni:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .gumb-uspjeh {
+    background-color: var(--success);
+    color: var(--on-accent);
+  }
+
+  .gumb-uspjeh:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  .gumb-dodaj:disabled,
+  .gumb-primarni:disabled,
+  .gumb-sekundarni:disabled,
+  .gumb-uspjeh:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  @media (pointer: coarse) {
+    .gumb-dodaj, .gumb-primarni, .gumb-sekundarni, .gumb-uspjeh {
+      min-height: var(--touch);
+    }
+  }
+
+  /* ==================== TABOVI (pilule) ==================== */
+  .tabovi {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: var(--space-5);
+    scrollbar-width: none;
+  }
+
+  .tabovi::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+    min-height: var(--touch);
+    padding: 10px 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    color: var(--text-heading);
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .tab:hover:not(.aktivan) {
+    border-color: var(--accent);
+  }
+
+  .tab.aktivan {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .tab .material-icons {
+    font-size: 18px;
+  }
+
+  /* ==================== MOBITEL / DODIR ==================== */
+  @media (pointer: coarse), (max-width: 768px) {
+    /* ikone-gumbi i male kontrole: najmanje 40 px da se lako pogode prstom */
+    .gumb-navigacije, .gumb-akcija, .gumb-brisi, .gumb-uredi, .gumb-zatvori, .gumb-zatvaranja,
+    .gumb-realizovana, .gumb-eksport {
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    .raspon-gumb, .gumb-prikazi-sve, .gumb-plati, .gumb-prodaj, .gumb-spremi, .prikazuj-sve-gumb {
+      min-height: 40px;
+    }
+
+    /* iPhone zumira svako polje s fontom manjim od 16 px */
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .kartica .podaci h3 {
+      font-size: 0.75rem;
+    }
   }

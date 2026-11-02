@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { navStavke } from '../config/navigacija.js';
 
 import LoginPage from '../components/LoginPage.vue';
 import Dashboard from '../korisnik/Dashboard.vue';
@@ -134,6 +135,13 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
+});
+
+// naslov kartice u pregledniku i u povijesti: "Prihodi · Nagy Photos"
+router.afterEach((to) => {
+  const stavka = navStavke.find(n => n.to === to.path);
+  const naziv = stavka ? stavka.label : (to.path === '/login' ? 'Prijava' : to.path === '/dashboard' ? 'Moji materijali' : '');
+  document.title = naziv ? `${naziv} · Nagy Photos` : 'Nagy Photos';
 });
 
 export default router;

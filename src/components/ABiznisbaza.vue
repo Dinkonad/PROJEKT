@@ -1,6 +1,25 @@
 <template>
-  <div class="biznisbaza">
-    <h1 class="naslov">BiznisBaza</h1>
+  <div class="biznisbaza stranica">
+    <AZaglavljeStranice naslov="BiznisBaza">
+      <button class="gumb-sekundarni" @click="otvoriModalTjedan">
+          <span class="material-icons">date_range</span> Tjedni alati
+        </button>
+      <button
+          v-if="mozePrebaciti"
+          class="gumb-uspjeh"
+          @click="prebaciUPrihode"
+          :disabled="prebacivanjeUTijeku"
+        >
+          <span class="material-icons">arrow_forward</span>
+          {{ prebacivanjeUTijeku ? 'Prebacujem...' : 'Prebaci u Prihodi' }}
+        </button>
+        <span v-else-if="mjesecPrebacen" class="oznaka-prebaceno">
+          <span class="material-icons">check_circle</span> Ovaj mjesec je prebačen u Prihode
+        </span>
+      <button class="gumb-dodaj" @click="otvoriModalUnos()">
+          <span class="material-icons">add</span> Dodaj dan
+        </button>
+    </AZaglavljeStranice>
 
     <div v-if="ucitava" class="loading-container">
       <span class="material-icons spinning">sync</span>
@@ -23,6 +42,13 @@
             <p class="iznos">{{ formatCurrency(ukupnoZaradaMjesec) }}</p>
           </div>
         </div>
+        <div class="kartica videa">
+          <div class="ikona"><span class="material-icons">movie</span></div>
+          <div class="podaci">
+            <h3>Napravljeno videa ovaj mjesec</h3>
+            <p class="iznos">{{ videaMjesec.length }}</p>
+          </div>
+        </div>
       </div>
 
       <div v-if="iphoneEventi.length > 0" class="iphone-eventi">
@@ -43,28 +69,6 @@
         <button class="gumb-navigacije" @click="sljedeciMjesec">&gt;</button>
       </div>
 
-      <div class="akcije-zaglavlje">
-        <button class="gumb-dodaj" @click="otvoriModalUnos()">
-          <span class="material-icons">add</span> Dodaj dan
-        </button>
-
-        <button class="gumb-tjedni-alati" @click="otvoriModalTjedan">
-          <span class="material-icons">date_range</span> Tjedni alati
-        </button>
-
-        <button
-          v-if="mozePrebaciti"
-          class="gumb-prebaci"
-          @click="prebaciUPrihode"
-          :disabled="prebacivanjeUTijeku"
-        >
-          <span class="material-icons">arrow_forward</span>
-          {{ prebacivanjeUTijeku ? 'Prebacujem...' : 'Prebaci u Prihodi' }}
-        </button>
-        <span v-else-if="mjesecPrebacen" class="oznaka-prebaceno">
-          <span class="material-icons">check_circle</span> Ovaj mjesec je prebačen u Prihode
-        </span>
-      </div>
 
       <!-- ==================== KALENDARSKA MREŽA ==================== -->
       <div class="mreza-kalendara">
@@ -84,7 +88,7 @@
           <span class="broj-dana">{{ dan.brojDana }}</span>
           <div class="pregled-unosa">
             <div v-for="unos in dan.unosi.slice(0, 2)" :key="unos.id" class="tocka-unosa" :title="unos.opis">
-              {{ (unos.opis || 'Rad').substring(0, 12) }}
+              {{ unos.terenSat ? '📍 ' : '' }}{{ (unos.opis || 'Rad').substring(0, 12) }}
             </div>
             <div v-if="dan.unosi.length > 2" class="vise-unosa">+{{ dan.unosi.length - 2 }} više</div>
           </div>
@@ -93,6 +97,30 @@
 
       <div v-if="odabraniDanDatum" class="dani-odabranog-dana">
         <h3>{{ formatDugiDatum(odabraniDanDatum) }}</h3>
+
+        <div class="videa-dan">
+          <div class="videa-dan-info">
+            <span class="material-icons">movie</span>
+            <div class="videa-dan-tekst">
+              <span class="videa-dan-naziv">Videa taj dan</span>
+              <span class="videa-dan-broj">{{ videaOdabranogDana }}</span>
+            </div>
+          </div>
+          <div class="videa-dan-akcije">
+            <button type="button" class="gumb-video-dodaj" @click="dodajVideo(odabraniDanDatum)">
+              <span class="material-icons">add</span> Dodaj video
+            </button>
+            <button aria-label="Makni jedan video"
+              type="button"
+              class="gumb-video-makni"
+              title="Makni jedan video"
+              :disabled="videaOdabranogDana === 0"
+              @click="makniVideoZaDan(odabraniDanDatum)"
+            >
+              <span class="material-icons">remove</span>
+            </button>
+          </div>
+        </div>
 
         <div v-if="odabraniDanUnosi.length === 0" class="prazno">
           <p>Nema unosa za ovaj dan</p>
@@ -103,19 +131,26 @@
             <div class="redak-detalji">
               <div class="redak-vrijeme">{{ unos.pocetnoVrijeme }} - {{ unos.zavrsnoVrijeme }}</div>
               <div class="redak-opis">{{ unos.opis || 'Bez opisa' }}</div>
+              <div v-if="unos.terenSat" class="redak-teren">
+                <span class="material-icons">place</span>
+                Teren {{ unos.terenSat }}<template v-if="unos.terenNapomena"> · {{ unos.terenNapomena }}</template>
+              </div>
             </div>
             <div class="redak-brojevi">
               <span class="redak-sati">{{ formatSati(unos.satiRada) }}</span>
               <span class="redak-zarada">{{ formatCurrency(unos.zarada) }}</span>
             </div>
             <div class="redak-akcije">
-              <button class="gumb-akcija" title="Dodaj u kalendar" @click="preuzmiUKalendar(unos)">
+              <button aria-label="Dodaj u kalendar" class="gumb-akcija" title="Dodaj u kalendar" @click="preuzmiUKalendar(unos)">
                 <span class="material-icons">event</span>
               </button>
-              <button class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
+              <button class="gumb-akcija" :title="unos.terenSat ? 'Uredi teren' : 'Dodaj teren'" @click="otvoriModalUnos(unos, true)">
+                <span class="material-icons">{{ unos.terenSat ? 'edit_location_alt' : 'add_location_alt' }}</span>
+              </button>
+              <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
                 <span class="material-icons">edit</span>
               </button>
-              <button class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
+              <button aria-label="Obriši" class="gumb-akcija obrisi" title="Obriši" @click="unosZaBrisanje = unos">
                 <span class="material-icons">delete</span>
               </button>
             </div>
@@ -130,40 +165,90 @@
           <span class="material-icons">edit</span> Promijeni plaću
         </button>
       </div>
+
+      <!-- ==================== VIDEA PO MJESECIMA (dno stranice) ==================== -->
+      <div class="videa-povijest">
+        <div class="vp-zaglavlje">
+          <div class="vp-naslov">
+            <span class="material-icons">movie</span>
+            <h3>Koliko sam videa napravio</h3>
+          </div>
+          <div class="vp-godina">
+            <button class="gumb-navigacije" @click="godinaVidea--">&lt;</button>
+            <span>{{ godinaVidea }}.</span>
+            <button class="gumb-navigacije" @click="godinaVidea++">&gt;</button>
+          </div>
+        </div>
+
+        <div class="vp-lista">
+          <div
+            v-for="m in videaPoMjesecimaGodine"
+            :key="m.kljuc"
+            class="vp-redak"
+            :class="{ prazan: m.broj === 0, aktivan: m.kljuc === mjesecKljuc }"
+          >
+            <span class="vp-mjesec">{{ m.naziv }}</span>
+            <span class="vp-traka"><span class="vp-traka-ispuna" :style="{ width: m.postotak + '%' }"></span></span>
+            <span class="vp-broj">{{ m.broj }}</span>
+          </div>
+        </div>
+
+        <div class="vp-ukupno">
+          <span>Ukupno u {{ godinaVidea }}.</span>
+          <strong>{{ videaGodinaUkupno }}</strong>
+        </div>
+      </div>
     </template>
 
     <!-- ==================== MODAL: DODAJ/UREDI DAN ==================== -->
     <div v-if="prikaziModalUnos" class="prekrivka-modala" @click="zatvoriModalUnos">
-      <div class="modal" @click.stop>
+      <div class="modal" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h3>{{ uredujeUnos ? 'Uredi dan' : 'Dodaj dan' }}</h3>
-          <button class="gumb-zatvaranja" @click="zatvoriModalUnos">&times;</button>
+          <button aria-label="Zatvori" class="gumb-zatvaranja" @click="zatvoriModalUnos">&times;</button>
         </div>
 
         <form class="forma" @submit.prevent="spremiUnos">
           <div class="grupa-polja">
-            <label>Datum:</label>
-            <input v-model="forma.datum" type="date" required>
+            <label for="abiznisbaza-polje-1">Datum:</label>
+            <input autocomplete="off" id="abiznisbaza-polje-1" v-model="forma.datum" type="date" required>
           </div>
           <div class="grupa-polja grupa-vrijeme">
             <div>
-              <label>Od:</label>
-              <select v-model="forma.pocetnoVrijeme" required>
+              <label for="abiznisbaza-polje-2">Od:</label>
+              <select id="abiznisbaza-polje-2" v-model="forma.pocetnoVrijeme" required>
                 <option value="" disabled>Odaberi sat</option>
                 <option v-for="sat in satoviDana" :key="sat" :value="sat">{{ sat }}</option>
               </select>
             </div>
             <div>
-              <label>Do:</label>
-              <select v-model="forma.zavrsnoVrijeme" required>
+              <label for="abiznisbaza-polje-3">Do:</label>
+              <select id="abiznisbaza-polje-3" v-model="forma.zavrsnoVrijeme" required>
                 <option value="" disabled>Odaberi sat</option>
                 <option v-for="sat in satoviDana" :key="sat" :value="sat">{{ sat }}</option>
               </select>
             </div>
           </div>
           <div class="grupa-polja">
-            <label>Opis (klijent/event):</label>
-            <input v-model="forma.opis" type="text" placeholder="Npr. vjenčanje - Ana i Marko">
+            <label for="abiznisbaza-polje-4">Opis (klijent/event):</label>
+            <input autocomplete="off" id="abiznisbaza-polje-4" v-model="forma.opis" type="text" placeholder="Npr. vjenčanje - Ana i Marko">
+          </div>
+
+          <div class="grupa-polja">
+            <label class="prekidac">
+              <input v-model="forma.teren" type="checkbox">
+              <span>Teren u sklopu ovog radnog dana</span>
+            </label>
+          </div>
+          <div v-if="forma.teren" class="grupa-polja grupa-vrijeme">
+            <div>
+              <label for="abiznisbaza-polje-5">Teren u:</label>
+              <input autocomplete="off" id="abiznisbaza-polje-5" v-model="forma.terenSat" type="time" required>
+            </div>
+            <div>
+              <label for="abiznisbaza-polje-6">Mjesto / napomena:</label>
+              <input autocomplete="off" id="abiznisbaza-polje-6" v-model="forma.terenNapomena" type="text" placeholder="Neobavezno">
+            </div>
           </div>
 
           <div class="pregled-izracuna" v-if="pregledSati !== null">
@@ -181,15 +266,15 @@
 
     <!-- ==================== MODAL: SATNICA ==================== -->
     <div v-if="prikaziModalSatnicu" class="prekrivka-modala" @click="prikaziModalSatnicu = false">
-      <div class="modal" @click.stop>
+      <div class="modal" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h3>Promijeni plaću</h3>
-          <button class="gumb-zatvaranja" @click="prikaziModalSatnicu = false">&times;</button>
+          <button aria-label="Zatvori" class="gumb-zatvaranja" @click="prikaziModalSatnicu = false">&times;</button>
         </div>
         <form class="forma" @submit.prevent="spremiSatnicu">
           <div class="grupa-polja">
-            <label>Nova satnica (EUR/sat):</label>
-            <input v-model.number="novaSatnica" type="number" step="0.5" min="0" required>
+            <label for="abiznisbaza-polje-7">Nova satnica (EUR/sat):</label>
+            <input autocomplete="off" id="abiznisbaza-polje-7" v-model.number="novaSatnica" type="number" step="0.5" min="0" required>
           </div>
           <p class="napomena-satnica">Nova satnica vrijedi samo za dane koje tek unosiš - već upisani dani zadržavaju svoju staru satnicu.</p>
           <div class="akcije-forme">
@@ -202,7 +287,7 @@
 
     <!-- ==================== MODAL: POTVRDA BRISANJA ==================== -->
     <div v-if="unosZaBrisanje" class="prekrivka-modala" @click="unosZaBrisanje = null">
-      <div class="modal-potvrda" @click.stop>
+      <div class="modal-potvrda" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h2>Potvrda brisanja</h2>
         </div>
@@ -219,21 +304,21 @@
 
     <!-- ==================== MODAL: TJEDNI ALATI ==================== -->
     <div v-if="prikaziModalTjedan" class="prekrivka-modala" @click="prikaziModalTjedan = false">
-      <div class="modal modal-siroki" @click.stop>
+      <div class="modal modal-siroki" role="dialog" aria-modal="true" @click.stop>
         <div class="zaglavlje-modala">
           <h3>Tjedni alati</h3>
-          <button class="gumb-zatvaranja" @click="prikaziModalTjedan = false">&times;</button>
+          <button aria-label="Zatvori" class="gumb-zatvaranja" @click="prikaziModalTjedan = false">&times;</button>
         </div>
 
         <div class="forma">
           <div class="grupa-polja grupa-vrijeme">
             <div>
-              <label>Od:</label>
-              <input v-model="tjedanOd" type="date">
+              <label for="abiznisbaza-polje-8">Od:</label>
+              <input autocomplete="off" id="abiznisbaza-polje-8" v-model="tjedanOd" type="date">
             </div>
             <div>
-              <label>Do:</label>
-              <input v-model="tjedanDo" type="date">
+              <label for="abiznisbaza-polje-9">Do:</label>
+              <input autocomplete="off" id="abiznisbaza-polje-9" v-model="tjedanDo" type="date">
             </div>
           </div>
 
@@ -244,7 +329,7 @@
             <div v-for="unos in unosiZaTjedan" :key="unos.id" class="tjedni-redak">
               <span>{{ formatKratkiDatum(unos.datum) }}</span>
               <span>{{ unos.pocetnoVrijeme }}-{{ unos.zavrsnoVrijeme }}</span>
-              <span class="tjedni-opis">{{ unos.opis || '-' }}</span>
+              <span class="tjedni-opis">{{ unos.opis || '-' }}<template v-if="unos.terenSat"> · 📍 teren {{ unos.terenSat }}</template></span>
             </div>
             <div class="tjedni-ukupno">Ukupno: {{ formatSati(ukupnoSatiTjedan) }} · {{ formatCurrency(ukupnoZaradaTjedan) }}</div>
           </div>
@@ -276,7 +361,7 @@
               <button class="gumb-akcija" title="Primijeni na odabrani tjedan (Od gore)" @click="primijeniPredlozak(predlozak)">
                 <span class="material-icons">play_arrow</span>
               </button>
-              <button class="gumb-akcija obrisi" title="Obriši predložak" @click="obrisiPredlozak(predlozak)">
+              <button aria-label="Obriši predložak" class="gumb-akcija obrisi" title="Obriši predložak" @click="obrisiPredlozak(predlozak)">
                 <span class="material-icons">delete</span>
               </button>
             </div>
@@ -292,6 +377,8 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { preuzmiICS, preuzmiVisestrukiICS } from '@/utils/ics.js';
@@ -309,7 +396,8 @@ const odabraniDanDatum = ref(null);
 
 const prikaziModalUnos = ref(false);
 const uredujeUnos = ref(null);
-const forma = ref({ datum: '', pocetnoVrijeme: '', zavrsnoVrijeme: '', opis: '' });
+const praznaForma = () => ({ datum: '', pocetnoVrijeme: '', zavrsnoVrijeme: '', opis: '', teren: false, terenSat: '', terenNapomena: '' });
+const forma = ref(praznaForma());
 
 const prikaziModalSatnicu = ref(false);
 const novaSatnica = ref(0);
@@ -329,6 +417,9 @@ let unsubUnosi = null;
 let unsubPrebacivanja = null;
 let unsubPredlosci = null;
 let unsubIphoneEventi = null;
+let unsubVidea = null;
+
+const videa = ref([]);
 
 const iphoneEventi = ref([]);
 
@@ -463,6 +554,10 @@ const postaviRealtimeListenere = () => {
     predlosci.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   });
 
+  unsubVidea = onSnapshot(collection(db, 'videa'), (snapshot) => {
+    videa.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
+
   const danasDatum = new Date();
   const danasStr = `${danasDatum.getFullYear()}-${String(danasDatum.getMonth() + 1).padStart(2, '0')}-${String(danasDatum.getDate()).padStart(2, '0')}`;
   const qIphoneEventi = query(
@@ -492,17 +587,68 @@ onBeforeUnmount(() => {
   if (unsubPrebacivanja) unsubPrebacivanja();
   if (unsubPredlosci) unsubPredlosci();
   if (unsubIphoneEventi) unsubIphoneEventi();
+  if (unsubVidea) unsubVidea();
 });
 
-const resetirajFormu = () => {
-  forma.value = { datum: odabraniDanDatum.value || '', pocetnoVrijeme: '', zavrsnoVrijeme: '', opis: '' };
+// ==================== VIDEA ====================
+const videaMjesec = computed(() => videa.value.filter(v => v.datum && v.datum.startsWith(mjesecKljuc.value)));
+const videaOdabranogDana = computed(() => videa.value.filter(v => v.datum === odabraniDanDatum.value).length);
+
+// zbroj videa za svaki mjesec odabrane godine (prikaz na dnu stranice)
+const godinaVidea = ref(new Date().getFullYear());
+const videaPoMjesecimaGodine = computed(() => {
+  const mjeseci = nazviMjeseci.map((naziv, indeks) => {
+    const kljuc = `${godinaVidea.value}-${String(indeks + 1).padStart(2, '0')}`;
+    return { kljuc, naziv, broj: videa.value.filter(v => v.datum && v.datum.startsWith(kljuc)).length };
+  });
+  const najvise = Math.max(1, ...mjeseci.map(m => m.broj));
+  return mjeseci.map(m => ({ ...m, postotak: m.broj > 0 ? Math.max(4, Math.round((m.broj / najvise) * 100)) : 0 }));
+});
+const videaGodinaUkupno = computed(() => videaPoMjesecimaGodine.value.reduce((zbroj, m) => zbroj + m.broj, 0));
+
+const dodajVideo = async (datum) => {
+  if (!datum) return;
+  try {
+    await addDoc(collection(db, 'videa'), { datum, kreirano: serverTimestamp() });
+  } catch (error) {
+    console.error('Greška pri dodavanju videa:', error);
+    obavijesti('Greška pri spremanju videa.');
+  }
 };
 
-const otvoriModalUnos = (unos = null) => {
+// zadnje dodani video iz liste (serverTimestamp je kratko null dok se ne potvrdi - taj je najnoviji)
+const najnoviji = (lista) => lista.reduce((a, b) => {
+  const ka = a.kreirano?.seconds ?? Number.MAX_SAFE_INTEGER;
+  const kb = b.kreirano?.seconds ?? Number.MAX_SAFE_INTEGER;
+  return b.datum > a.datum || (b.datum === a.datum && kb >= ka) ? b : a;
+});
+
+const obrisiVideo = async (video) => {
+  try {
+    await deleteDoc(doc(db, 'videa', video.id));
+  } catch (error) {
+    console.error('Greška pri brisanju videa:', error);
+  }
+};
+
+const makniVideoZaDan = (datum) => {
+  const taj = videa.value.filter(v => v.datum === datum);
+  if (taj.length) obrisiVideo(najnoviji(taj));
+};
+
+const resetirajFormu = () => {
+  forma.value = { ...praznaForma(), datum: odabraniDanDatum.value || '' };
+};
+
+// ukljuciTeren: brza tipka na retku - otvori formu s već uključenim poljem za teren
+const otvoriModalUnos = (unos = null, ukljuciTeren = false) => {
   uredujeUnos.value = unos;
   forma.value = unos
-    ? { datum: unos.datum, pocetnoVrijeme: unos.pocetnoVrijeme, zavrsnoVrijeme: unos.zavrsnoVrijeme, opis: unos.opis || '' }
-    : { datum: odabraniDanDatum.value || '', pocetnoVrijeme: '', zavrsnoVrijeme: '', opis: '' };
+    ? {
+        datum: unos.datum, pocetnoVrijeme: unos.pocetnoVrijeme, zavrsnoVrijeme: unos.zavrsnoVrijeme, opis: unos.opis || '',
+        teren: !!unos.terenSat || ukljuciTeren, terenSat: unos.terenSat || '', terenNapomena: unos.terenNapomena || ''
+      }
+    : { ...praznaForma(), datum: odabraniDanDatum.value || '' };
   prikaziModalUnos.value = true;
 };
 
@@ -515,9 +661,18 @@ const zatvoriModalUnos = () => {
 const spremiUnos = async () => {
   const sati = izracunajSate(forma.value.pocetnoVrijeme, forma.value.zavrsnoVrijeme);
   if (sati <= 0) {
-    alert('Neispravno radno vrijeme.');
+    obavijesti('Neispravno radno vrijeme.');
     return;
   }
+
+  if (forma.value.teren && !forma.value.terenSat) {
+    obavijesti('Upiši u koliko sati je teren.');
+    return;
+  }
+  // teren je samo oznaka na danu - ne mijenja sate ni zaradu
+  const teren = forma.value.teren
+    ? { terenSat: forma.value.terenSat, terenNapomena: forma.value.terenNapomena.trim() }
+    : { terenSat: null, terenNapomena: '' };
 
   try {
     if (uredujeUnos.value) {
@@ -528,6 +683,7 @@ const spremiUnos = async () => {
         pocetnoVrijeme: forma.value.pocetnoVrijeme,
         zavrsnoVrijeme: forma.value.zavrsnoVrijeme,
         opis: forma.value.opis,
+        ...teren,
         satiRada: sati,
         zarada: Math.round(sati * satnicaZaUnos * 100) / 100
       });
@@ -537,6 +693,7 @@ const spremiUnos = async () => {
         pocetnoVrijeme: forma.value.pocetnoVrijeme,
         zavrsnoVrijeme: forma.value.zavrsnoVrijeme,
         opis: forma.value.opis,
+        ...teren,
         satiRada: sati,
         placaPoSatu: trenutnaSatnica.value,
         zarada: Math.round(sati * trenutnaSatnica.value * 100) / 100,
@@ -547,7 +704,7 @@ const spremiUnos = async () => {
     zatvoriModalUnos();
   } catch (error) {
     console.error('Greška pri spremanju unosa:', error);
-    alert('Greška pri spremanju unosa.');
+    obavijesti('Greška pri spremanju unosa.');
   }
 };
 
@@ -577,8 +734,11 @@ const spremiSatnicu = async () => {
   }
 };
 
+// u kalendaru dan ostaje "Rad", a teren se samo dopiše u naslov
+const zaKalendar = (u) => (u.terenSat ? { ...u, opis: `${u.opis || 'Rad'} (teren ${u.terenSat})` } : u);
+
 const preuzmiUKalendar = (unos) => {
-  preuzmiICS(unos);
+  preuzmiICS(zaKalendar(unos));
 };
 
 const prikaziPoruku = (uspjeh, tekst) => {
@@ -647,12 +807,12 @@ const otvoriModalTjedan = () => {
 };
 
 const dodajTjedanUKalendar = () => {
-  preuzmiVisestrukiICS(unosiZaTjedan.value, `raspored-${tjedanOd.value}.ics`);
+  preuzmiVisestrukiICS(unosiZaTjedan.value.map(zaKalendar), `raspored-${tjedanOd.value}.ics`);
 };
 
 const izgradiTekstIzvjestaja = () => {
   const linije = unosiZaTjedan.value.map(u =>
-    `${formatKratkiDatum(u.datum)}: ${u.pocetnoVrijeme}-${u.zavrsnoVrijeme}${u.opis ? ' (' + u.opis + ')' : ''}`
+    `${formatKratkiDatum(u.datum)}: ${u.pocetnoVrijeme}-${u.zavrsnoVrijeme}${u.opis ? ' (' + u.opis + ')' : ''}${u.terenSat ? ', teren ' + u.terenSat : ''}`
   );
   return `Raspored ${formatKratkiDatum(tjedanOd.value)} - ${formatKratkiDatum(tjedanDo.value)}\n\n${linije.join('\n')}\n\nUkupno: ${formatSati(ukupnoSatiTjedan.value)}`;
 };
@@ -728,16 +888,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 <style scoped>
 .biznisbaza {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.naslov {
-  color: var(--text-heading);
-  font-weight: 700;
-  margin-bottom: 30px;
+  font-family: var(--font-sans);
 }
 
 .loading-container {
@@ -883,36 +1034,8 @@ const obrisiPredlozak = async (predlozak) => {
 
 .gumb-navigacije:hover {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   border-color: var(--accent);
-}
-
-.kartice {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
-}
-
-.kartica {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--glass-shadow);
-  padding: 20px;
-  animation: pojaviSe 0.35s ease both;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.kartica:hover {
-  transform: translateY(-2px);
 }
 
 @keyframes pojaviSe {
@@ -920,94 +1043,7 @@ const obrisiPredlozak = async (predlozak) => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.kartica .ikona {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-card-muted);
-  color: var(--accent);
-}
-
-.kartica .podaci h3 {
-  margin: 0 0 4px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.kartica .podaci .iznos {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--text-heading);
-}
-
-.akcije-zaglavlje {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.gumb-dodaj {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.gumb-dodaj:hover {
-  background-color: var(--accent-hover);
-}
-
-.gumb-prebaci {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--success);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-  margin-left: auto;
-}
-
-.gumb-prebaci:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.gumb-tjedni-alati {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--bg-card-muted);
-  color: var(--text-heading);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.gumb-tjedni-alati:hover {
-  background-color: var(--border-color);
-}
-
 .oznaka-prebaceno {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1019,7 +1055,8 @@ const obrisiPredlozak = async (predlozak) => {
 /* ==================== KALENDARSKA MREŽA ==================== */
 .mreza-kalendara {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr): sedam jednakih stupaca, tekst unosa se skraćuje umjesto da širi stupac */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: var(--border-color);
   border: 1px solid var(--border-color);
@@ -1030,7 +1067,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 .zaglavlje-dana {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   padding: 10px 4px;
   text-align: center;
   font-weight: 600;
@@ -1039,6 +1076,7 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 .dan-kalendara {
+  min-width: 0;
   background: var(--bg-card);
   min-height: 72px;
   padding: 6px;
@@ -1086,8 +1124,8 @@ const obrisiPredlozak = async (predlozak) => {
 
 .tocka-unosa {
   background: var(--accent);
-  color: white;
-  font-size: 9px;
+  color: var(--on-accent);
+  font-size: 10px;
   padding: 1px 4px;
   border-radius: 3px;
   overflow: hidden;
@@ -1192,6 +1230,275 @@ const obrisiPredlozak = async (predlozak) => {
   color: var(--danger);
 }
 
+/* ==================== TEREN I VIDEA ==================== */
+.redak-teren {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.redak-teren .material-icons {
+  font-size: 16px;
+}
+
+.prekidac {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.prekidac input {
+  width: 20px !important;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.videa-povijest {
+  margin-top: 25px;
+  padding: 20px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+}
+
+.vp-zaglavlje {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.vp-naslov {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vp-naslov .material-icons {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-card-muted);
+  color: var(--accent);
+}
+
+.vp-naslov h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-heading);
+}
+
+.vp-godina {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.vp-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vp-redak {
+  display: grid;
+  grid-template-columns: 90px 1fr 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.vp-redak.aktivan {
+  background: var(--bg-card-muted);
+}
+
+.vp-mjesec {
+  font-size: 0.9rem;
+  color: var(--text-body);
+}
+
+.vp-traka {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-card-muted);
+  overflow: hidden;
+}
+
+.vp-redak.aktivan .vp-traka {
+  background: var(--border-color);
+}
+
+.vp-traka-ispuna {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.vp-broj {
+  text-align: right;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.vp-redak.prazan .vp-mjesec,
+.vp-redak.prazan .vp-broj {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.vp-ukupno {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.vp-ukupno strong {
+  font-size: 1.5rem;
+  color: var(--text-heading);
+}
+
+.videa-dan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background-color: var(--bg-card-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
+}
+
+.videa-dan-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.videa-dan-info > .material-icons {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--accent);
+}
+
+.videa-dan-tekst {
+  display: flex;
+  flex-direction: column;
+}
+
+.videa-dan-naziv {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.videa-dan-broj {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text-heading);
+}
+
+.videa-dan-akcije {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gumb-video-dodaj {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 22px 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.gumb-video-dodaj:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.gumb-video-dodaj:active {
+  transform: scale(0.97);
+}
+
+.gumb-video-makni {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.gumb-video-makni:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.gumb-video-makni:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .videa-dan {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .videa-dan-akcije {
+    width: 100%;
+  }
+
+  .gumb-video-dodaj {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 /* ==================== MODALI ==================== */
 .prekrivka-modala {
   position: fixed;
@@ -1213,6 +1520,7 @@ const obrisiPredlozak = async (predlozak) => {
   width: 90%;
   max-width: 480px;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
 }
 
@@ -1341,7 +1649,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 .zaglavlje-modala {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -1384,7 +1692,7 @@ const obrisiPredlozak = async (predlozak) => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-page);
   color: var(--text-body);
 }
@@ -1436,7 +1744,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 .gumb-spremiti {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .modal-potvrda {
@@ -1501,16 +1809,6 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 @media (max-width: 768px) {
-  .biznisbaza {
-    padding: 16px;
-    padding-bottom: 100px;
-  }
-
-  .naslov {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
-  }
-
   .satnica-traka {
     padding: 14px 16px;
     gap: 8px 14px;
@@ -1529,25 +1827,6 @@ const obrisiPredlozak = async (predlozak) => {
     font-size: 0.95rem;
   }
 
-  .kartice {
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .kartica {
-    padding: 14px;
-    min-width: 0;
-  }
-
-  .kartica .podaci .iznos {
-    font-size: 1.1rem;
-  }
-
-  .gumb-dodaj, .gumb-tjedni-alati, .gumb-prebaci {
-    width: 100%;
-    justify-content: center;
-  }
-
   .dan-kalendara {
     min-height: 54px;
     padding: 4px;
@@ -1558,7 +1837,7 @@ const obrisiPredlozak = async (predlozak) => {
   }
 
   .tocka-unosa {
-    font-size: 8px;
+    font-size: 10px;
   }
 
   .redak-unosa {
@@ -1584,15 +1863,6 @@ const obrisiPredlozak = async (predlozak) => {
     justify-content: flex-end;
   }
 
-  .akcije-zaglavlje {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .gumb-prebaci {
-    margin-left: 0;
-  }
-
   .tjedni-redak {
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "datum vrijeme" "opis opis";
@@ -1607,7 +1877,44 @@ const obrisiPredlozak = async (predlozak) => {
   }
 }
 
+/* ==================== MOBITEL: dodatna prilagodba ==================== */
+@media (max-width: 768px) {
+  .videa-povijest {
+    padding: 16px;
+  }
+
+  .vp-redak {
+    grid-template-columns: 78px 1fr 30px;
+    gap: 8px;
+  }
+
+  /* treća kartica (videa) ide preko cijele širine, dvije gore ostaju u paru */
+  .kartica.videa {
+    grid-column: 1 / -1;
+  }
+
+  /* iOS zumira polja sa fontom manjim od 16px */
+  .grupa-polja input:not([type='checkbox']),
+  .grupa-polja select,
+  .grupa-polja textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .modal {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
+  .gumb-akcija {
+    padding: 9px;
+  }
+
+  .videa-dan-broj {
+    font-size: 1.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .kartica { animation: none !important; transition: none !important; }
 }
 </style>

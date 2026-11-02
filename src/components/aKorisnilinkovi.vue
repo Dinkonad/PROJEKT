@@ -1,11 +1,9 @@
 <template>
   <div class="stranica">
     <div class="sadrzaj">
-      <div class="zaglavlje">
-        <h1 class="naslov">Korisni linkovi</h1>
-      </div>
+      <AZaglavljeStranice naslov="Linkovi" />
       <div class="pretraga-sekcija">
-        <input 
+        <input autocomplete="off" 
           v-model="pretraga"
           type="text" 
           placeholder="🔍 Pretražite linkove po nazivu ili URL-u..."
@@ -15,7 +13,7 @@
 
       <div class="dodaj-sekcija">
         <div class="forma">
-          <input 
+          <input autocomplete="off" 
             v-model="noviLink.url"
             type="text" 
             placeholder="Zalijepite link ovdje..."
@@ -24,7 +22,7 @@
             @input="debounceUcitajPodatke"
           />
           
-          <input 
+          <input autocomplete="off" 
             v-if="trebaNaziv"
             v-model="noviLink.naziv"
             type="text" 
@@ -86,7 +84,7 @@
                   <div class="datum">{{ formatirajDatum(link.datum) }}</div>
                 </div>
 
-                <h3 class="naziv" @click.stop="urediNaziv(link)">{{ link.naziv }}</h3>
+                <h3 class="naziv" @click.stop="urediNaziv(link)" role="button" tabindex="0" @keydown.enter.stop.prevent="urediNaziv(link)">{{ link.naziv }}</h3>
                 <div class="url">{{ skratiUrl(link.url) }}</div>
               </div>
 
@@ -105,12 +103,12 @@
     </div>
     <Transition name="fade">
       <div class="pozadina" v-if="uredba !== null" @click="uredba = null">
-        <div class="modal" @click.stop>
+        <div class="modal" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Uredi naziv</h2>
           </div>
           <div class="modal-sadrzaj">
-            <input 
+            <input autocomplete="off" 
               v-model="noviNaziv"
               type="text" 
               placeholder="Unesite novi naziv..."
@@ -131,7 +129,7 @@
 
     <Transition name="fade">
       <div class="pozadina" v-if="brisanje !== null" @click="brisanje = null">
-        <div class="modal" @click.stop>
+        <div class="modal" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Potvrda brisanja</h2>
           </div>
@@ -152,6 +150,8 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, onMounted, computed } from 'vue';
 import { db } from '@/services/firebase.js';
 import { 
@@ -362,7 +362,7 @@ const spremi = async () => {
     };
   } catch (greska) {
     console.error('Greška pri spremanju:', greska);
-    alert('Greška pri spremanju linka. Pokušajte ponovno.');
+    obavijesti('Greška pri spremanju linka. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -404,7 +404,7 @@ const spremiNaziv = async () => {
     noviNaziv.value = '';
   } catch (greska) {
     console.error('Greška pri ažuriranju:', greska);
-    alert('Greška pri ažuriranju naziva. Pokušajte ponovno.');
+    obavijesti('Greška pri ažuriranju naziva. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -427,7 +427,7 @@ const obrisi = async () => {
     brisanje.value = null;
   } catch (greska) {
     console.error('Greška pri brisanju:', greska);
-    alert('Greška pri brisanju linka. Pokušajte ponovno.');
+    obavijesti('Greška pri brisanju linka. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -477,29 +477,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
 .stranica {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-body);
 }
 
 .sadrzaj {
   width: 100%;
-}
-
-.zaglavlje {
-  margin-bottom: 30px;
-}
-
-.naslov {
-  color: var(--text-heading);
-  margin-bottom: 8px;
-  font-weight: 700;
-  font-size: 1.8rem;
 }
 
 .zaglavlje p {
@@ -518,7 +502,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--bg-card);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 2px 4px var(--shadow-color);
@@ -553,7 +537,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
 }
@@ -569,7 +553,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
 }
@@ -588,7 +572,7 @@ onMounted(() => {
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   white-space: nowrap;
   font-size: 14px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -664,7 +648,7 @@ onMounted(() => {
   border-radius: var(--radius-card);
   padding: 20px;
   box-shadow: var(--glass-shadow);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   cursor: pointer;
   border-left: 4px solid var(--border-color);
   width: 100%;
@@ -796,7 +780,7 @@ onMounted(() => {
   border-radius: 50%;
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -817,7 +801,7 @@ onMounted(() => {
   cursor: pointer;
   font-size: 18px;
   font-weight: bold;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -892,7 +876,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
 }
@@ -915,7 +899,7 @@ onMounted(() => {
   border-radius: 6px;
   border: none;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   cursor: pointer;
   font-size: 16px;
 }
@@ -951,14 +935,6 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .stranica {
-    padding: 20px;
-  }
-
-  .naslov {
-    font-size: 2rem;
-  }
-
   .forma {
     grid-template-columns: 1fr;
     gap: 15px;
@@ -968,19 +944,36 @@ onMounted(() => {
     padding: 20px;
   }
 
+  /* slika lijevo, naziv i link desno, a radnje ispod njih */
   .sadrzaj-reda {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 8px;
+    align-items: start;
+    text-align: left;
   }
 
   .slika {
-    width: 200px;
-    height: 150px;
+    grid-row: 1 / span 2;
+  }
+
+  .informacije,
+  .akcije {
+    grid-column: 2;
+  }
+
+  .akcije {
+    justify-content: flex-start;
+  }
+
+  .slika {
+    width: 72px;
+    height: 72px;
   }
 
   .vrh {
-    justify-content: center;
+    justify-content: space-between;
     flex-wrap: wrap;
   }
 
@@ -990,14 +983,6 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .stranica {
-    padding: 15px;
-  }
-
-  .naslov {
-    font-size: 1.8rem;
-  }
-
   .dodaj-sekcija {
     padding: 20px;
   }
@@ -1011,8 +996,8 @@ onMounted(() => {
   }
 
   .slika {
-    width: 150px;
-    height: 112px;
+    width: 72px;
+    height: 72px;
   }
 
   .modal {

@@ -1,14 +1,12 @@
 <template>
   <div class="stranica">
     <div class="sadrzaj">
-      <div class="zaglavlje">
-        <h1 class="naslov">Kreativna zona</h1>
-      </div>
+      <AZaglavljeStranice naslov="Kreativna zona" />
 
       <div class="dodaj-sekcija">
         <div class="forma">
           <div class="unos-grupa">
-            <input 
+            <input autocomplete="off" 
               v-model="novaIdeja.naslov"
               type="text" 
               placeholder="Naslov ideje..."
@@ -69,7 +67,7 @@
                 <div class="datum">{{ formatirajDatum(ideja.datum) }}</div>
               </div>
 
-              <div class="sadrzaj-ideje" @click="otvoriLightbox(ideja)">
+              <div class="sadrzaj-ideje" @click="otvoriLightbox(ideja)" role="button" tabindex="0" @keydown.enter.prevent="otvoriLightbox(ideja)">
                 <h3 class="naslov-ideje">
                   {{ ideja.naslov }}
                 </h3>
@@ -106,11 +104,11 @@
     </div>
 
     <Transition name="fade">
-      <div class="lightbox-pozadina" v-if="lightboxIdeja !== null" @click="zatвориLightbox">
-        <div class="lightbox-modal" @click.stop>
+      <div class="lightbox-pozadina" v-if="lightboxIdeja !== null" @click="zatvoriLightbox">
+        <div class="lightbox-modal" role="dialog" aria-modal="true" @click.stop>
           <div class="lightbox-zaglavlje">
             <h2>{{ lightboxIdeja.naslov }}</h2>
-            <button @click="zatвориLightbox" class="lightbox-zatvori">×</button>
+            <button @click="zatvoriLightbox" class="lightbox-zatvori">×</button>
           </div>
           <div class="lightbox-sadrzaj">
             <div class="lightbox-meta">
@@ -131,12 +129,12 @@
 
     <Transition name="fade">
       <div class="pozadina" v-if="uredba !== null" @click="uredba = null">
-        <div class="modal" @click.stop>
+        <div class="modal" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Uredi ideju</h2>
           </div>
           <div class="modal-sadrzaj">
-            <input 
+            <input autocomplete="off" 
               v-model="uredivanaNaslov"
               type="text" 
               placeholder="Naslov ideje..."
@@ -161,7 +159,7 @@
 
     <Transition name="fade">
       <div class="pozadina" v-if="brisanje !== null" @click="brisanje = null">
-        <div class="modal" @click.stop>
+        <div class="modal" role="dialog" aria-modal="true" @click.stop>
           <div class="modal-zaglavlje">
             <h2>Potvrda brisanja</h2>
           </div>
@@ -183,6 +181,8 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase.js';
 import { 
@@ -285,7 +285,7 @@ const spremi = async () => {
     };
   } catch (greska) {
     console.error('Greška pri spremanju:', greska);
-    alert('Greška pri spremanju ideje. Pokušajte ponovno.');
+    obavijesti('Greška pri spremanju ideje. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -295,7 +295,7 @@ const otvoriLightbox = (ideja) => {
   lightboxIdeja.value = ideja;
 };
 
-const zatвориLightbox = () => {
+const zatvoriLightbox = () => {
   lightboxIdeja.value = null;
 };
 
@@ -326,7 +326,7 @@ const toggleRealizovana = async (ideja) => {
     }
   } catch (greska) {
     console.error('Greška pri ažuriranju statusa:', greska);
-    alert('Greška pri ažuriranju statusa. Pokušajte ponovno.');
+    obavijesti('Greška pri ažuriranju statusa. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -361,7 +361,7 @@ const spremiUredbe = async () => {
     uredba.value = null;
   } catch (greska) {
     console.error('Greška pri ažuriranju:', greska);
-    alert('Greška pri ažuriranju ideje. Pokušajte ponovno.');
+    obavijesti('Greška pri ažuriranju ideje. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -396,7 +396,7 @@ const obrisi = async () => {
     brisanje.value = null;
   } catch (greska) {
     console.error('Greška pri brisanju:', greska);
-    alert('Greška pri brisanju ideje. Pokušajte ponovno.');
+    obavijesti('Greška pri brisanju ideje. Pokušajte ponovno.');
   } finally {
     ucitava.value = false;
   }
@@ -456,29 +456,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
 .stranica {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-body);
 }
 
 .sadrzaj {
   width: 100%;
-}
-
-.zaglavlje {
-  margin-bottom: 30px;
-}
-
-.naslov {
-  color: var(--text-heading);
-  margin-bottom: 8px;
-  font-weight: 700;
-  font-size: 1.8rem;
 }
 
 .zaglavlje p {
@@ -520,7 +504,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
 }
@@ -536,7 +520,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
   resize: vertical;
@@ -576,7 +560,7 @@ onMounted(() => {
   border: none;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   font-size: 14px;
   white-space: nowrap;
   text-align: center;
@@ -671,7 +655,7 @@ onMounted(() => {
   border-radius: var(--radius-card);
   padding: 20px;
   box-shadow: var(--glass-shadow);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   border-left: 4px solid var(--accent);
 }
 
@@ -751,6 +735,7 @@ onMounted(() => {
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow: hidden;
   box-shadow: var(--glass-shadow);
   display: flex;
@@ -846,7 +831,7 @@ onMounted(() => {
   border: none;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -941,6 +926,7 @@ onMounted(() => {
   width: 500px;
   max-width: 90%;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   box-shadow: var(--glass-shadow);
 }
@@ -993,7 +979,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
 }
@@ -1010,7 +996,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: var(--bg-card);
   resize: vertical;
@@ -1040,7 +1026,7 @@ onMounted(() => {
   border-radius: 6px;
   border: none;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   cursor: pointer;
   font-size: 16px;
 }
@@ -1079,12 +1065,19 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .stranica {
-    padding: 20px;
+  /* obrazac preko cijele širine kartice */
+  .dodaj-sekcija .forma {
+    align-items: stretch;
   }
 
-  .naslov {
-    font-size: 2rem;
+  .unos-grupa {
+    flex: none;
+    width: 100%;
+  }
+
+  .gumbovi {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .forma {
@@ -1122,14 +1115,6 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .stranica {
-    padding: 15px;
-  }
-
-  .naslov {
-    font-size: 1.8rem;
-  }
-
   .dodaj-sekcija {
     padding: 20px;
   }
@@ -1159,6 +1144,7 @@ onMounted(() => {
   .lightbox-modal {
     width: 95%;
     height: 90vh;
+    height: 90dvh;
   }
 
   .lightbox-zaglavlje {

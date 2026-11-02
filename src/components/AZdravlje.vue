@@ -1,22 +1,19 @@
 <template>
-  <div class="zdravlje">
-    <div class="zaglavlje">
-      <h1 class="naslov">Zdravlje</h1>
-      <div class="zaglavlje-akcije">
-        <span v-if="uTijeku" class="zadnji-sync u-tijeku">
+  <div class="zdravlje stranica">
+    <AZaglavljeStranice naslov="Zdravlje">
+      <span v-if="uTijeku" class="zadnji-sync u-tijeku">
           <span class="material-icons spinning">sync</span> Sinkronizacija u tijeku...
           <button type="button" class="gumb-resetiraj" @click="resetirajSync">Zaglavilo? Resetiraj</button>
         </span>
         <span v-else class="zadnji-sync">Zadnje osvježeno: {{ formatVrijemeSync(zadnjiSync?.vrijeme) }}</span>
-        <button class="gumb-osvjezi" :disabled="uTijeku || osvjezavanje" @click="osvjeziSad">
+      <button class="gumb-sekundarni" :disabled="uTijeku || osvjezavanje" @click="povuciPovijest">
+          <span class="material-icons">history</span> Povuci povijest
+        </button>
+      <button class="gumb-primarni" :disabled="uTijeku || osvjezavanje" @click="osvjeziSad">
           <span class="material-icons" :class="{ spinning: osvjezavanje }">sync</span>
           Osvježi sad
         </button>
-        <button class="gumb-povijest" :disabled="uTijeku || osvjezavanje" @click="povuciPovijest">
-          <span class="material-icons">history</span> Povuci povijest
-        </button>
-      </div>
-    </div>
+    </AZaglavljeStranice>
 
     <p v-if="zadnjiSync?.greska" class="poruka-greska">Zadnji pokušaj nije uspio: {{ zadnjiSync.greska }}</p>
     <p v-if="porukaGreske" class="poruka-greska">{{ porukaGreske }}</p>
@@ -490,6 +487,8 @@
 </template>
 
 <script setup>
+import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db, auth } from '@/services/firebase.js';
 import { collection, doc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
@@ -1024,58 +1023,19 @@ const resetirajSync = async () => {
     if (!odgovor.ok) throw new Error(`Greška ${odgovor.status}`);
   } catch (error) {
     console.error('Greška pri resetiranju sinkronizacije:', error);
-    alert('Reset nije uspio: ' + error.message);
+    obavijesti('Reset nije uspio: ' + error.message);
   }
 };
 </script>
 
 <style scoped>
 .zdravlje {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.zaglavlje {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.naslov {
-  color: var(--text-heading);
-  font-weight: 700;
-  margin: 0;
-}
-
-.zaglavlje-akcije {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  font-family: var(--font-sans);
 }
 
 .zadnji-sync {
   color: var(--text-muted);
   font-size: 0.85rem;
-}
-
-.gumb-osvjezi {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .gumb-osvjezi:hover:not(:disabled), .gumb-povijest:hover:not(:disabled) {
@@ -1086,20 +1046,6 @@ const resetirajSync = async () => {
 .gumb-osvjezi:disabled, .gumb-povijest:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.gumb-povijest {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--bg-card-muted);
-  color: var(--text-heading);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .zadnji-sync.u-tijeku {
@@ -1155,35 +1101,8 @@ const resetirajSync = async () => {
 }
 
 /* ==================== KARTICE ==================== */
-.kartice {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
 .kartice-dodatne {
   margin-bottom: 25px;
-}
-
-.kartica {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--glass-shadow);
-  padding: 18px;
-  animation: pojaviSe 0.35s ease both;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.kartica:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 @keyframes pojaviSe {
@@ -1197,37 +1116,6 @@ const resetirajSync = async () => {
 .kartice-animirane .kartica:nth-child(4) { animation-delay: 0.14s; }
 .kartice-animirane .kartica:nth-child(5) { animation-delay: 0.18s; }
 .kartice-animirane .kartica:nth-child(6) { animation-delay: 0.22s; }
-
-.kartica .ikona {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-card-muted);
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.kartica .podaci {
-  min-width: 0;
-  flex: 1;
-}
-
-.kartica .podaci h3 {
-  margin: 0 0 4px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.kartica .podaci .iznos {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-heading);
-}
 
 .mini-tekst {
   display: inline-flex;
@@ -1464,13 +1352,13 @@ const resetirajSync = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 
 .gumb-navigacije:hover:not(:disabled) {
   background-color: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .gumb-navigacije:disabled {
@@ -1494,7 +1382,7 @@ const resetirajSync = async () => {
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
   white-space: nowrap;
 }
 
@@ -1506,7 +1394,7 @@ const resetirajSync = async () => {
 .raspon-gumb.aktivan {
   background-color: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 /* ==================== PRIKAŽI SVE ==================== */
@@ -1521,7 +1409,7 @@ const resetirajSync = async () => {
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 
 .gumb-prikazi-sve:hover {
@@ -1549,7 +1437,7 @@ const resetirajSync = async () => {
 }
 
 .dan-iznos {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-heading);
   white-space: nowrap;
@@ -1733,26 +1621,6 @@ const resetirajSync = async () => {
 }
 
 @media (max-width: 768px) {
-  .zdravlje {
-    padding: 16px;
-    padding-bottom: 100px;
-  }
-
-  .zaglavlje {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .naslov {
-    font-size: 1.5rem;
-  }
-
-  .zaglavlje-akcije {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
   .zadnji-sync {
     text-align: center;
   }
@@ -1760,33 +1628,6 @@ const resetirajSync = async () => {
   .gumb-osvjezi, .gumb-povijest {
     width: 100%;
     justify-content: center;
-  }
-
-  .kartice {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .kartica {
-    padding: 14px;
-    gap: 10px;
-  }
-
-  .kartica .ikona {
-    width: 36px;
-    height: 36px;
-  }
-
-  .kartica .ikona .material-icons {
-    font-size: 20px;
-  }
-
-  .kartica .podaci h3 {
-    font-size: 0.72rem;
-  }
-
-  .kartica .podaci .iznos {
-    font-size: 1.05rem;
   }
 
   .sekcija {
@@ -1836,15 +1677,11 @@ const resetirajSync = async () => {
   }
 
   .dan-naziv {
-    font-size: 0.62rem;
+    font-size: 0.7rem;
   }
 }
 
 @media (max-width: 380px) {
-  .kartice {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .trend-mreza {
     grid-template-columns: 1fr 1fr;
   }
@@ -1858,6 +1695,24 @@ const resetirajSync = async () => {
   .kartica, .spinning, .san-dio, .stres-dio, .dan-stupac-traka, .mini-progres-traka {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+.zdravlje .kartice {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+/* kartice na ovoj stranici imaju više redaka teksta pa se poravnavaju uz vrh */
+.zdravlje .kartica {
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .zdravlje .kartica {
+    flex-direction: row;
+    text-align: left;
+    padding: 14px;
+    gap: 10px;
   }
 }
 </style>

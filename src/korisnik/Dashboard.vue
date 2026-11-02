@@ -3,18 +3,18 @@
     <div class="gornja-traka">
       <div class="traka-sadrzaj">
         <div class="profil-padajuci">
-          <div class="profil-ikona" @click="toggleProfilMenu">
+          <div class="profil-ikona" aria-label="Profil" @click="toggleProfilMenu" role="button" tabindex="0" @keydown.enter.prevent="toggleProfilMenu">
             {{ inicijalKorisnika }}
           </div>
           <div class="profil-izbornik" v-if="pokaziProfilMenu">
             <div class="korisnik-email">{{ emailKorisnika }}</div>
-            <div class="izbornik-opcija odjava-opcija" @click="odjava">Odjava</div>
+            <div class="izbornik-opcija odjava-opcija" @click="odjava" role="button" tabindex="0" @keydown.enter.prevent="odjava">Odjava</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="glavni-sadrzaj">
+    <div class="glavni-sadrzaj" role="main">
       <div class="sadrzaj-omotac">
         <div class="zaglavlje-stranice">
           <h1>Dobrodošli, {{ emailKorisnika }}</h1>
@@ -25,14 +25,14 @@
             <div class="naslov-i-refresh">
               <h2>Moje fotografije</h2>
               <div class="refresh-buttons">
-                <button @click="osvjeziSlike" class="refresh-gumb" title="Osvježi slike">
+                <button aria-label="Osvježi slike" @click="osvjeziSlike" class="refresh-gumb" title="Osvježi slike">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="23 4 23 10 17 10"></polyline>
                     <polyline points="1 20 1 14 7 14"></polyline>
                     <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
                   </svg>
                 </button>
-                <button @click="forcirajSinkronizaciju" class="sync-gumb" title="Forciraj sinkronizaciju">
+                <button aria-label="Forciraj sinkronizaciju" @click="forcirajSinkronizaciju" class="sync-gumb" title="Forciraj sinkronizaciju">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M23 4v6h-6"></path>
                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
@@ -55,22 +55,22 @@
           <div v-if="slikeKorisnika.length > 0" class="slike-mreza">
             <div v-for="(slika, indeks) in slikeKorisnika" :key="indeks" class="slika-kartica">
               <div class="slika-prekrivni-sloj">
-                <button @click.stop="preuzmiSliku(slika)" class="prekrivni-gumb-preuzmi" title="Preuzmi sliku">
+                <button aria-label="Preuzmi sliku" @click.stop="preuzmiSliku(slika)" class="prekrivni-gumb-preuzmi" title="Preuzmi sliku">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
                 </button>
-                <button @click.stop="toggleKomentarFormu(slika.fileName)" class="prekrivni-gumb-komentar" title="Dodaj komentar">
+                <button aria-label="Dodaj komentar" @click.stop="toggleKomentarFormu(slika.fileName)" class="prekrivni-gumb-komentar" title="Dodaj komentar">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14"></path>
                   </svg>
                 </button>
               </div>
               
-              <div class="slika-pregled-kontejner" @click="prikaziSliku(slika)">
-                <img v-if="slika.fileCategory === 'image'" :src="slika.publicUrl" :alt="slika.fileName" class="slika-pregled" @error="greskaSlike" />
+              <div class="slika-pregled-kontejner" :aria-label="'Otvori ' + slika.fileName" @click="prikaziSliku(slika)" role="button" tabindex="0" @keydown.enter.prevent="prikaziSliku(slika)">
+                <img loading="lazy" decoding="async" v-if="slika.fileCategory === 'image'" :src="slika.publicUrl" :alt="slika.fileName" class="slika-pregled" @error="greskaSlike" />
                 <video v-else-if="slika.fileCategory === 'video'" :src="slika.publicUrl" class="slika-pregled" @error="greskaSlike"></video>
                 <div v-else class="ostalo-prikaz">
                   <span>{{ slika.fileCategory || 'Nepoznati tip' }}</span>
@@ -105,13 +105,13 @@
                             <span v-if="komentar.editedAt" class="komentar-uredjen">(uređeno)</span>
                           </div>
                           <div v-if="komentar.authorEmail === emailKorisnika" class="komentar-akcije">
-                            <button @click="pocniUredbu(komentar)" class="uredi-komentar-gumb" title="Uredi">
+                            <button aria-label="Uredi" @click="pocniUredbu(komentar)" class="uredi-komentar-gumb" title="Uredi">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                               </svg>
                             </button>
-                            <button @click="ukloniKomentar(komentar.id)" class="ukloni-komentar-gumb" title="Obriši" :disabled="ucitava">
+                            <button aria-label="Obriši" @click="ukloniKomentar(komentar.id)" class="ukloni-komentar-gumb" title="Obriši" :disabled="ucitava">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"></path>
@@ -146,7 +146,7 @@
     </div>
     
     <div v-if="trenutnaSlika" class="lightbox" @click="zatvoriPrikaz">
-      <div class="lightbox-sadrzaj" @click.stop>
+      <div class="lightbox-sadrzaj" role="dialog" aria-modal="true" @click.stop>
         <button @click="zatvoriPrikaz" class="lightbox-zatvori">✕</button>
         <img v-if="trenutnaSlika.fileCategory === 'image'" :src="trenutnaSlika.publicUrl" :alt="trenutnaSlika.fileName" class="lightbox-slika">
         <video v-else-if="trenutnaSlika.fileCategory === 'video'" :src="trenutnaSlika.publicUrl" controls autoplay class="lightbox-slika"></video>
@@ -163,6 +163,7 @@
 </template>
 
 <script setup>
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../store/auth'
@@ -511,7 +512,7 @@ const spremiUredbu = async (komentar) => {
     tekstZaUredbu.value = ''
   } catch (greska) {
     console.error('Greška pri ažuriranju komentara:', greska)
-    alert('Greška pri ažuriranju komentara. Pokušajte ponovno.')
+    obavijesti('Greška pri ažuriranju komentara. Pokušajte ponovno.')
   } finally {
     ucitava.value = false
   }
@@ -526,7 +527,7 @@ const ukloniKomentar = async (id) => {
     await deleteDoc(doc(db, 'komentari', id))
   } catch (greska) {
     console.error('Greška pri brisanju komentara:', greska)
-    alert('Greška pri brisanju komentara. Pokušajte ponovno.')
+    obavijesti('Greška pri brisanju komentara. Pokušajte ponovno.')
   } finally {
     ucitava.value = false
   }
@@ -558,7 +559,7 @@ const dodajKomentar = async (slika, event = null) => {
     otvorenaForma.value = null 
   } catch (greska) {
     console.error('Greška pri dodavanju komentara:', greska)
-    alert('Greška pri dodavanju komentara. Pokušajte ponovno.')
+    obavijesti('Greška pri dodavanju komentara. Pokušajte ponovno.')
   } finally {
     ucitava.value = false
   }
@@ -832,19 +833,23 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #F1EFEC;
-  font-family: 'Roboto', sans-serif;
+  height: 100dvh;
+  background-color: transparent;
+  font-family: var(--font-sans);
 }
 
 .gornja-traka {
-  height: 60px;
+  min-height: 60px;
   z-index: 10;
   position: fixed;
   top: 0;
   right: 0;
-  padding: 10px 20px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px;
   width: 100%;
-  background-color: #F1EFEC;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .traka-sadrzaj {
@@ -862,8 +867,8 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #123458;
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -878,12 +883,12 @@ onBeforeUnmount(() => {
   top: 50px;
   right: 0;
   width: 220px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-small);
+  box-shadow: 0 4px 15px var(--shadow-color);
   overflow: hidden;
   animation: klizanjeDolje 0.3s ease;
-  border: 1px solid #D4C9BE;
+  border: 1px solid var(--border-color);
 }
 
 @keyframes klizanjeDolje {
@@ -899,8 +904,8 @@ onBeforeUnmount(() => {
 
 .korisnik-email {
   padding: 15px;
-  border-bottom: 1px solid #D4C9BE;
-  color: #123458;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--accent);
   font-size: 0.9rem;
   text-align: center;
   font-weight: 500;
@@ -915,19 +920,19 @@ onBeforeUnmount(() => {
 .odjava-opcija {
   color: white;
   font-weight: bold;
-  background-color: #e53935;
+  background-color: var(--danger);
   text-align: center;
 }
 
 .odjava-opcija:hover {
-  background-color: #c62828;
+  background-color: var(--danger-hover);
 }
 
 .glavni-sadrzaj {
   flex: 1;
   overflow-y: auto;
-  background-color: #F1EFEC;
-  padding-top: 70px;
+  background-color: transparent;
+  padding-top: calc(70px + env(safe-area-inset-top, 0px));
 }
 
 .sadrzaj-omotac {
@@ -942,25 +947,29 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-bottom: 30px;
   padding: 20px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #D4C9BE;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
 }
 
 .zaglavlje-stranice h1 {
-  color: #123458;
+  color: var(--accent);
   margin: 0;
   font-weight: 700;
   font-size: 1.8rem;
 }
 
 .galerija-sekcija {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-card);
   padding: 30px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #D4C9BE;
 }
 
 .galerija-zaglavlje {
@@ -982,7 +991,7 @@ onBeforeUnmount(() => {
 }
 
 .galerija-sekcija h2 {
-  color: #123458;
+  color: var(--accent);
   margin: 0;
   font-weight: 600;
   font-size: 1.5rem;
@@ -996,7 +1005,7 @@ onBeforeUnmount(() => {
   left: 0;
   width: 80px;
   height: 3px;
-  background-color: #123458;
+  background-color: var(--accent);
   border-radius: 2px;
 }
 
@@ -1004,20 +1013,20 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #5D8AA8;
+  background-color: var(--accent-soft);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   padding: 10px;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 5px rgba(93, 138, 168, 0.2);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--accent-soft) 20%, transparent);
 }
 
 .refresh-gumb:hover {
-  background-color: #4a7294;
+  background-color: var(--accent-soft-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(93, 138, 168, 0.3);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--accent-soft) 30%, transparent);
 }
 
 .refresh-gumb svg {
@@ -1032,20 +1041,20 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #28a745;
+  background-color: var(--success);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   padding: 10px;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 5px rgba(40, 167, 69, 0.2);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--success) 20%, transparent);
 }
 
 .sync-gumb:hover {
-  background-color: #218838;
+  background-color: color-mix(in srgb, var(--success) 85%, black);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 @keyframes spin {
@@ -1062,26 +1071,26 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #123458;
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   padding: 12px 20px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   font-size: 0.9rem;
   min-width: 200px;
   justify-content: center;
 }
 
 .gumb-preuzmi-sve:hover:not(:disabled) {
-  background-color: #1c4c80;
+  background-color: var(--accent-hover);
   transform: translateY(-2px);
 }
 
 .gumb-preuzmi-sve:disabled {
-  background-color: #6c757d;
+  background-color: var(--gray-muted);
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -1094,18 +1103,18 @@ onBeforeUnmount(() => {
 }
 
 .slika-kartica {
-  background-color: white;
-  border-radius: 12px;
+  background-color: var(--bg-card);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  transition: all 0.3s ease;
-  border: 2px solid #123458;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+  border: 2px solid var(--accent);
   position: relative;
 }
 
 .slika-kartica:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 24px rgba(18, 52, 88, 0.15);
-  border-color: #123458;
+  border-color: var(--accent);
 }
 
 .slika-prekrivni-sloj {
@@ -1125,7 +1134,7 @@ onBeforeUnmount(() => {
 
 .prekrivni-gumb-preuzmi,
 .prekrivni-gumb-komentar {
-  background-color: rgba(18, 52, 88, 0.9);
+  background-color: color-mix(in srgb, var(--accent) 90%, transparent);
   color: white;
   border: none;
   border-radius: 50%;
@@ -1135,7 +1144,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   backdrop-filter: blur(10px);
 }
 
@@ -1144,7 +1153,7 @@ onBeforeUnmount(() => {
 }
 
 .prekrivni-gumb-preuzmi:hover {
-  background-color: rgba(18, 52, 88, 1);
+  background-color: var(--accent);
   transform: scale(1.1);
 }
 
@@ -1174,15 +1183,15 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #F1EFEC;
-  color: #6c757d;
+  background-color: var(--bg-card-muted);
+  color: var(--gray-muted);
   font-size: 0.8rem;
 }
 
 .slika-informacije {
   padding: 18px;
-  background-color: #ffffff;
-  border-top: 1px solid #123458;
+  background-color: var(--bg-card);
+  border-top: 1px solid var(--accent);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -1198,7 +1207,7 @@ onBeforeUnmount(() => {
 
 .slika-naziv {
   font-weight: 600;
-  color: #123458;
+  color: var(--accent);
   font-size: 1rem;
   margin: 0 0 8px 0;
   white-space: nowrap;
@@ -1208,7 +1217,7 @@ onBeforeUnmount(() => {
 
 .slika-datum {
   font-size: 0.85rem;
-  color: #123458;
+  color: var(--accent);
   margin: 0;
   font-weight: 500;
 }
@@ -1216,7 +1225,7 @@ onBeforeUnmount(() => {
 .komentari-sekcija {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid #D4C9BE;
+  border-top: 1px solid var(--border-color);
 }
 
 .komentari-zaglavlje {
@@ -1225,7 +1234,7 @@ onBeforeUnmount(() => {
 
 .komentari-broj {
   font-weight: 600;
-  color: #123458;
+  color: var(--accent);
   font-size: 0.9rem;
 }
 
@@ -1236,9 +1245,9 @@ onBeforeUnmount(() => {
 }
 
 .komentar-stavka {
-  background-color: white;
-  border: 1px solid #D4C9BE;
-  border-radius: 6px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
   padding: 10px;
   margin-bottom: 8px;
 }
@@ -1274,23 +1283,23 @@ onBeforeUnmount(() => {
   cursor: pointer;
   padding: 2px;
   border-radius: 3px;
-  color: #6c757d;
-  transition: all 0.2s;
+  color: var(--gray-muted);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .uredi-komentar-gumb:hover {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .ukloni-komentar-gumb:hover {
-  background-color: #dc3545;
+  background-color: var(--danger);
   color: white;
 }
 
 .komentar-uredjen {
   font-size: 0.65rem;
-  color: #6c757d;
+  color: var(--gray-muted);
   font-style: italic;
 }
 
@@ -1301,8 +1310,8 @@ onBeforeUnmount(() => {
 }
 
 .uredi-komentar-unos {
-  border: 1px solid #D4C9BE;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
   padding: 8px;
   font-size: 0.8rem;
   resize: vertical;
@@ -1312,7 +1321,7 @@ onBeforeUnmount(() => {
 
 .uredi-komentar-unos:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
@@ -1322,8 +1331,8 @@ onBeforeUnmount(() => {
 }
 
 .spremi-uredbu-gumb {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 4px;
   padding: 6px 12px;
@@ -1333,39 +1342,39 @@ onBeforeUnmount(() => {
 }
 
 .spremi-uredbu-gumb:hover {
-  background-color: #0056b3;
+  background-color: var(--accent-hover);
 }
 
 .otkazi-uredbu-gumb {
   background-color: transparent;
-  color: #6c757d;
-  border: 1px solid #D4C9BE;
+  color: var(--gray-muted);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 6px 12px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .otkazi-uredbu-gumb:hover {
-  background-color: #f8f9fa;
-  border-color: #6c757d;
+  background-color: var(--bg-card-muted);
+  border-color: var(--gray-muted);
 }
 
 .komentar-autor {
   font-weight: 600;
-  color: #123458;
+  color: var(--accent);
   font-size: 0.8rem;
 }
 
 .komentar-datum {
   font-size: 0.7rem;
-  color: #6c757d;
+  color: var(--gray-muted);
 }
 
 .komentar-tekst {
   margin: 0;
-  color: #333;
+  color: var(--text-body-alt);
   font-size: 0.85rem;
   line-height: 1.3;
 }
@@ -1373,7 +1382,7 @@ onBeforeUnmount(() => {
 .dodaj-komentar-forma {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid #D4C9BE;
+  border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1381,8 +1390,8 @@ onBeforeUnmount(() => {
 }
 
 .komentar-unos {
-  border: 1px solid #D4C9BE;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
   padding: 10px;
   font-size: 0.85rem;
   resize: vertical;
@@ -1392,7 +1401,7 @@ onBeforeUnmount(() => {
 
 .komentar-unos:focus {
   outline: none;
-  border-color: #123458;
+  border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(18, 52, 88, 0.1);
 }
 
@@ -1403,10 +1412,10 @@ onBeforeUnmount(() => {
 }
 
 .dodaj-komentar-gumb {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-small);
   padding: 8px 16px;
   font-size: 0.85rem;
   cursor: pointer;
@@ -1414,34 +1423,34 @@ onBeforeUnmount(() => {
 }
 
 .dodaj-komentar-gumb:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: var(--accent-hover);
 }
 
 .dodaj-komentar-gumb:disabled {
-  background-color: #6c757d;
+  background-color: var(--gray-muted);
   cursor: not-allowed;
 }
 
 .otkazi-komentar-gumb {
   background-color: transparent;
-  color: #6c757d;
-  border: 1px solid #D4C9BE;
-  border-radius: 6px;
+  color: var(--gray-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
   padding: 8px 16px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .otkazi-komentar-gumb:hover {
-  background-color: #f8f9fa;
-  border-color: #6c757d;
+  background-color: var(--bg-card-muted);
+  border-color: var(--gray-muted);
 }
 
 .prazno-stanje {
   text-align: center;
   padding: 80px 20px;
-  color: #123458;
+  color: var(--accent);
 }
 
 .prazno-ikona {
@@ -1492,7 +1501,7 @@ onBeforeUnmount(() => {
   font-size: 20px;
   cursor: pointer;
   backdrop-filter: blur(10px);
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .lightbox-zatvori:hover {
@@ -1503,7 +1512,7 @@ onBeforeUnmount(() => {
   max-width: 100%;
   max-height: 80vh;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-small);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -1511,11 +1520,11 @@ onBeforeUnmount(() => {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #123458;
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 12px var(--shadow-color);
   z-index: 1000;
   animation: klizanjeGore 0.3s ease;
   min-width: 280px;
@@ -1548,7 +1557,7 @@ onBeforeUnmount(() => {
 
 .ispunjavanje-napretka {
   height: 100%;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -1661,17 +1670,17 @@ onBeforeUnmount(() => {
 }
 
 .komentari-lista::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bg-card-muted);
   border-radius: 2px;
 }
 
 .komentari-lista::-webkit-scrollbar-thumb {
-  background: #123458;
+  background: var(--accent);
   border-radius: 2px;
 }
 
 .komentari-lista::-webkit-scrollbar-thumb:hover {
-  background: #1c4c80;
+  background: var(--accent-hover);
 }
 
 .prekrivni-gumb-preuzmi:focus,
@@ -1680,7 +1689,7 @@ onBeforeUnmount(() => {
 .lightbox-zatvori:focus,
 .refresh-gumb:focus,
 .sync-gumb:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -1688,7 +1697,7 @@ onBeforeUnmount(() => {
 .otkazi-komentar-gumb:focus,
 .spremi-uredbu-gumb:focus,
 .otkazi-uredbu-gumb:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 

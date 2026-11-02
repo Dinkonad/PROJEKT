@@ -2,7 +2,7 @@
   <div class="admin-ploca">
     <div class="bocna-traka" :class="{ 'otvorena': bocnaTrakaOtvorena }">
       <div class="bocna-traka-sadrzaj">
-        <button class="zatvori-bocnu-traku" @click="toggleBocnaTraka">
+        <button aria-label="Zatvori izbornik" class="zatvori-bocnu-traku" @click="toggleBocnaTraka">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -17,25 +17,6 @@
             <div class="bocna-korisnik-email">{{ korisnikEmail }}</div>
             <div class="bocna-korisnik-uloga">Administrator</div>
           </div>
-          <button class="gumb-tema" @click="toggleTemu">
-            <span class="material-icons">{{ temaState.tamna ? 'light_mode' : 'dark_mode' }}</span>
-            {{ temaState.tamna ? 'Svijetla tema' : 'Tamna tema' }}
-          </button>
-
-          <button v-if="faceIdCredentiali.length === 0" class="gumb-tema" @click="registrirajFaceId">
-            <span class="material-icons">face</span>
-            Registriraj Face ID
-          </button>
-          <div v-else class="faceid-lista">
-            <div v-for="zapis in faceIdCredentiali" :key="zapis.id" class="faceid-redak">
-              <span class="material-icons">verified_user</span>
-              <span class="faceid-naziv">{{ zapis.naziv }}</span>
-              <button class="faceid-ukloni" title="Ukloni" @click="ukloniFaceIdZapis(zapis)">
-                <span class="material-icons">close</span>
-              </button>
-            </div>
-          </div>
-
           <div class="odjava-sekcija">
             <button class="gumb-odjava" @click="odjaviKorisnika">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -59,12 +40,48 @@
             {{ stavka.label }}
           </router-link>
         </nav>
+
+        <!-- postavke su skroz dolje i zatvorene dok ih ne otvoriš -->
+        <div class="bocna-postavke">
+          <button class="gumb-tema gumb-postavke" @click="postavkeOtvorene = !postavkeOtvorene">
+            <span class="material-icons">settings</span>
+            Postavke
+            <span class="material-icons postavke-strelica" :class="{ otvoreno: postavkeOtvorene }">expand_more</span>
+          </button>
+          <div v-if="postavkeOtvorene" class="postavke-sadrzaj">
+          <button class="gumb-tema" @click="toggleTemu">
+            <span class="material-icons">{{ temaState.tamna ? 'light_mode' : 'dark_mode' }}</span>
+            {{ temaState.tamna ? 'Svijetla tema' : 'Tamna tema' }}
+          </button>
+
+          <button class="gumb-tema" :disabled="kopijaUTijeku" @click="napraviKopiju">
+            <span class="material-icons">{{ kopijaUTijeku ? 'hourglass_top' : 'backup' }}</span>
+            {{ kopijaUTijeku ? 'Radim kopiju...' : 'Sigurnosna kopija' }}
+          </button>
+          <p v-if="kopijaPoruka" class="kopija-poruka">{{ kopijaPoruka }}</p>
+
+          <button v-if="faceIdCredentiali.length === 0" class="gumb-tema" @click="registrirajFaceId">
+            <span class="material-icons">face</span>
+            Registriraj Face ID
+          </button>
+          <div v-else class="faceid-lista">
+            <div v-for="zapis in faceIdCredentiali" :key="zapis.id" class="faceid-redak">
+              <span class="material-icons">verified_user</span>
+              <span class="faceid-naziv">{{ zapis.naziv }}</span>
+              <button aria-label="Ukloni" class="faceid-ukloni" title="Ukloni" @click="ukloniFaceIdZapis(zapis)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          </div>
+
+          </div>
+        </div>
       </div>
     </div>
 
     <div v-if="bocnaTrakaOtvorena" class="bocna-overlay" @click="toggleBocnaTraka"></div>
 
-    <button v-if="!bocnaTrakaOtvorena" class="otvori-bocnu-traku" @click="toggleBocnaTraka">
+    <button aria-label="Otvori izbornik" v-if="!bocnaTrakaOtvorena" class="otvori-bocnu-traku" @click="toggleBocnaTraka">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"></line>
         <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -72,16 +89,16 @@
       </svg>
     </button>
 
-    <div class="glavni-sadrzaj" :class="{ 'pomjeren': bocnaTrakaOtvorena }">
+    <div class="glavni-sadrzaj" role="main" :class="{ 'pomjeren': bocnaTrakaOtvorena }">
       <div class="sadrzaj-omotac">
-        <div v-if="$route.path === '/admin'" class="dashboard-stranica">
+        <div v-if="$route.path === '/admin'" class="dashboard-stranica stranica">
           <div v-if="ucitavaPodatke" class="ucitavanje">
             <p>Učitavaju se podaci...</p>
           </div>
 
           <template v-else>
             <div class="pozdrav-traka">
-              <h1 class="pozdrav-naslov">{{ pozdravTekst }}</h1>
+              <h1 class="naslov pozdrav-naslov">{{ pozdravTekst }}</h1>
               <span class="pozdrav-datum">{{ danasnjiDatumTekst }}</span>
             </div>
 
@@ -262,7 +279,7 @@
               </div>
               <div v-else class="lokacije-lista">
                 <div v-for="grad in lokacijeSummary" :key="grad.grad" class="grad-grupa">
-                  <div class="grad-red" @click="toggleGrad(grad.grad)">
+                  <div class="grad-red" @click="toggleGrad(grad.grad)" role="button" tabindex="0" @keydown.enter.prevent="toggleGrad(grad.grad)">
                     <span class="material-icons grad-strelica">{{ prosireniGradovi.has(grad.grad) ? 'expand_more' : 'chevron_right' }}</span>
                     <span class="grad-naziv">{{ grad.grad }}</span>
                     <span class="grad-broj">{{ grad.brojEventa }} {{ grad.brojEventa === 1 ? 'event' : 'eventa' }}</span>
@@ -298,6 +315,7 @@
 </template>
 
 <script setup>
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
@@ -306,6 +324,7 @@ import { db, auth } from '@/services/firebase.js';
 import { navStavke } from '@/config/navigacija.js';
 import ABottomNav from './ABottomNav.vue';
 import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
+import { spremiSigurnosnuKopiju, opisRezultata } from '@/services/backup.js';
 import {
   collection,
   getDocs
@@ -323,6 +342,24 @@ const zdravljeDaniList = ref([]);
 const autoUnosi = ref([]);
 const ucitavaPodatke = ref(true);
 const faceIdCredentiali = ref([]);
+const kopijaUTijeku = ref(false);
+const kopijaPoruka = ref('');
+const postavkeOtvorene = ref(false);
+
+const napraviKopiju = async () => {
+  if (kopijaUTijeku.value) return;
+  kopijaUTijeku.value = true;
+  kopijaPoruka.value = '';
+  try {
+    kopijaPoruka.value = opisRezultata(await spremiSigurnosnuKopiju());
+  } catch (error) {
+    console.error('Greška pri izradi sigurnosne kopije:', error);
+    kopijaPoruka.value = 'Kopija nije uspjela. Pokušaj ponovno.';
+  } finally {
+    kopijaUTijeku.value = false;
+    setTimeout(() => { kopijaPoruka.value = ''; }, 10000);
+  }
+};
 
 const korisnikEmail = computed(() => 'naddinko@gmail.com');
 const korisnikInicijali = computed(() => korisnikEmail.value.charAt(0).toUpperCase());
@@ -777,7 +814,7 @@ const formatCurrency = (value) => {
 
 const registrirajFaceId = async () => {
   if (!jePodrzano()) {
-    alert('Ovaj uređaj/preglednik ne podržava Face ID / Touch ID / Windows Hello.');
+    obavijesti('Ovaj uređaj/preglednik ne podržava Face ID / Touch ID / Windows Hello.');
     return;
   }
   const nazivUredaja = prompt('Naziv uređaja (npr. iPhone):', 'iPhone') || 'Uređaj';
@@ -785,10 +822,10 @@ const registrirajFaceId = async () => {
     const idToken = await auth.currentUser.getIdToken();
     await registrirajNoviCredential(idToken, nazivUredaja);
     faceIdCredentiali.value = await dohvatiRegistrirane();
-    alert('Face ID je registriran na ovom uređaju.');
+    obavijesti('Face ID je registriran na ovom uređaju.');
   } catch (error) {
     console.error('Greška pri registraciji Face ID:', error);
-    alert('Registracija nije uspjela: ' + error.message);
+    obavijesti('Registracija nije uspjela: ' + error.message);
   }
 };
 
@@ -812,8 +849,9 @@ onMounted(() => {
 .admin-ploca {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-page);
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   position: relative;
 }
 
@@ -823,6 +861,7 @@ onMounted(() => {
   top: 0;
   width: 250px;
   height: 100vh;
+  height: 100dvh;
   background-color: rgba(18, 52, 88, 0.78);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
@@ -932,6 +971,37 @@ onMounted(() => {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
+.bocna-postavke {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.gumb-postavke {
+  margin-bottom: 8px;
+}
+
+.postavke-strelica {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.postavke-strelica.otvoreno {
+  transform: rotate(180deg);
+}
+
+.kopija-poruka {
+  margin: -4px 0 12px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.gumb-tema:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .faceid-lista {
   display: flex;
   flex-direction: column;
@@ -1009,7 +1079,7 @@ onMounted(() => {
   margin-bottom: 5px;
   text-decoration: none;
   color: rgba(255, 255, 255, 0.8);
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   cursor: pointer;
   text-align: center;
 }
@@ -1046,7 +1116,7 @@ onMounted(() => {
   padding: 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   z-index: 100;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -1083,7 +1153,7 @@ onMounted(() => {
 .dashboard-stranica {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: var(--space-7);
 }
 
 .ucitavanje {
@@ -1122,12 +1192,12 @@ onMounted(() => {
 .gumb-kalendar {
   padding: 10px 18px;
   background-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
   text-decoration: none;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1158,6 +1228,7 @@ onMounted(() => {
 
 /* ==================== POZDRAVNA TRAKA ==================== */
 .pozdrav-traka {
+  padding-top: 4px;
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -1168,7 +1239,6 @@ onMounted(() => {
   margin: 0;
   color: var(--text-heading);
   font-weight: 700;
-  font-size: 1.8rem;
 }
 
 .pozdrav-datum {
@@ -1669,6 +1739,28 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .pozdrav-traka {
+    padding-top: 0;
+  }
+
+  /* brzi pregled kao mreža 2x2 (isto kao kartice na drugim stranicama), ne četiri visoka retka */
+  .pregled-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .pregled-kartica {
+    flex-direction: column;
+    text-align: center;
+    padding: 14px 8px;
+    gap: var(--space-2);
+  }
+
+  .pregled-glavno {
+    font-size: 0.9rem;
+    white-space: normal;
+  }
+
   .sadrzaj-omotac {
     padding: 20px;
   }
@@ -1761,7 +1853,7 @@ onMounted(() => {
   }
 
   .dashboard-stranica {
-    gap: 25px;
+    gap: var(--space-section);
   }
 
   .sekcija {
@@ -1801,6 +1893,13 @@ onMounted(() => {
 
   .prazan-sadrzaj p {
     font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .godina-select {
+    font-size: 16px;
+    min-height: 40px;
   }
 }
 </style>

@@ -263,7 +263,7 @@ const poredanaVidea = computed(() => {
 
 .gumb-glavni {
   background-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .gumb-glavni:disabled {
@@ -359,58 +359,6 @@ h2 {
   font-size: 0.68rem;
 }
 
-.kartice {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.kartica {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--glass-shadow);
-  padding: 16px;
-}
-
-.kartica .ikona {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-card-muted);
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.kartica .podaci {
-  min-width: 0;
-}
-
-.kartica .podaci h3 {
-  margin: 0 0 4px;
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.kartica .podaci .iznos {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--text-heading);
-}
-
 .promjena,
 .promjena-sitno {
   display: block;
@@ -486,7 +434,7 @@ h2 {
 
 .prekidac-poretka button.aktivan {
   background-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .video-red {

@@ -17,8 +17,13 @@
               <input 
                 type="email" 
                 id="email-unos" 
+                name="email"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
                 v-model="korisnickoIme" 
-                placeholder="kreso123@exempl.com" 
+                placeholder="ime@primjer.hr…" 
+                @keydown.enter="prijava"
               />
             </div>
 
@@ -28,9 +33,12 @@
                 <input 
                   :type="prikaziLozinku ? 'text' : 'password'" 
                   id="lozinka" 
+                  name="password"
+                  autocomplete="current-password"
                   v-model="lozinka" 
+                  @keydown.enter="prijava"
                 />
-                <span class="prekidac-lozinka" @click="togglePrikaziLozinku">
+                <span class="prekidac-lozinka" aria-label="Prikaži ili sakrij lozinku" @click="togglePrikaziLozinku" role="button" tabindex="0" @keydown.enter.prevent="togglePrikaziLozinku">
                   {{ prikaziLozinku ? '👁️' : '🙈' }}
                 </span>
               </div>
@@ -88,6 +96,8 @@
               <input 
                 type="text" 
                 id="novo-korisnicko-ime" 
+                name="username"
+                autocomplete="nickname"
                 v-model="novoKorisnickoIme" 
                 placeholder="Vaše korisničko ime"
               />
@@ -98,8 +108,12 @@
               <input 
                 type="email" 
                 id="email" 
+                name="email"
+                autocomplete="email"
+                autocapitalize="none"
+                spellcheck="false"
                 v-model="email" 
-                placeholder="kreso123@exempl.com" 
+                placeholder="ime@primjer.hr…" 
               />
             </div>
 
@@ -109,9 +123,12 @@
                 <input 
                   :type="prikaziNovuLozinku ? 'text' : 'password'" 
                   id="nova-lozinka" 
+                  name="new-password"
+                  autocomplete="new-password"
                   v-model="novaLozinka" 
+                  @keydown.enter="registracija"
                 />
-                <span class="prekidac-lozinka" @click="togglePrikaziNovuLozinku">
+                <span class="prekidac-lozinka" aria-label="Prikaži ili sakrij lozinku" @click="togglePrikaziNovuLozinku" role="button" tabindex="0" @keydown.enter.prevent="togglePrikaziNovuLozinku">
                   {{ prikaziNovuLozinku ? '🙈' : '👁️' }}
                 </span>
               </div>
@@ -131,6 +148,7 @@
 </template>
 
 <script setup>
+import { obavijesti } from '@/services/obavijest.js';
 import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -253,13 +271,13 @@ const handleAdminPrijava = async (adminEmail, adminPassword) => {
     await loginAsAdmin(adminEmail, adminPassword);
     prikaziAdminPanel.value = false;
   } catch (error) {
-    alert('Admin prijava nije uspjela: ' + error.message);
+    obavijesti('Admin prijava nije uspjela: ' + error.message);
   }
 };
 
 const prikaziAdminPrijavu = () => {
   if (state.isAdmin) {
-    alert('Već ste prijavljeni kao administrator!');
+    obavijesti('Već ste prijavljeni kao administrator!');
     return;
   }
   prikaziAdminPanel.value = true;
@@ -278,17 +296,19 @@ const promijeniNačin = () => {
 
 <style scoped>
 .prijava-kontejner {
+    color-scheme: light;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     background-color: #F1EFEC;
     background-image:
       radial-gradient(circle at 12% 10%, rgba(18, 52, 88, 0.12), transparent 42%),
       radial-gradient(circle at 88% 18%, rgba(93, 138, 168, 0.16), transparent 42%),
       radial-gradient(circle at 25% 92%, rgba(156, 122, 84, 0.12), transparent 45%);
-    font-family: Arial, sans-serif;
+    font-family: var(--font-sans);
     perspective: 1500px;
     position: relative;
   }
@@ -307,7 +327,7 @@ const promijeniNačin = () => {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   }
 
   .gumb-faceid:hover:not(:disabled) {
@@ -337,7 +357,7 @@ const promijeniNačin = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   }
   
   .google-prijava:hover {
@@ -446,7 +466,7 @@ const promijeniNačin = () => {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 16px;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   }
   
   input:focus {
@@ -465,7 +485,7 @@ const promijeniNačin = () => {
     font-size: 16px;
     cursor: pointer;
     margin-top: 10px;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   }
   
   .gumb-prijava:hover {
@@ -491,7 +511,7 @@ const promijeniNačin = () => {
     color: #0066ff;
     cursor: pointer;
     text-decoration: underline;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   }
   
   .poveznica-registracija:hover {
