@@ -1511,16 +1511,13 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 .modal {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
   width: 90%;
   max-width: 480px;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: 100%;
   overflow-y: auto;
 }
 
@@ -1748,9 +1745,7 @@ const obrisiPredlozak = async (predlozak) => {
 }
 
 .modal-potvrda {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
@@ -1902,8 +1897,7 @@ const obrisiPredlozak = async (predlozak) => {
   }
 
   .modal {
-    max-height: 90vh;
-    max-height: 90dvh;
+    max-height: 100%;
   }
 
   .gumb-akcija {

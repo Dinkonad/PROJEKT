@@ -457,3 +457,22 @@
       font-size: 0.75rem;
     }
   }
+
+  /* ==================== PROZORI (modali) ==================== */
+  /* Prekrivač poštuje sigurna područja iPhonea (statusna traka, Dynamic Island, donja crta),
+     a prozor nikad nije viši od preostalog prostora - zaglavlje s gumbom X uvijek ostaje na ekranu. */
+  .prekrivka-modala, .pozadina, .lightbox-pozadina {
+    box-sizing: border-box;
+    padding: calc(var(--space-3) + env(safe-area-inset-top, 0px)) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .modal, .modal-detalji, .modal-forma, .modal-potvrda, .modal-siroki {
+    max-height: 100%;
+  }
+
+  /* zaglavlje prozora ostaje vidljivo dok se sadržaj skrola */
+  .modal-zaglavlje, .zaglavlje-modala {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }

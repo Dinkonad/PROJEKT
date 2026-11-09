@@ -1131,16 +1131,13 @@ const potvrdiBrisanjeOcitanja = async () => {
 }
 
 .modal {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
   width: 100%;
   max-width: 440px;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: 100%;
   overflow-y: auto;
 }
 
@@ -1258,9 +1255,7 @@ const potvrdiBrisanjeOcitanja = async () => {
 }
 
 .modal-potvrda {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
@@ -1332,8 +1327,7 @@ const potvrdiBrisanjeOcitanja = async () => {
   }
 
   .modal {
-    max-height: 90vh;
-    max-height: 90dvh;
+    max-height: 100%;
   }
 
   /* prsti: gumbi za uredi/obriši bili su samo 26x26 px */

@@ -726,16 +726,14 @@ const dodajNovuOpremu = async () => {
 }
 
 .modal-detalji, .modal-forma, .modal-potvrda {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
   padding: 0;
   width: 500px;
   max-width: 90%;
   box-shadow: var(--glass-shadow);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .modal-zaglavlje {
@@ -790,7 +788,7 @@ const dodajNovuOpremu = async () => {
 .podatak-red p {
   margin: 0;
   padding: 8px 12px;
-  background-color: var(--bg-card);
+  background-color: var(--bg-card-muted);
   border-radius: 6px;
   border: 1px solid var(--border-color);
 }
@@ -1021,7 +1019,6 @@ form {
 
   .modal-detalji, .modal-forma, .modal-potvrda {
     width: 95%;
-    margin: 10px;
   }
 
   .modal-zaglavlje {

@@ -2090,16 +2090,14 @@ const spremiUredivanje = async () => {
 }
 
 .modal-detalji, .modal-forma, .modal-potvrda {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
   padding: 0;
   width: 500px;
   max-width: 90%;
   box-shadow: var(--glass-shadow);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .modal-zaglavlje {
@@ -2137,6 +2135,8 @@ const spremiUredivanje = async () => {
 }
 
 .modal-sadrzaj .podatak-red {
+  flex-direction: column;
+  align-items: stretch;
   margin-bottom: 18px;
 }
 
@@ -2154,7 +2154,7 @@ const spremiUredivanje = async () => {
 .modal-sadrzaj .podatak-red p {
   margin: 0;
   padding: 8px 12px;
-  background-color: var(--bg-card);
+  background-color: var(--bg-card-muted);
   border-radius: 6px;
   border: 1px solid var(--border-color);
   overflow-wrap: anywhere;
@@ -2395,8 +2395,7 @@ input:checked + .klizac:before {
 }
 
 .modal-forma {
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: 100%;
   overflow-y: auto;
 }
 
@@ -2554,7 +2553,6 @@ input:checked + .klizac:before {
 
   .modal-detalji, .modal-forma, .modal-potvrda {
     width: 95%;
-    margin: 10px;
   }
 }
 

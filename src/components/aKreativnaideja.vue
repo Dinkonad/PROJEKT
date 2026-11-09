@@ -727,15 +727,12 @@ onMounted(() => {
 }
 
 .lightbox-modal {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
   width: 90%;
   max-width: 800px;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: 100%;
   overflow: hidden;
   box-shadow: var(--glass-shadow);
   display: flex;
@@ -917,16 +914,13 @@ onMounted(() => {
 }
 
 .modal {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
   padding: 0;
   width: 500px;
   max-width: 90%;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: 100%;
   overflow-y: auto;
   box-shadow: var(--glass-shadow);
 }

@@ -827,9 +827,7 @@ onMounted(() => {
 }
 
 .modal {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-color: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
   padding: 0;
