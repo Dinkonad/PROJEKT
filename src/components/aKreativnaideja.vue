@@ -59,6 +59,7 @@
           <div 
             v-for="ideja in ideje" 
             :key="ideja.id"
+            v-svajp
             class="red"
             :class="{ 'realizovana': ideja.realizovana }"
           >
@@ -77,7 +78,7 @@
                 </div>
               </div>
 
-              <div class="akcije">
+              <div class="akcije" data-svajp-akcije>
                 <button 
                   @click="toggleRealizovana(ideja)" 
                   class="gumb-realizovana" 
@@ -181,9 +182,10 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { 
   collection, 
@@ -453,6 +455,10 @@ const ucitajIdeje = async () => {
 onMounted(() => {
   ucitajIdeje();
 });
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await ucitajIdeje(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

@@ -487,6 +487,7 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
@@ -1026,6 +1027,10 @@ const resetirajSync = async () => {
     obavijesti('Reset nije uspio: ' + error.message);
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await osvjeziSad(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

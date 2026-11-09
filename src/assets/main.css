@@ -476,3 +476,65 @@
     top: 0;
     z-index: 2;
   }
+
+  /* ==================== POVUCI REDAK ULIJEVO (mobitel) ==================== */
+  /* Radnje retka (Uredi / Obriši) stoje odmah desno od retka; povlačenje retka ulijevo ih otkriva.
+     Logika je u src/directives/svajp.js. Na računalu se ništa ne mijenja. */
+  @media (max-width: 768px) {
+    [data-svajp] {
+      position: relative;
+      touch-action: pan-y;
+      transition: transform 0.2s ease;
+    }
+
+    [data-svajp][data-svajp-povlaci] {
+      transition: none;
+    }
+
+    [data-svajp] [data-svajp-akcije] {
+      position: absolute !important;
+      top: 0;
+      bottom: 0;
+      left: 100%;
+      box-sizing: border-box;
+      width: var(--svajp-sirina, 0px) !important;
+      margin: 0 !important;
+      padding: 0 8px !important;
+      grid-area: auto !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px !important;
+      border: 0 !important;
+      background: transparent !important;
+    }
+
+    [data-svajp] [data-svajp-akcije]::before {
+      content: none !important;
+    }
+
+    /* gumbi otkriveni povlačenjem: okrugli, Obriši crveno (gumbi s vlastitim stilom ga zadržavaju) */
+    [data-svajp] [data-svajp-akcije] .gumb-akcija {
+      width: 40px !important;
+      height: 40px !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50% !important;
+      border: 1px solid var(--border-color) !important;
+      background-color: var(--bg-card) !important;
+      color: var(--accent) !important;
+    }
+
+    [data-svajp] [data-svajp-akcije] .gumb-akcija.obrisi {
+      border-color: var(--danger) !important;
+      background-color: var(--danger) !important;
+      color: var(--on-accent) !important;
+    }
+
+    /* popis u kojem su reci ne smije dobiti vodoravni klizač zbog skrivenih radnji */
+    :has(> [data-svajp]) {
+      overflow-x: clip;
+    }
+  }

@@ -127,7 +127,7 @@
         </div>
 
         <div v-else class="lista-unosa">
-          <div v-for="unos in odabraniDanUnosi" :key="unos.id" class="redak-unosa">
+          <div v-for="unos in odabraniDanUnosi" :key="unos.id" v-svajp class="redak-unosa">
             <div class="redak-detalji">
               <div class="redak-vrijeme">{{ unos.pocetnoVrijeme }} - {{ unos.zavrsnoVrijeme }}</div>
               <div class="redak-opis">{{ unos.opis || 'Bez opisa' }}</div>
@@ -140,7 +140,7 @@
               <span class="redak-sati">{{ formatSati(unos.satiRada) }}</span>
               <span class="redak-zarada">{{ formatCurrency(unos.zarada) }}</span>
             </div>
-            <div class="redak-akcije">
+            <div class="redak-akcije" data-svajp-akcije>
               <button aria-label="Dodaj u kalendar" class="gumb-akcija" title="Dodaj u kalendar" @click="preuzmiUKalendar(unos)">
                 <span class="material-icons">event</span>
               </button>
@@ -377,6 +377,7 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
@@ -885,6 +886,11 @@ const obrisiPredlozak = async (predlozak) => {
     console.error('Greška pri brisanju predloška:', error);
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+// podaci ove stranice se već osvježavaju uživo - nema što dodatno povlačiti
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => {});
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

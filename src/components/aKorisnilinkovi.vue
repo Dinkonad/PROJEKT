@@ -59,6 +59,7 @@
           <div 
             v-for="link in filteredLinkovi" 
             :key="link.id"
+            v-svajp
             class="red"
             :class="`tip-${link.tip}`"
             @click="otvori(link.url)"
@@ -88,7 +89,7 @@
                 <div class="url">{{ skratiUrl(link.url) }}</div>
               </div>
 
-              <div class="akcije">
+              <div class="akcije" data-svajp-akcije>
                 <button @click.stop="urediNaziv(link)" class="gumb-uredi" title="Uredi naziv">
                   ✏️
                 </button>
@@ -150,9 +151,10 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { 
   collection, 
@@ -474,6 +476,10 @@ const ucitajLinkove = async () => {
 onMounted(() => {
   ucitajLinkove();
 });
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await ucitajLinkove(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>
@@ -947,22 +953,12 @@ onMounted(() => {
     display: grid;
     grid-template-columns: 72px minmax(0, 1fr);
     column-gap: 12px;
-    row-gap: 8px;
     align-items: start;
     text-align: left;
   }
 
-  .slika {
-    grid-row: 1 / span 2;
-  }
-
-  .informacije,
-  .akcije {
+  .informacije {
     grid-column: 2;
-  }
-
-  .akcije {
-    justify-content: flex-start;
   }
 
   .slika {

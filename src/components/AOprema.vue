@@ -102,6 +102,7 @@
         </thead>
         <tbody>
           <tr v-for="opremaItem in sortiranaOprema" :key="opremaItem.id" 
+              v-svajp
               @click="prikaziDetalje(opremaItem)" 
               class="red" 
               :class="{ 'prodano-red': opremaItem.prodano }">
@@ -117,7 +118,7 @@
                 <span class="material-icons">sell</span> Označi kao prodano
               </button>
             </td>
-            <td data-label="Akcija">
+            <td data-label="Akcija" data-svajp-akcije>
               <button aria-label="Obriši" class="gumb-brisi" @click.stop="potvrdiZaBrisanje(opremaItem)" :disabled="sprema">
                 <span class="material-icons">delete</span>
               </button>
@@ -277,9 +278,10 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { 
   collection, 
@@ -539,6 +541,10 @@ const dodajNovuOpremu = async () => {
     console.error('Greška pri dodavanju nove opreme:', error);
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await ucitajOpremuIzFirestore(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 

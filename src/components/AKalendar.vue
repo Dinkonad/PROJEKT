@@ -43,6 +43,7 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db, auth } from '@/services/firebase.js';
@@ -158,6 +159,10 @@ const osvjeziSad = async () => {
     osvjezavanje.value = false;
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await osvjeziSad(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

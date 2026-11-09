@@ -219,7 +219,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" @click="prikaziDetalje(prihod)" class="red">
+            <tr v-for="prihod in filtriraniPrihodi" :key="prihod.id" v-svajp @click="prikaziDetalje(prihod)" class="red">
               <td data-label="Naziv eventa">{{ prihod.nazivEventa }}</td>
               <td data-label="Ime i prezime">
                 <div class="celija-stog">
@@ -249,7 +249,7 @@
                   <span class="material-icons">payments</span> Označi kao plaćeno
                 </button>
               </td>
-             <td data-label="Akcija">
+             <td data-label="Akcija" data-svajp-akcije>
   <div class="akcija-gumbi">
     <button aria-label="Uredi" class="gumb-uredi" @click.stop="otvoriUredivanje(prihod)" :disabled="sprema">
       <span class="material-icons">edit</span>
@@ -671,9 +671,10 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import jsPDF from 'jspdf';
 import {
@@ -1447,6 +1448,10 @@ const spremiUredivanje = async () => {
     console.error('Greška pri uređivanju prihoda:', error);
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await ucitajPrihodeiFirestore(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

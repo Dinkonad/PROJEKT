@@ -79,6 +79,8 @@
       </div>
     </div>
 
+    <APovuciOsvjezi />
+
     <div v-if="bocnaTrakaOtvorena" class="bocna-overlay" @click="toggleBocnaTraka"></div>
 
     <button aria-label="Otvori izbornik" v-if="!bocnaTrakaOtvorena" class="otvori-bocnu-traku" @click="toggleBocnaTraka">
@@ -318,7 +320,7 @@
 <script setup>
 import { prikaziNovac } from '@/store/privatnost.js';
 import { obavijesti } from '@/services/obavijest.js';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
 import { useTheme } from '../store/theme';
@@ -326,6 +328,8 @@ import { db, auth } from '@/services/firebase.js';
 import { navStavke } from '@/config/navigacija.js';
 import ABottomNav from './ABottomNav.vue';
 import ASakrijNovac from './ASakrijNovac.vue';
+import APovuciOsvjezi from './APovuciOsvjezi.vue';
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
 import { spremiSigurnosnuKopiju, opisRezultata } from '@/services/backup.js';
 import {
@@ -846,6 +850,17 @@ onMounted(() => {
   ucitajPodatke();
   dohvatiRegistrirane().then(lista => { faceIdCredentiali.value = lista; });
 });
+
+// povuci prema dolje (mobitel): početna stranica osvježava svoje podatke, ostale stranice javljaju vlastitu funkciju
+const odjaviOsnovnoOsvjezavanje = postaviOsvjezavanje(async () => {
+  if (router.currentRoute.value.path === '/admin') {
+    await ucitajPodatke();
+    return;
+  }
+  window.location.reload();
+  await new Promise(() => {});
+}, 'osnovno');
+onBeforeUnmount(odjaviOsnovnoOsvjezavanje);
 </script>
 
 <style scoped>

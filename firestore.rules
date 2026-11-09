@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Aplikacija je privatna: samo vlasnik smije čitati i pisati bilo što.
+// Prijava lozinkom/Googleom nosi email, Face ID prijava nosi oznaku "vlasnik" (backend je upisuje u token).
+// Backend (firebase_admin) zaobilazi ova pravila, pa sinkronizacije i obavijesti rade kao i prije.
+//
+// Uz ova pravila u Firebase konzoli ISKLJUČI otvaranje novih računa
+// (Authentication > Settings > User actions > "Enable create (sign-up)"), da nitko ne može napraviti račun.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function jeVlasnik() {
+      return request.auth != null && (
+        request.auth.token.vlasnik == true ||
+        request.auth.token.email == 'naddinko@gmail.com'
+      );
+    }
+
+    match /{document=**} {
+      allow read, write: if jeVlasnik();
+    }
+  }
+}

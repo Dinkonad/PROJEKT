@@ -149,8 +149,9 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import YoutubePanel from '@/components/mreze/YoutubePanel.vue';
 import {
@@ -191,6 +192,10 @@ onMounted(async () => {
     yt.greska = `Povezivanje nije uspjelo: ${route.query.razlog || 'nepoznata greška'}`;
   }
 });
+
+// povuci prema dolje za osvježavanje (mobitel)
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { if (yt.status?.povezano) await osvjeziYoutube(false); else await ucitajYoutube(); });
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

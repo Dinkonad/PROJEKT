@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { navStavke } from '../config/navigacija.js';
+import { jeVlasnik } from '../config/admin.js';
 
 import LoginPage from '../components/LoginPage.vue';
-import Dashboard from '../korisnik/Dashboard.vue';
 import AdminDashboard from '../components/ADashboard.vue';
 import PrihodiView from '../components/APrihodi.vue';
 import OpremaView from '../components/AOprema.vue';
@@ -28,10 +28,9 @@ const routes = [
     component: LoginPage
   },
   {
+    // stari link iz vremena kad je postojao klijentski dio - sada postoji samo admin
     path: '/dashboard',
-    name: 'Dashboard',
-    component: Dashboard,
-    meta: { requiresAuth: true }
+    redirect: '/admin'
   },
   {
     path: '/admin',
@@ -130,8 +129,8 @@ router.beforeEach((to, from, next) => {
 
   if (requiresAuth && !currentUser) {
     next('/login');
-  } else if (requiresAdmin && currentUser && currentUser.email !== 'naddinko@gmail.com') {
-    next('/dashboard');
+  } else if (requiresAdmin && currentUser && !jeVlasnik(currentUser)) {
+    next('/login');
   } else {
     next();
   }
@@ -140,7 +139,7 @@ router.beforeEach((to, from, next) => {
 // naslov kartice u pregledniku i u povijesti: "Prihodi · Nagy Photos"
 router.afterEach((to) => {
   const stavka = navStavke.find(n => n.to === to.path);
-  const naziv = stavka ? stavka.label : (to.path === '/login' ? 'Prijava' : to.path === '/dashboard' ? 'Moji materijali' : '');
+  const naziv = stavka ? stavka.label : (to.path === '/login' ? 'Prijava' : '');
   document.title = naziv ? `${naziv} · Nagy Photos` : 'Nagy Photos';
 });
 

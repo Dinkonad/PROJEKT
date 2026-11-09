@@ -63,7 +63,7 @@
       </div>
 
       <div v-else class="lista-unosa">
-        <div v-for="unos in unosi" :key="unos.id" class="redak-unosa">
+        <div v-for="unos in unosi" :key="unos.id" v-svajp class="redak-unosa">
           <div class="redak-glavno">
             <span class="redak-naziv">{{ unos.naziv }}</span>
             <span class="redak-korisnik">{{ dekriptirano[unos.id]?.korisnickoIme || '...' }}</span>
@@ -78,7 +78,7 @@
             </button>
           </div>
           <div v-if="dekriptirano[unos.id]?.napomena" class="redak-napomena">{{ dekriptirano[unos.id].napomena }}</div>
-          <div class="redak-akcije">
+          <div class="redak-akcije" data-svajp-akcije>
             <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
               <span class="material-icons">edit</span>
             </button>
@@ -140,6 +140,7 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
@@ -381,6 +382,11 @@ const potvrdiBrisanje = async () => {
     unosZaBrisanje.value = null;
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+// podaci ove stranice se već osvježavaju uživo - nema što dodatno povlačiti
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => {});
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>

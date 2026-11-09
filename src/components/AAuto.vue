@@ -130,11 +130,11 @@
         </div>
 
         <div v-if="ocitanjaKm.length" class="lista-ocitanja">
-          <div v-for="o in [...ocitanjaKm].reverse()" :key="o.id" class="redak-ocitanje">
+          <div v-for="o in [...ocitanjaKm].reverse()" :key="o.id" v-svajp class="redak-ocitanje">
             <div class="ocitanje-glavno">
               <span class="ocitanje-mjesec">{{ formatMjesecPuni(o.mjesec) }}</span>
               <span v-if="typeof o.kilometraza === 'number'" class="ocitanje-km">{{ o.kilometraza.toLocaleString('hr-HR') }} km</span>
-              <div class="redak-akcije">
+              <div class="redak-akcije" data-svajp-akcije>
                 <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalKm(o)">
                   <span class="material-icons">edit</span>
                 </button>
@@ -173,12 +173,12 @@
       </div>
 
       <div v-else class="lista-unosa">
-        <div v-for="unos in filtriraniUnosi" :key="unos.id" class="redak-unosa">
+        <div v-for="unos in filtriraniUnosi" :key="unos.id" v-svajp class="redak-unosa">
           <div class="redak-glavno">
             <span :class="['oznaka-tipa', `tip-${unos.tip}`]">{{ nazivTipa(unos.tip) }}</span>
             <span class="redak-datum">{{ formatDatum(unos.datum) }}</span>
             <span v-if="unos.iznos !== undefined" class="redak-iznos">{{ formatCurrency(unos.iznos) }}</span>
-            <div class="redak-akcije">
+            <div class="redak-akcije" data-svajp-akcije>
               <button aria-label="Uredi" class="gumb-akcija" title="Uredi" @click="otvoriModalUnos(unos)">
                 <span class="material-icons">edit</span>
               </button>
@@ -403,6 +403,7 @@
 </template>
 
 <script setup>
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
@@ -765,6 +766,11 @@ const potvrdiBrisanjeOcitanja = async () => {
     ocitanjeZaBrisanje.value = null;
   }
 };
+
+// povuci prema dolje za osvježavanje (mobitel)
+// podaci ove stranice se već osvježavaju uživo - nema što dodatno povlačiti
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => {});
+onBeforeUnmount(odjaviOsvjezavanje);
 </script>
 
 <style scoped>
