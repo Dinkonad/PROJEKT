@@ -513,6 +513,19 @@
       content: none !important;
     }
 
+    /* Radnje su nevidljive dok redak nije povučen. Ne oslanjamo se samo na rezanje ruba popisa
+       (na iPhoneu je virio komadić gumba): kad se redak zatvori, radnje nestanu nakon što klizanje završi. */
+    [data-svajp] [data-svajp-akcije] {
+      visibility: hidden;
+      transition: visibility 0s linear 0.2s;
+    }
+
+    [data-svajp][data-svajp-otvoreno] [data-svajp-akcije],
+    [data-svajp][data-svajp-povlaci] [data-svajp-akcije] {
+      visibility: visible;
+      transition-delay: 0s;
+    }
+
     /* gumbi otkriveni povlačenjem: okrugli, Obriši crveno (gumbi s vlastitim stilom ga zadržavaju) */
     [data-svajp] [data-svajp-akcije] .gumb-akcija {
       width: 40px !important;
