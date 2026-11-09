@@ -1512,7 +1512,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 .modal {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
   width: 90%;
@@ -1746,7 +1746,7 @@ const obrisiPredlozak = async (predlozak) => {
 
 .modal-potvrda {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
   width: 90%;

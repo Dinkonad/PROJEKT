@@ -2091,7 +2091,7 @@ const spremiUredivanje = async () => {
 
 .modal-detalji, .modal-forma, .modal-potvrda {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   border-radius: var(--radius-card);
   padding: 0;
   width: 500px;

@@ -600,7 +600,7 @@ const potvrdiBrisanje = async () => {
 
 .modal {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
   width: 90%;
@@ -683,7 +683,7 @@ const potvrdiBrisanje = async () => {
 
 .modal-potvrda {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-card);
   width: 90%;

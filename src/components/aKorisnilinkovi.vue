@@ -828,7 +828,7 @@ onMounted(() => {
 
 .modal {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   border-radius: var(--radius-card);
   padding: 0;
   width: 400px;

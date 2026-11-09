@@ -728,7 +728,7 @@ onMounted(() => {
 
 .lightbox-modal {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   border-radius: var(--radius-card);
   width: 90%;
   max-width: 800px;
@@ -915,7 +915,7 @@ onMounted(() => {
 
 .modal {
   background-color: var(--bg-card);
-  border: 1px solid var(--glass-border);
+  border: none;
   border-radius: var(--radius-card);
   padding: 0;
   width: 500px;
