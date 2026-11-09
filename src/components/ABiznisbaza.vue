@@ -1,6 +1,6 @@
 <template>
   <div class="biznisbaza stranica">
-    <AZaglavljeStranice naslov="BiznisBaza">
+    <AZaglavljeStranice naslov="BiznisBaza" novac>
       <button class="gumb-sekundarni" @click="otvoriModalTjedan">
           <span class="material-icons">date_range</span> Tjedni alati
         </button>
@@ -377,6 +377,7 @@
 </template>
 
 <script setup>
+import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
@@ -501,7 +502,7 @@ function izracunajSate(pocetno, zavrsno) {
 }
 
 const formatSati = (v) => `${(parseFloat(v) || 0).toFixed(2)} h`;
-const formatCurrency = (v) => `${(parseFloat(v) || 0).toFixed(2)} EUR`;
+const formatCurrency = (v) => prikaziNovac(`${(parseFloat(v) || 0).toFixed(2)} EUR`);
 const formatKratkiDatumIso = (danStr) => new Date(danStr).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short' });
 const formatDugiDatum = (datumString) => new Date(datumString).toLocaleDateString('hr-HR', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'

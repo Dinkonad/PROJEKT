@@ -1,7 +1,7 @@
 
 <template>
   <div class="oprema stranica">
-    <AZaglavljeStranice naslov="Oprema">
+    <AZaglavljeStranice naslov="Oprema" novac>
       <button v-if="!ucitava" class="gumb-dodaj" @click="prikaziFormu = true" :disabled="sprema">
         <span class="material-icons">add</span> Dodaj opremu
       </button>
@@ -277,6 +277,7 @@
 </template>
 
 <script setup>
+import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase.js';
@@ -448,7 +449,7 @@ onMounted(() => {
 });
 
 const formatCurrency = (value) => {
-  return `${parseFloat(value).toFixed(2)} EUR`;
+  return prikaziNovac(`${parseFloat(value).toFixed(2)} EUR`);
 };
 
 const formatDatum = (dateString) => {

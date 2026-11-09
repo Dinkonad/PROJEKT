@@ -1,7 +1,10 @@
 <template>
   <header class="stranica-zaglavlje">
     <div class="zaglavlje-tekst">
-      <h1 class="naslov">{{ naslov }}</h1>
+      <div class="naslov-red">
+        <h1 class="naslov">{{ naslov }}</h1>
+        <ASakrijNovac v-if="novac" />
+      </div>
       <p v-if="podnaslov" class="podnaslov">{{ podnaslov }}</p>
     </div>
     <div v-if="$slots.default" class="zaglavlje-radnje">
@@ -11,8 +14,12 @@
 </template>
 
 <script setup>
+import ASakrijNovac from './ASakrijNovac.vue';
+
 defineProps({
   naslov: { type: String, required: true },
+  // stranica prikazuje novac -> pokaži ikonu za sakrivanje iznosa uz naslov
+  novac: { type: Boolean, default: false },
   podnaslov: { type: String, default: '' }
 });
 </script>
@@ -31,6 +38,12 @@ defineProps({
 
 .zaglavlje-tekst {
   min-width: 0;
+}
+
+.naslov-red {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .naslov {

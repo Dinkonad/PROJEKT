@@ -101,6 +101,21 @@ export async function osvjeziYoutube(puno = false) {
   }
 }
 
+// Google u "Testing" načinu ukida vezu nakon 7 dana; backend upisuje rok u status.istjeceU
+// (nema roka ako je OAuth aplikacija objavljena). Stanje: ok | uskoro | istekla | bezRoka | nepovezano
+export const ytVeza = computed(() => {
+  const s = yt.status;
+  if (!s) return { stanje: 'nepovezano' };
+  if (s.istekla) return { stanje: 'istekla' };
+  if (!s.povezano) return { stanje: 'nepovezano' };
+  if (!s.istjeceU) return { stanje: 'bezRoka' };
+  const ostalo = new Date(s.istjeceU).getTime() - Date.now();
+  if (Number.isNaN(ostalo)) return { stanje: 'bezRoka' };
+  if (ostalo <= 0) return { stanje: 'istekla' };
+  const danaDo = Math.ceil(ostalo / 86400000);
+  return { stanje: danaDo <= 2 ? 'uskoro' : 'ok', danaDo };
+});
+
 export async function poveziYoutube() {
   yt.povezuje = true;
   yt.greska = '';

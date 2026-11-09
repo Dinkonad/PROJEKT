@@ -1,6 +1,6 @@
 <template>
   <div class="prihodi stranica">
-    <AZaglavljeStranice naslov="Prihodi">
+    <AZaglavljeStranice naslov="Prihodi" novac>
       <router-link v-if="!ucitava" to="/admin/karte" class="gumb-sekundarni">
           <span class="material-icons">map</span> Karta
         </router-link>
@@ -671,6 +671,7 @@
 </template>
 
 <script setup>
+import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase.js';
@@ -1161,7 +1162,7 @@ onMounted(() => {
 });
 
 const formatCurrency = (value) => {
-  return `${parseFloat(value).toFixed(2)} EUR`;
+  return prikaziNovac(`${parseFloat(value).toFixed(2)} EUR`);
 };
 
 const formatDatum = (dateString) => {

@@ -21,6 +21,29 @@
       </button>
     </div>
 
+    <!-- ==================== UPOZORENJE: VEZA S YOUTUBEOM ISTJEČE / JE ISTEKLA ==================== -->
+    <div
+      v-if="ytVeza.stanje === 'uskoro' || ytVeza.stanje === 'istekla'"
+      class="veza-upozorenje"
+      :class="{ istekla: ytVeza.stanje === 'istekla' }"
+      role="alert"
+    >
+      <span class="material-icons">{{ ytVeza.stanje === 'istekla' ? 'link_off' : 'schedule' }}</span>
+      <div class="veza-tekst">
+        <strong v-if="ytVeza.stanje === 'istekla'">Veza s YouTubeom je istekla</strong>
+        <strong v-else>Veza s YouTubeom ističe {{ ytVeza.danaDo <= 1 ? 'sutra' : `za ${ytVeza.danaDo} dana` }}</strong>
+        <span>
+          Google tako ograničava aplikacije u testnom načinu. Poveži ponovno (traje par sekundi)
+          <template v-if="ytVeza.stanje === 'istekla'"> - podaci se nadoknade, ništa se ne gubi.</template>
+          <template v-else> da osvježavanje ne stane.</template>
+        </span>
+      </div>
+      <button class="gumb-primarni" :disabled="yt.povezuje" @click="poveziYoutube">
+        <span class="material-icons">{{ yt.povezuje ? 'sync' : 'link' }}</span>
+        {{ yt.povezuje ? 'Otvaram Google...' : 'Poveži ponovno' }}
+      </button>
+    </div>
+
     <!-- ==================== ZAJEDNIČKI PREGLED ==================== -->
     <div v-show="tab === 'pregled'">
       <div class="hero">
@@ -136,8 +159,10 @@ import {
   ukupno,
   udjeliPregleda,
   yt,
+  ytVeza,
   ucitajYoutube,
-  osvjeziYoutube
+  osvjeziYoutube,
+  poveziYoutube
 } from '@/store/mreze.js';
 
 const route = useRoute();
@@ -500,6 +525,59 @@ h2 {
 
   .platforme {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ==================== UPOZORENJE O VEZI ==================== */
+.veza-upozorenje {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-section);
+  padding: var(--space-4);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent-soft);
+  border-radius: var(--radius-small);
+  box-shadow: var(--glass-shadow);
+}
+
+.veza-upozorenje.istekla {
+  border-left-color: var(--danger);
+}
+
+.veza-upozorenje > .material-icons {
+  flex-shrink: 0;
+  font-size: 26px;
+  color: var(--accent-soft);
+}
+
+.veza-upozorenje.istekla > .material-icons {
+  color: var(--danger);
+}
+
+.veza-tekst {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.88rem;
+  color: var(--text-body);
+}
+
+.veza-tekst strong {
+  font-size: 0.98rem;
+  color: var(--text-heading);
+}
+
+@media (max-width: 768px) {
+  .veza-upozorenje {
+    flex-wrap: wrap;
+  }
+
+  .veza-upozorenje .gumb-primarni {
+    flex: 1 1 100%;
   }
 }
 </style>

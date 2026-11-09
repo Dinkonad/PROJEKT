@@ -1,6 +1,6 @@
 <template>
   <div class="auto stranica">
-    <AZaglavljeStranice naslov="Auto">
+    <AZaglavljeStranice naslov="Auto" novac>
       <button class="gumb-dodaj" @click="otvoriModalUnos()">
           <span class="material-icons">add</span> Dodaj unos
         </button>
@@ -72,7 +72,7 @@
               <div class="ikona"><span class="material-icons">payments</span></div>
               <div class="podaci">
                 <h3>Trošak po kilometru</h3>
-                <p class="iznos">{{ statistikaGoriva.trosakPoKm !== null ? `${formatBroj(statistikaGoriva.trosakPoKm, 3)} €/km` : '-' }}</p>
+                <p class="iznos">{{ statistikaGoriva.trosakPoKm !== null ? prikaziNovac(`${formatBroj(statistikaGoriva.trosakPoKm, 3)} €/km`) : '-' }}</p>
               </div>
             </div>
             <div class="kartica">
@@ -153,14 +153,14 @@
                 <span v-if="izracunZa(o).prvi">(prvi unos: cijeli brojač)</span>
                 <span v-else>({{ izracunZa(o).prethodniBrojac }} → {{ o.brojacLitara }})</span>
                 <template v-if="izracunZa(o).trosak !== null">
-                  × {{ o.cijenaPoLitri }} € = <strong>{{ formatCurrency(izracunZa(o).trosak) }}</strong>
+                  × {{ prikaziNovac(`${o.cijenaPoLitri} €`) }} = <strong>{{ formatCurrency(izracunZa(o).trosak) }}</strong>
                 </template>
                 <span v-if="potrosnjaOcitanja(o) !== null" class="redak-potrosnja">{{ potrosnjaOcitanja(o).toFixed(1) }} L/100km</span>
               </template>
             </div>
             <div v-else-if="trosakGorivaOcitanja(o) !== null" class="ocitanje-gorivo">
               <span class="material-icons">local_gas_station</span>
-              {{ formatCurrency(trosakGorivaOcitanja(o)) }} ({{ o.litreGoriva }} L × {{ o.cijenaPoLitri }} €)
+              {{ formatCurrency(trosakGorivaOcitanja(o)) }} ({{ o.litreGoriva }} L × {{ prikaziNovac(`${o.cijenaPoLitri} €`) }})
               <span v-if="potrosnjaOcitanja(o) !== null" class="redak-potrosnja">{{ potrosnjaOcitanja(o).toFixed(1) }} L/100km</span>
             </div>
           </div>
@@ -344,11 +344,11 @@
               </span>
               <span v-else-if="pregledNovog.prvi">
                 Prvi unos: cijeli brojač {{ formaKm.brojacLitara }} L
-                <template v-if="pregledNovog.trosak !== null"> × {{ formaKm.cijenaPoLitri }} € = {{ formatCurrency(pregledNovog.trosak) }}</template>
+                <template v-if="pregledNovog.trosak !== null"> × {{ prikaziNovac(`${formaKm.cijenaPoLitri} €`) }} = {{ formatCurrency(pregledNovog.trosak) }}</template>
               </span>
               <span v-else>
                 Potrošnja mjeseca: {{ formaKm.brojacLitara }} − {{ pregledNovog.prethodniBrojac }} = {{ formatLitre(pregledNovog.potroseno) }} L
-                <template v-if="pregledNovog.trosak !== null"> × {{ formaKm.cijenaPoLitri }} € = {{ formatCurrency(pregledNovog.trosak) }}</template>
+                <template v-if="pregledNovog.trosak !== null"> × {{ prikaziNovac(`${formaKm.cijenaPoLitri} €`) }} = {{ formatCurrency(pregledNovog.trosak) }}</template>
               </span>
               <span v-if="pregledLper100 !== null">
                 Prijeđeno {{ formaKm.kilometraza - pregledNovog.prethodniKm }} km, potrošnja {{ pregledLper100.toFixed(1) }} L/100km
@@ -403,6 +403,7 @@
 </template>
 
 <script setup>
+import { prikaziNovac } from '@/store/privatnost.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
@@ -429,7 +430,7 @@ function praznaForma() {
 }
 
 const nazivTipa = (tip) => ({ registracija: 'Registracija', servis: 'Servis', kilometraza: 'Gorivo' }[tip] || tip);
-const formatCurrency = (v) => `${(parseFloat(v) || 0).toFixed(2)} EUR`;
+const formatCurrency = (v) => prikaziNovac(`${(parseFloat(v) || 0).toFixed(2)} EUR`);
 const formatDatum = (datumString) => datumString ? new Date(datumString).toLocaleDateString('hr-HR') : '';
 
 const filtriraniUnosi = computed(() => {

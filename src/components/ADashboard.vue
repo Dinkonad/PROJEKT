@@ -99,6 +99,7 @@
           <template v-else>
             <div class="pozdrav-traka">
               <h1 class="naslov pozdrav-naslov">{{ pozdravTekst }}</h1>
+              <ASakrijNovac />
               <span class="pozdrav-datum">{{ danasnjiDatumTekst }}</span>
             </div>
 
@@ -315,6 +316,7 @@
 </template>
 
 <script setup>
+import { prikaziNovac } from '@/store/privatnost.js';
 import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -323,6 +325,7 @@ import { useTheme } from '../store/theme';
 import { db, auth } from '@/services/firebase.js';
 import { navStavke } from '@/config/navigacija.js';
 import ABottomNav from './ABottomNav.vue';
+import ASakrijNovac from './ASakrijNovac.vue';
 import { dohvatiRegistrirane, registrirajNoviCredential, ukloniCredential, jePodrzano } from '@/services/webauthn.js';
 import { spremiSigurnosnuKopiju, opisRezultata } from '@/services/backup.js';
 import {
@@ -809,7 +812,7 @@ const najcesciDanUTjednu = computed(() => {
 });
 
 const formatCurrency = (value) => {
-  return `${parseFloat(value || 0).toFixed(2)} EUR`;
+  return prikaziNovac(`${parseFloat(value || 0).toFixed(2)} EUR`);
 };
 
 const registrirajFaceId = async () => {

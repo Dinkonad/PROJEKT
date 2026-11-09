@@ -8,6 +8,7 @@
             Povezano s YouTubeom. Podaci se sami osvježavaju svaki dan i spremaju u bazu.
           </p>
           <p class="sitno">Zadnja sinkronizacija: <strong>{{ formatDatumVrijeme(yt.status?.zadnjaSinkronizacija) }}</strong></p>
+          <p v-if="yt.status?.istjeceU" class="sitno">Veza vrijedi do: <strong>{{ formatDatumVrijeme(yt.status.istjeceU) }}</strong></p>
         </template>
         <template v-else>
           <p v-if="yt.kanal">Veza s YouTubeom je prekinuta - prikazani su zadnji spremljeni podaci. Poveži ponovno da se nastave osvježavati.</p>
