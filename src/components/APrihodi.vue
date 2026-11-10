@@ -134,6 +134,24 @@
 
       <!-- Filteri za sortiranje -->
       <div v-if="!ucitava" class="filteri-okvir">
+        <div class="filter-grupa filter-pretraga">
+          <label for="prihodi-trazi">Traži:</label>
+          <div class="pretraga-polje">
+            <span class="material-icons pretraga-ikona" aria-hidden="true">search</span>
+            <input
+              id="prihodi-trazi"
+              v-model="pretraga"
+              type="search"
+              placeholder="Klijent, event, lokacija, suradnik, iznos..."
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+            <button v-if="pretraga" type="button" class="pretraga-ocisti" aria-label="Očisti pretragu" @click="pretraga = ''">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        </div>
+
         <div class="filter-grupa">
           <label for="godina-filter">Godina:</label>
           <select id="godina-filter" v-model="odabranaGodina" @change="resetirajMjesec">
@@ -150,7 +168,7 @@
           </select>
         </div>
 
-        <button class="gumb-reset" @click="resetirajFiltere" v-if="odabranaGodina || odabraniMjesec">
+        <button class="gumb-reset" @click="resetirajFiltere" v-if="odabranaGodina || odabraniMjesec || pretraga">
           <span class="material-icons">clear</span> Resetuj filtere
         </button>
       </div>
@@ -198,11 +216,12 @@
 
 
       <div v-if="!ucitava" class="tablica-okvir">
-        <div class="filter-info" v-if="odabranaGodina || odabraniMjesec">
+        <div class="filter-info" v-if="odabranaGodina || odabraniMjesec || pretraga.trim()">
           <span class="material-icons">filter_list</span>
           <span>Prikaz za:
             <strong v-if="odabranaGodina && odabraniMjesec">{{ nazviMjeseci[odabraniMjesec] }} {{ odabranaGodina }}</strong>
             <strong v-else-if="odabranaGodina">{{ odabranaGodina }}</strong>
+            <template v-if="pretraga.trim()"><template v-if="odabranaGodina"> · </template>pretraga <strong>"{{ pretraga.trim() }}"</strong></template>
           </span>
           <span class="rezultati-broj">({{ filtriraniPrihodi.length }} rezultata)</span>
         </div>
@@ -705,6 +724,7 @@ const uredivanjePrihod = ref(null);
 const aktivniTab = ref('prihodi'); // 'prihodi' | 'osobe'
 
 // Filtriranje
+const pretraga = ref('');
 const odabranaGodina = ref('');
 const odabraniMjesec = ref('');
 
@@ -901,8 +921,43 @@ const sakrijKlijentDropdownUredi = () => {
   }, 150);
 };
 
+// pretraga: ne razlikuje velika/mala slova ni č/ć/š/ž/đ; svaka upisana riječ mora biti početak neke riječi prihoda
+const normaliziraj = (t) => String(t ?? '').toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const razdvojiRijeci = (t) => normaliziraj(t).split(/[^a-z0-9]+/).filter(Boolean);
+
+const rijeciPrihoda = (prihod) => {
+  const poDatumu = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const mj = String(d.getMonth() + 1).padStart(2, '0');
+    return `${String(d.getDate()).padStart(2, '0')}.${mj}.${d.getFullYear()} ${nazviMjeseci[mj]} ${d.getFullYear()}`;
+  };
+  return razdvojiRijeci([
+    prihod.nazivEventa,
+    prihod.imeIPrezime,
+    suradniciZaPrihod(prihod).join(' '),
+    prihod.lokacija,
+    prihod.opisSnimanja,
+    poDatumu(prihod.datumSnimanja),
+    poDatumu(prihod.datumZavrsetak),
+    prihod.cijena,
+    prihod.putniTrosak,
+    prihod.danoBratu,
+    prihod.placeno ? 'placeno' : 'neplaceno'
+  ].filter(v => v !== undefined && v !== null).join(' '));
+};
+
 const filtriraniPrihodi = computed(() => {
   let filtrirani = [...prihodi.value];
+
+  const trazeneRijeci = razdvojiRijeci(pretraga.value);
+  if (trazeneRijeci.length) {
+    filtrirani = filtrirani.filter((prihod) => {
+      const rijeci = rijeciPrihoda(prihod);
+      return trazeneRijeci.every(t => rijeci.some(r => r.startsWith(t)));
+    });
+  }
 
   if (odabranaGodina.value) {
     filtrirani = filtrirani.filter(prihod => {
@@ -1152,6 +1207,7 @@ const resetirajMjesec = () => {
 const resetirajFiltere = () => {
   odabranaGodina.value = '';
   odabraniMjesec.value = '';
+  pretraga.value = '';
 };
 
 const odaberiMjesec = (mjesec) => {
@@ -1670,6 +1726,62 @@ onBeforeUnmount(odjaviOsvjezavanje);
   font-weight: 500;
   color: var(--text-heading);
   font-size: 14px;
+}
+
+.filter-pretraga {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.pretraga-polje {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pretraga-ikona {
+  position: absolute;
+  left: 12px;
+  font-size: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.pretraga-polje input {
+  width: 100%;
+  padding: 10px 44px 10px 42px;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-card);
+  color: var(--text-heading);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.pretraga-polje input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
+}
+
+.pretraga-ocisti {
+  position: absolute;
+  right: 4px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pretraga-ocisti .material-icons {
+  font-size: 20px;
 }
 
 .filter-grupa select {

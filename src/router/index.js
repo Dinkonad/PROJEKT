@@ -13,7 +13,7 @@ import AAuto from '../components/AAuto.vue';
 import AZdravlje from '../components/AZdravlje.vue';
 import aKarte from '../components/aKarte.vue';
 import aKorisnilinkovi from '../components/aKorisnilinkovi.vue';
-import aKreativnaideja from '../components/aKreativnaideja.vue';
+import ABiljeske from '../components/ABiljeske.vue';
 import AKalendar from '../components/AKalendar.vue';
 import AMreze from '../components/AMreze.vue';
 
@@ -87,10 +87,15 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
-        path: 'kreativna-zona',
-        name: 'KreativnaZona',
-        component: aKreativnaideja,
+        path: 'biljeske',
+        name: 'Biljeske',
+        component: ABiljeske,
         meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        // stari naziv stranice (Kreativna zona) - stari linkovi i prečaci i dalje rade
+        path: 'kreativna-zona',
+        redirect: '/admin/biljeske'
       },
       {
         path: 'kalendar',

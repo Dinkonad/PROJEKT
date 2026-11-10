@@ -42,6 +42,15 @@
             <p class="iznos">{{ formatCurrency(ukupnoZaradaMjesec) }}</p>
           </div>
         </div>
+        <div class="kartica zaradeno">
+          <div class="ikona"><span class="material-icons">savings</span></div>
+          <div class="podaci">
+            <h3>Zarađeno do sada</h3>
+            <p class="iznos">{{ formatCurrency(zaradenoDoSada.zarada) }}</p>
+            <span class="podnaslov">{{ formatSati(zaradenoDoSada.sati) }} od {{ formatSati(ukupnoSatiMjesec) }}</span>
+            <span v-if="danasCekaDo" class="podnaslov">današnji dan se pribraja nakon {{ danasCekaDo }}</span>
+          </div>
+        </div>
         <div class="kartica videa">
           <div class="ikona"><span class="material-icons">movie</span></div>
           <div class="podaci">
@@ -443,10 +452,42 @@ const mjesecKljuc = computed(() => {
   return `${g}-${m}`;
 });
 
+// "sada" se osvježava svakih 30 s i čim se vratiš u app (iPhone zaustavi sat dok je app u pozadini)
+const sada = ref(new Date());
+let satInterval = null;
+const osvjeziSada = () => { sada.value = new Date(); };
+
+// trenutak kad radni dan završava (rad preko ponoći završava idući dan)
+const krajUnosa = (u) => {
+  const [g, m, d] = u.datum.split('-').map(Number);
+  const [zh, zm] = u.zavrsnoVrijeme.split(':').map(Number);
+  const [ph, pm] = u.pocetnoVrijeme.split(':').map(Number);
+  const kraj = new Date(g, m - 1, d, zh, zm);
+  if (zh * 60 + zm <= ph * 60 + pm) kraj.setDate(kraj.getDate() + 1);
+  return kraj;
+};
+
 const unosiZaMjesec = computed(() => unosi.value.filter(u => u.datum && u.datum.startsWith(mjesecKljuc.value)));
 
 const ukupnoSatiMjesec = computed(() => unosiZaMjesec.value.reduce((s, u) => s + (u.satiRada || 0), 0));
 const ukupnoZaradaMjesec = computed(() => unosiZaMjesec.value.reduce((s, u) => s + (u.zarada || 0), 0));
+
+// zarađeno do ovog trenutka: samo radni dani koji su po rasporedu ZAVRŠENI (današnji se pribroji nakon kraja smjene)
+const zaradenoDoSada = computed(() => {
+  const gotovi = unosiZaMjesec.value.filter(u => krajUnosa(u) <= sada.value);
+  return {
+    zarada: gotovi.reduce((s, u) => s + (u.zarada || 0), 0),
+    sati: gotovi.reduce((s, u) => s + (u.satiRada || 0), 0)
+  };
+});
+
+// ako danas ima radni dan koji još traje: do kad čekamo da se pribroji
+const danasCekaDo = computed(() => {
+  const danas = uISO(sada.value);
+  const cekaju = unosiZaMjesec.value.filter(u => u.datum === danas && krajUnosa(u) > sada.value);
+  if (!cekaju.length) return null;
+  return cekaju.map(u => u.zavrsnoVrijeme).sort().pop();
+});
 
 const mjesecPrebacen = computed(() => !!prebacivanja.value[mjesecKljuc.value]);
 const mozePrebaciti = computed(() => unosiZaMjesec.value.length > 0 && !mjesecPrebacen.value);
@@ -578,6 +619,9 @@ const postaviRealtimeListenere = () => {
 };
 
 onMounted(async () => {
+  satInterval = setInterval(osvjeziSada, 30000);
+  document.addEventListener('visibilitychange', osvjeziSada);
+  window.addEventListener('focus', osvjeziSada);
   ucitava.value = true;
   await ucitajSatnicu();
   postaviRealtimeListenere();
@@ -585,6 +629,9 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  clearInterval(satInterval);
+  document.removeEventListener('visibilitychange', osvjeziSada);
+  window.removeEventListener('focus', osvjeziSada);
   if (unsubUnosi) unsubUnosi();
   if (unsubPrebacivanja) unsubPrebacivanja();
   if (unsubPredlosci) unsubPredlosci();
@@ -1888,11 +1935,6 @@ onBeforeUnmount(odjaviOsvjezavanje);
   .vp-redak {
     grid-template-columns: 78px 1fr 30px;
     gap: 8px;
-  }
-
-  /* treća kartica (videa) ide preko cijele širine, dvije gore ostaju u paru */
-  .kartica.videa {
-    grid-column: 1 / -1;
   }
 
   /* iOS zumira polja sa fontom manjim od 16px */
