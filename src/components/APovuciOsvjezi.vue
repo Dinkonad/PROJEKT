@@ -46,7 +46,7 @@ const unutarPrekrivaca = (cilj) => !!cilj.closest('.prekrivka-modala, .pozadina,
 const pocetak = (e) => {
   aktivno = false;
   odlucen = false;
-  if (osvjezava.value || e.touches.length !== 1 || element.scrollTop > 0 || unutarPrekrivaca(e.target)) return;
+  if (osvjezava.value || e.touches.length !== 1 || element.scrollTop > 0 || unutarPrekrivaca(e.target) || e.target.closest('.leaflet-container')) return;
   y0 = e.touches[0].clientY;
   x0 = e.touches[0].clientX;
   aktivno = true;

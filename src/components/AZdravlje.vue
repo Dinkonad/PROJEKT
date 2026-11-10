@@ -422,6 +422,9 @@
         </div>
       </div>
 
+      <!-- ==================== RUTE NA KARTI ==================== -->
+      <ZdravljeRute />
+
       <!-- ==================== AKTIVNOSTI PO KATEGORIJAMA ==================== -->
       <div v-for="kat in aktivnostiPoKategoriji" :key="kat.kljuc" class="sekcija">
         <div class="sekcija-zaglavlje"><h2>{{ kat.naziv }}</h2></div>
@@ -489,6 +492,7 @@
 <script setup>
 import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
+import ZdravljeRute from './zdravlje/ZdravljeRute.vue';
 import { obavijesti } from '@/services/obavijest.js';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db, auth } from '@/services/firebase.js';
