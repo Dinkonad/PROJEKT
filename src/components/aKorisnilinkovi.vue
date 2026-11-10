@@ -260,6 +260,23 @@
               Prečac napraviš jednom (oko 2 minute):
             </p>
 
+            <div class="dnevnik">
+              <span class="oznaka-polja">Zadnji pokušaji spremanja</span>
+              <p v-if="!dnevnik.length" class="mali">
+                Još nijedan pokušaj nije stigao na server. Ako si podijelio link preko prečaca, a ovdje nema ničega,
+                zahtjev uopće ne dolazi do servera (provjeri adresu u prečacu).
+              </p>
+              <ul v-else class="dnevnik-popis">
+                <li v-for="z in dnevnik" :key="z.id" :class="'dnevnik-' + z.ishod">
+                  <span class="material-icons" aria-hidden="true">{{ z.ishod === 'ok' ? 'check_circle' : z.ishod === 'duplikat' ? 'content_copy' : 'error_outline' }}</span>
+                  <div class="dnevnik-tekst">
+                    <span>{{ z.poruka }}</span>
+                    <small>{{ vrijemeZapisa(z) }} · {{ z.izvor === 'precac' ? 'prečac s mobitela' : 'app' }}<template v-if="z.ishod === 'greska' && z.primljeno"> · prečac je poslao: „{{ z.primljeno }}“</template></small>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
             <div class="kopiraj-blok">
               <span class="oznaka-polja">1. Adresa</span>
               <div class="kopiraj-red">
@@ -307,8 +324,9 @@
               </li>
               <li>Dodaj radnju <strong>Prikaži obavijest</strong> i u nju stavi tu vrijednost (varijabla <strong>Vrijednost rječnika</strong>).</li>
               <li>
-                Dodirni ikonu <strong>i</strong> (postavke prečaca) i uključi prikaz prečaca u izborniku za dijeljenje
-                (na engleskom <em>Show in Share Sheet</em>). Kao vrstu ulaznog podatka ostavi samo <strong>URL-ove</strong> i <strong>Tekst</strong>.
+                Dodirni ikonu <strong>i</strong> (postavke prečaca) i uključi <strong>Prikaži u listi za dijeljenje</strong>.
+                Vrste ulaznih podataka <strong>ne ograničavaj</strong> (ostavi sve): Instagram ponekad šalje link kao vrstu koju
+                iPhone ne računa kao običan URL, pa bi se prečac sakrio.
               </li>
               <li>
                 Probaj: u Instagramu otvori bilo koji reel → <strong>Dijeli</strong> (avion) → povuci red s radnjama do kraja →
@@ -317,7 +335,9 @@
             </ol>
 
             <p class="mali">
-              Savjet: u izborniku za dijeljenje dodirni <strong>Uredi radnje</strong> i prikvači „Spremi u Nagy“ na vrh pa je uvijek pri ruci.
+              Gdje ga naći: u izborniku Dijeli prečaci nisu u redu s aplikacijama, nego u donjem redu s radnjama (Kopiraj…).
+              Dodirni <strong>Prikaži više</strong>, pomakni se do kraja i dodirni <strong>Uredi radnje</strong>, pa u popisu
+              uključi „Spremi u nagy“ i dodaj ga u <strong>Omiljeno</strong> da bude odmah vidljiv.
               Prvo spremanje nakon duže pauze može potrajati do minute jer se server budi.
             </p>
             <p class="mali">
@@ -350,12 +370,12 @@
 // Linkovi: spremljeni videi/linkovi s Instagrama, Facebooka, TikToka, YouTubea...
 // Dodaju se (1) zalijepljenim linkom ovdje ili (2) jednim dodirom iz drugih aplikacija (iOS Prečac -> backend).
 // Backend dohvati naslov, autora i sličicu; ovdje se samo prikazuje, pretražuje i uređuje.
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
 import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { db } from '@/services/firebase.js';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { adresaSpremanja, spremiLinkNaServeru, dohvatiKljucPrecaca, noviKljucPrecaca } from '@/services/linkovi.js';
 
 const PLATFORME = {
@@ -742,6 +762,38 @@ const kopiraj = async (naziv, tekst) => {
   kopiranoTimer = setTimeout(() => { kopirano.value = ''; }, 1800);
 };
 
+// ---------- dnevnik pokušaja (što je stiglo na server) ----------
+const dnevnik = ref([]);
+let odjavaDnevnika = null;
+
+const vrijemeZapisa = (z) => {
+  const ms = uMs(z.vrijeme);
+  if (!ms) return '';
+  const d = new Date(ms);
+  const sada = new Date();
+  const sat = `${dvije(d.getHours())}:${dvije(d.getMinutes())}`;
+  return d.toDateString() === sada.toDateString() ? `danas ${sat}` : `${dvije(d.getDate())}.${dvije(d.getMonth() + 1)}. ${sat}`;
+};
+
+const zaustaviDnevnik = () => {
+  if (odjavaDnevnika) odjavaDnevnika();
+  odjavaDnevnika = null;
+};
+
+watch(postavljanjeOtvoreno, (otvoreno) => {
+  zaustaviDnevnik();
+  if (!otvoreno) return;
+  odjavaDnevnika = onSnapshot(
+    query(collection(db, 'linkovi-dnevnik'), orderBy('vrijeme', 'desc'), limit(8)),
+    (snimka) => {
+      const lista = [];
+      snimka.forEach((d) => lista.push({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }));
+      dnevnik.value = lista;
+    },
+    (greska) => console.error('Dnevnik linkova se ne može učitati:', greska)
+  );
+});
+
 // ---------- životni ciklus ----------
 const naTipku = (e) => {
   if (e.key !== 'Escape') return;
@@ -759,6 +811,7 @@ const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { pokreniSlusanje(); 
 
 onBeforeUnmount(() => {
   odjaviOsvjezavanje();
+  zaustaviDnevnik();
   if (odjavaSnimke) odjavaSnimke();
   clearTimeout(porukaTimer);
   clearTimeout(kopiranoTimer);
@@ -1470,6 +1523,63 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
   color: var(--text-heading);
   user-select: all;
+}
+
+.dnevnik {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
+  background-color: var(--bg-card-muted);
+}
+
+.dnevnik-popis {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dnevnik-popis li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.dnevnik-popis .material-icons {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.dnevnik-ok .material-icons {
+  color: var(--success);
+}
+
+.dnevnik-duplikat .material-icons {
+  color: var(--text-muted);
+}
+
+.dnevnik-greska .material-icons,
+.dnevnik-greska .dnevnik-tekst > span {
+  color: var(--danger);
+}
+
+.dnevnik-tekst {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+
+.dnevnik-tekst small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .mali {
