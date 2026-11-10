@@ -1,148 +1,344 @@
 <template>
   <div class="stranica">
-    <div class="sadrzaj">
-      <AZaglavljeStranice naslov="Linkovi" />
-      <div class="pretraga-sekcija">
-        <input autocomplete="off" 
-          v-model="pretraga"
-          type="text" 
-          placeholder="🔍 Pretražite linkove po nazivu ili URL-u..."
-          class="pretraga-input"
-        />
-      </div>
+    <AZaglavljeStranice naslov="Linkovi" :podnaslov="podnaslov">
+      <button type="button" class="gumb-sekundarni" @click="otvoriPostavljanje">
+        <span class="material-icons" aria-hidden="true">ios_share</span>Spremanje s mobitela
+      </button>
+    </AZaglavljeStranice>
 
-      <div class="dodaj-sekcija">
-        <div class="forma">
-          <input autocomplete="off" 
-            v-model="noviLink.url"
-            type="text" 
-            placeholder="Zalijepite link ovdje..."
-            class="url-unos"
-            @keyup.enter="spremi"
-            @input="debounceUcitajPodatke"
+    <!-- dodavanje: zalijepi cijelu poruku s linkom, backend sam izvuče link, naslov i sličicu -->
+    <section class="dodaj">
+      <div class="dodaj-red">
+        <div class="polje-link">
+          <span class="material-icons polje-ikona" aria-hidden="true">link</span>
+          <input
+            v-model="unos"
+            type="text"
+            inputmode="url"
+            class="unos-link"
+            placeholder="Zalijepi link ili poruku s linkom"
+            aria-label="Link za spremanje"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            :disabled="sprema"
+            @keydown.enter.prevent="spremiUnos"
           />
-          
-          <input autocomplete="off" 
-            v-if="trebaNaziv"
-            v-model="noviLink.naziv"
-            type="text" 
-            placeholder="Naziv"
-            class="naziv-unos"
-          />
-
-          <button @click="spremi" class="gumb-spremi" :disabled="!mozeSpremi || ucitava">
-            {{ ucitava ? 'Sprema...' : 'Spremi' }}
+        </div>
+        <div class="dodaj-gumbi">
+          <button type="button" class="gumb-sekundarni" :disabled="sprema" @click="zalijepiISpremi">
+            <span class="material-icons" aria-hidden="true">content_paste</span>Zalijepi
+          </button>
+          <button type="button" class="gumb-dodaj" :disabled="sprema || !unos.trim()" @click="spremiUnos">
+            <span class="material-icons" aria-hidden="true">bookmark_add</span>{{ sprema ? 'Sprema...' : 'Spremi' }}
           </button>
         </div>
       </div>
 
-      <div class="lista">
-        <div v-if="ucitavaLinkove" class="ucitavanje">
-          <div class="poruka">
-            <p>Učitavaju se linkovi...</p>
-          </div>
+      <button type="button" class="vise-gumb" :aria-expanded="dodatno" @click="dodatno = !dodatno">
+        <span class="material-icons" aria-hidden="true">{{ dodatno ? 'expand_less' : 'add' }}</span>
+        Bilješka i oznake (nije obavezno)
+      </button>
+
+      <div v-if="dodatno" class="dodatno">
+        <textarea
+          v-model="novaBiljeska"
+          rows="2"
+          class="unos-biljeska"
+          placeholder="Što ti se sviđa na ovome? (npr. tranzicija na 0:07, glazba)"
+          aria-label="Bilješka uz link"
+        ></textarea>
+        <div class="oznake-uredi">
+          <span v-for="o in noveOznake" :key="o" class="oznaka oznaka-aktivna">
+            {{ o }}
+            <button type="button" :aria-label="`Ukloni oznaku ${o}`" @click="noveOznake = noveOznake.filter((x) => x !== o)">
+              <span class="material-icons" aria-hidden="true">close</span>
+            </button>
+          </span>
+          <input
+            v-model="novaOznaka"
+            type="text"
+            class="unos-oznaka"
+            placeholder="Nova oznaka + Enter"
+            aria-label="Nova oznaka"
+            maxlength="30"
+            @keydown="tipkaNoveOznake"
+          />
         </div>
-
-        <div v-else-if="linkovi.length === 0" class="prazno">
-          <div class="poruka">
-            <p>Nema spremljenih linkova</p>
-          </div>
-        </div>
-
-        <div v-else-if="filteredLinkovi.length === 0 && pretraga" class="nema-rezultata">
-          <div class="poruka">
-            <p>Nema rezultata za pretragu "{{ pretraga }}"</p>
-          </div>
-        </div>
-
-        <div v-else class="redovi">
-          <div 
-            v-for="link in filteredLinkovi" 
-            :key="link.id"
-            v-svajp
-            class="red"
-            :class="`tip-${link.tip}`"
-            @click="otvori(link.url)"
-          >
-            <div class="sadrzaj-reda">
-              <div class="slika">
-                <img 
-                  v-if="link.slika" 
-                  :src="link.slika" 
-                  :alt="link.naziv"
-                  @error="sakriSliku"
-                />
-                <div v-else class="zamjena">
-                  <span class="tekst">{{ dohvatiInitijale(link.tip) }}</span>
-                </div>
-              </div>
-
-              <div class="informacije">
-                <div class="vrh">
-                  <span class="oznaka" :class="`oznaka-${link.tip}`">
-                    {{ tipovi[link.tip] }}
-                  </span>
-                  <div class="datum">{{ formatirajDatum(link.datum) }}</div>
-                </div>
-
-                <h3 class="naziv" @click.stop="urediNaziv(link)" role="button" tabindex="0" @keydown.enter.stop.prevent="urediNaziv(link)">{{ link.naziv }}</h3>
-                <div class="url">{{ skratiUrl(link.url) }}</div>
-              </div>
-
-              <div class="akcije" data-svajp-akcije>
-                <button @click.stop="urediNaziv(link)" class="gumb-uredi" title="Uredi naziv">
-                  ✏️
-                </button>
-                <button @click.stop="pripremiZaBrisanje(link)" class="gumb-brisi">
-                  ×
-                </button>
-              </div>
-            </div>
-          </div>
+        <div v-if="predlozeneNove.length" class="oznake-prijedlozi">
+          <button v-for="o in predlozeneNove" :key="o" type="button" class="oznaka" @click="noveOznake.push(o)">+ {{ o }}</button>
         </div>
       </div>
+
+      <p v-if="poruka.tekst" class="poruka" :class="'poruka-' + poruka.vrsta" role="status" aria-live="polite">
+        <span class="material-icons" aria-hidden="true">{{ poruka.vrsta === 'ok' ? 'check_circle' : poruka.vrsta === 'greska' ? 'error_outline' : 'info' }}</span>
+        {{ poruka.tekst }}
+      </p>
+    </section>
+
+    <p v-if="ucitava" class="stanje">Učitavaju se linkovi...</p>
+    <p v-else-if="greskaUcitavanja" class="stanje stanje-greska">Linkovi se nisu mogli učitati. Provjeri internet pa povuci stranicu prema dolje.</p>
+
+    <div v-else-if="!linkovi.length" class="prazno">
+      <span class="material-icons prazno-ikona" aria-hidden="true">video_library</span>
+      <p class="prazno-naslov">Još nema spremljenih linkova</p>
+      <p class="prazno-opis">
+        Zalijepi prvi link gore, a još bolje: uključi spremanje jednim dodirom pa videe s Instagrama, Facebooka i TikToka
+        spremaš izravno iz tih aplikacija (Podijeli → Spremi u Nagy).
+      </p>
+      <button type="button" class="gumb-dodaj" @click="otvoriPostavljanje">
+        <span class="material-icons" aria-hidden="true">ios_share</span>Kako uključiti
+      </button>
     </div>
-    <Transition name="fade">
-      <div class="pozadina" v-if="uredba !== null" @click="uredba = null">
-        <div class="modal" role="dialog" aria-modal="true" @click.stop>
-          <div class="modal-zaglavlje">
-            <h2>Uredi naziv</h2>
-          </div>
-          <div class="modal-sadrzaj">
-            <input autocomplete="off" 
-              v-model="noviNaziv"
-              type="text" 
-              placeholder="Unesite novi naziv..."
-              class="naziv-input-modal"
-              @keyup.enter="spremiNaziv"
-              ref="nazivInput"
+
+    <template v-else>
+      <!-- filteri: platforma, oznaka, pretraga -->
+      <div class="tabovi" role="tablist" aria-label="Platforma">
+        <button type="button" class="tab" :class="{ aktivan: !odabranaPlatforma }" @click="odabranaPlatforma = ''">
+          Sve <span class="tab-broj">{{ linkovi.length }}</span>
+        </button>
+        <button
+          v-for="p in dostupnePlatforme"
+          :key="p.kljuc"
+          type="button"
+          class="tab"
+          :class="{ aktivan: odabranaPlatforma === p.kljuc }"
+          @click="odabranaPlatforma = odabranaPlatforma === p.kljuc ? '' : p.kljuc"
+        >
+          {{ p.naziv }} <span class="tab-broj">{{ p.broj }}</span>
+        </button>
+      </div>
+
+      <div class="pretraga-polje">
+        <span class="material-icons pretraga-ikona" aria-hidden="true">search</span>
+        <input v-model="pretraga" type="search" placeholder="Traži po naslovu, autoru, bilješci, oznaci..." aria-label="Traži linkove" autocomplete="off" enterkeyhint="search" />
+        <button v-if="pretraga" type="button" class="pretraga-ocisti" aria-label="Očisti pretragu" @click="pretraga = ''">
+          <span class="material-icons" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div v-if="sveOznake.length" class="oznake-filter" role="group" aria-label="Oznake">
+        <button
+          v-for="o in sveOznake"
+          :key="o.naziv"
+          type="button"
+          class="oznaka"
+          :class="{ 'oznaka-aktivna': odabranaOznaka === o.naziv }"
+          :aria-pressed="odabranaOznaka === o.naziv"
+          @click="odabranaOznaka = odabranaOznaka === o.naziv ? '' : o.naziv"
+        >
+          #{{ o.naziv }} <span class="oznaka-broj">{{ o.broj }}</span>
+        </button>
+      </div>
+
+      <p v-if="!prikazani.length" class="stanje">Nema linkova za ovaj odabir.</p>
+
+      <div v-else class="mreza">
+        <article
+          v-for="link in prikazani"
+          :key="link.id"
+          class="video"
+          role="link"
+          tabindex="0"
+          :aria-label="`Otvori: ${link.naziv}`"
+          @click="otvori(link)"
+          @keydown.enter.self.prevent="otvori(link)"
+        >
+          <div class="video-slika" :class="'tip-' + platforma(link)">
+            <img
+              v-if="link.slika && !slikaPala[link.id]"
+              :src="link.slika"
+              :alt="''"
+              loading="lazy"
+              decoding="async"
+              referrerpolicy="no-referrer"
+              @error="slikaPala[link.id] = true"
             />
-          </div>
-          <div class="modal-gumbovi">
-            <button class="gumb-odustani" @click="uredba = null">Odustani</button>
-            <button class="gumb-potvrdi" @click="spremiNaziv" :disabled="ucitava">
-              {{ ucitava ? 'Sprema...' : 'Spremi' }}
+            <div v-else class="video-zamjena" aria-hidden="true">
+              <span class="material-icons">play_circle</span>
+              <strong>{{ PLATFORME[platforma(link)].kratko }}</strong>
+            </div>
+            <span class="video-platforma">{{ PLATFORME[platforma(link)].naziv }}</span>
+            <button type="button" class="video-uredi" aria-label="Uredi" title="Uredi" @click.stop="uredi(link)">
+              <span class="material-icons" aria-hidden="true">edit</span>
             </button>
+          </div>
+          <div class="video-tijelo">
+            <h3 class="video-naziv">{{ link.naziv || 'Bez naslova' }}</h3>
+            <p v-if="link.autor" class="video-autor">{{ link.autor }}</p>
+            <p v-if="link.biljeska" class="video-biljeska">{{ link.biljeska }}</p>
+            <div v-if="link.oznake && link.oznake.length" class="video-oznake">
+              <span v-for="o in link.oznake" :key="o" class="oznaka oznaka-mala">#{{ o }}</span>
+            </div>
+            <span class="video-datum">{{ kratkiDatum(link) }}</span>
+          </div>
+        </article>
+      </div>
+    </template>
+
+    <!-- uređivanje -->
+    <Transition name="fade">
+      <div v-if="ur" class="pozadina" @mousedown.self="zatvoriUredivanje">
+        <div class="prozor" role="dialog" aria-modal="true" aria-label="Uredi link">
+          <div class="prozor-zaglavlje">
+            <h2>Uredi link</h2>
+            <button type="button" class="ikona-gumb" aria-label="Zatvori" @click="zatvoriUredivanje">
+              <span class="material-icons" aria-hidden="true">close</span>
+            </button>
+          </div>
+          <div class="prozor-tijelo">
+            <label class="oznaka-polja" for="ur-naziv">Naslov</label>
+            <input id="ur-naziv" v-model="ur.naziv" type="text" class="unos" maxlength="200" autocomplete="off" />
+
+            <label class="oznaka-polja" for="ur-biljeska">Bilješka</label>
+            <textarea id="ur-biljeska" v-model="ur.biljeska" rows="4" class="unos" placeholder="Što ti se sviđa na ovome?"></textarea>
+
+            <span class="oznaka-polja">Oznake</span>
+            <div class="oznake-uredi">
+              <span v-for="o in ur.oznake" :key="o" class="oznaka oznaka-aktivna">
+                {{ o }}
+                <button type="button" :aria-label="`Ukloni oznaku ${o}`" @click="ur.oznake = ur.oznake.filter((x) => x !== o)">
+                  <span class="material-icons" aria-hidden="true">close</span>
+                </button>
+              </span>
+              <input
+                v-model="urOznaka"
+                type="text"
+                class="unos-oznaka"
+                placeholder="Nova oznaka + Enter"
+                aria-label="Nova oznaka"
+                maxlength="30"
+                @keydown="tipkaUrOznake"
+              />
+            </div>
+            <div v-if="predlozeneUr.length" class="oznake-prijedlozi">
+              <button v-for="o in predlozeneUr" :key="o" type="button" class="oznaka" @click="ur.oznake.push(o)">+ {{ o }}</button>
+            </div>
+
+            <a class="izvor" :href="ur.url" target="_blank" rel="noopener noreferrer">
+              <span class="material-icons" aria-hidden="true">open_in_new</span>
+              <span class="izvor-tekst">{{ skratiUrl(ur.url) }}</span>
+            </a>
+          </div>
+
+          <div v-if="!potvrdaBrisanja" class="prozor-podnozje">
+            <button type="button" class="gumb-opasnost-tanki" @click="potvrdaBrisanja = true">
+              <span class="material-icons" aria-hidden="true">delete</span>Obriši
+            </button>
+            <div class="prozor-radnje">
+              <button type="button" class="gumb-sekundarni" @click="zatvoriUredivanje">Odustani</button>
+              <button type="button" class="gumb-primarni" :disabled="spremaUredbe" @click="spremiUredbe">
+                {{ spremaUredbe ? 'Sprema...' : 'Spremi' }}
+              </button>
+            </div>
+          </div>
+          <div v-else class="prozor-podnozje potvrda">
+            <span class="potvrda-tekst">Obrisati ovaj link? To se ne može poništiti.</span>
+            <div class="prozor-radnje">
+              <button type="button" class="gumb-sekundarni" @click="potvrdaBrisanja = false">Odustani</button>
+              <button type="button" class="gumb-opasnost" :disabled="spremaUredbe" @click="obrisiLink">Obriši</button>
+            </div>
           </div>
         </div>
       </div>
     </Transition>
 
+    <!-- spremanje s mobitela -->
     <Transition name="fade">
-      <div class="pozadina" v-if="brisanje !== null" @click="brisanje = null">
-        <div class="modal" role="dialog" aria-modal="true" @click.stop>
-          <div class="modal-zaglavlje">
-            <h2>Potvrda brisanja</h2>
-          </div>
-          <div class="modal-sadrzaj">
-            <span class="upozorenje">⚠</span>
-            <p>Jeste li sigurni da želite obrisati ovaj link?</p>
-          </div>
-          <div class="modal-gumbovi">
-            <button class="gumb-odustani" @click="brisanje = null">Odustani</button>
-            <button class="gumb-potvrdi" @click="obrisi" :disabled="ucitava">
-              {{ ucitava ? 'Briše...' : 'Potvrdi' }}
+      <div v-if="postavljanjeOtvoreno" class="pozadina" @mousedown.self="postavljanjeOtvoreno = false">
+        <div class="prozor prozor-siroki" role="dialog" aria-modal="true" aria-label="Spremanje s mobitela">
+          <div class="prozor-zaglavlje">
+            <h2>Spremanje s mobitela</h2>
+            <button type="button" class="ikona-gumb" aria-label="Zatvori" @click="postavljanjeOtvoreno = false">
+              <span class="material-icons" aria-hidden="true">close</span>
             </button>
+          </div>
+          <div class="prozor-tijelo">
+            <p class="uvod">
+              Na Instagramu, Facebooku, TikToku ili YouTubeu dodirni <strong>Podijeli</strong>, odaberi
+              <strong>„Spremi u Nagy“</strong> i video je spremljen sa sličicom i naslovom, bez otvaranja ove aplikacije.
+              Prečac napraviš jednom (oko 2 minute):
+            </p>
+
+            <div class="kopiraj-blok">
+              <span class="oznaka-polja">1. Adresa</span>
+              <div class="kopiraj-red">
+                <code class="kopiraj-vrijednost">{{ adresa || 'Backend adresa nije postavljena' }}</code>
+                <button type="button" class="gumb-sekundarni" :disabled="!adresa" @click="kopiraj('adresa', adresa)">
+                  {{ kopirano === 'adresa' ? 'Kopirano ✓' : 'Kopiraj' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="kopiraj-blok">
+              <span class="oznaka-polja">2. Tajni ključ</span>
+              <p v-if="kljucUcitava" class="mali">Učitavam ključ (server se možda budi, do minute)...</p>
+              <p v-else-if="kljucGreska" class="mali mali-greska">{{ kljucGreska }}</p>
+              <div v-else class="kopiraj-red">
+                <code class="kopiraj-vrijednost">{{ kljucPrikazan ? kljuc : '••••••••••••••••••••••••' }}</code>
+                <button type="button" class="gumb-sekundarni" @click="kljucPrikazan = !kljucPrikazan">{{ kljucPrikazan ? 'Sakrij' : 'Prikaži' }}</button>
+                <button type="button" class="gumb-sekundarni" :disabled="!kljuc" @click="kopiraj('kljuc', kljuc)">
+                  {{ kopirano === 'kljuc' ? 'Kopirano ✓' : 'Kopiraj' }}
+                </button>
+              </div>
+              <p class="mali">Ključ je lozinka tvog prečaca. Nikome ga ne šalji.</p>
+            </div>
+
+            <ol class="koraci">
+              <li>Otvori aplikaciju <strong>Prečaci</strong> na iPhoneu, dodirni <strong>+</strong> i nazovi prečac <strong>Spremi u Nagy</strong>.</li>
+              <li>
+                Dodaj radnju <strong>Dohvati sadržaj URL-a</strong> (u tražilici radnji upiši <em>URL</em>). U polje URL zalijepi
+                <em>adresu</em> odozgo.
+              </li>
+              <li>
+                Dodirni <strong>Prikaži više</strong> uz tu radnju. Metodu postavi na <strong>POST</strong>. Kad se pojavi
+                <strong>Tijelo zahtjeva</strong> (ili „Zatraži tijelo“), odaberi <strong>JSON</strong>.
+              </li>
+              <li>
+                Dodaj dva polja u tijelo zahtjeva (opcija <strong>Dodaj novo polje</strong>, vrsta <strong>Tekst</strong>):
+                <ul>
+                  <li>ključ <code>url</code>, vrijednost: dodirni polje i odaberi <strong>Ulazni podatak prečaca</strong></li>
+                  <li>ključ <code>kljuc</code>, vrijednost: zalijepi <em>tajni ključ</em> odozgo</li>
+                </ul>
+              </li>
+              <li>
+                Dodaj radnju <strong>Dohvati vrijednost rječnika</strong>: vrijednost za ključ <code>poruka</code>, iz
+                <strong>Sadržaja URL-a</strong> (rezultat prethodne radnje).
+              </li>
+              <li>Dodaj radnju <strong>Prikaži obavijest</strong> i u nju stavi tu vrijednost (varijabla <strong>Vrijednost rječnika</strong>).</li>
+              <li>
+                Dodirni ikonu <strong>i</strong> (postavke prečaca) i uključi prikaz prečaca u izborniku za dijeljenje
+                (na engleskom <em>Show in Share Sheet</em>). Kao vrstu ulaznog podatka ostavi samo <strong>URL-ove</strong> i <strong>Tekst</strong>.
+              </li>
+              <li>
+                Probaj: u Instagramu otvori bilo koji reel → <strong>Dijeli</strong> (avion) → povuci red s radnjama do kraja →
+                <strong>Spremi u Nagy</strong>. Trebala bi stići obavijest „Spremljeno (Instagram): …“.
+              </li>
+            </ol>
+
+            <p class="mali">
+              Savjet: u izborniku za dijeljenje dodirni <strong>Uredi radnje</strong> i prikvači „Spremi u Nagy“ na vrh pa je uvijek pri ruci.
+              Prvo spremanje nakon duže pauze može potrajati do minute jer se server budi.
+            </p>
+            <p class="mali">
+              Što se sprema: link, naslov, autor i malena kopija sličice. Instagram i Facebook ponekad ne daju naslov ili sličicu;
+              tada se link ipak spremi, a naslov i sličicu možeš dopisati ovdje u appu (olovka na kartici).
+            </p>
+
+            <div class="novi-kljuc">
+              <template v-if="!potvrdaNovogKljuca">
+                <button type="button" class="gumb-sekundarni" :disabled="kljucUcitava || !kljuc" @click="potvrdaNovogKljuca = true">
+                  <span class="material-icons" aria-hidden="true">autorenew</span>Napravi novi ključ
+                </button>
+              </template>
+              <template v-else>
+                <span class="potvrda-tekst">Stari prečac prestaje raditi dok ne upišeš novi ključ.</span>
+                <div class="prozor-radnje">
+                  <button type="button" class="gumb-sekundarni" @click="potvrdaNovogKljuca = false">Odustani</button>
+                  <button type="button" class="gumb-opasnost" @click="napraviNoviKljuc">Napravi novi</button>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -151,859 +347,1252 @@
 </template>
 
 <script setup>
-import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
+// Linkovi: spremljeni videi/linkovi s Instagrama, Facebooka, TikToka, YouTubea...
+// Dodaju se (1) zalijepljenim linkom ovdje ili (2) jednim dodirom iz drugih aplikacija (iOS Prečac -> backend).
+// Backend dohvati naslov, autora i sličicu; ovdje se samo prikazuje, pretražuje i uređuje.
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { obavijesti } from '@/services/obavijest.js';
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
+import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { db } from '@/services/firebase.js';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  orderBy, 
-  query,
-  serverTimestamp 
-} from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { adresaSpremanja, spremiLinkNaServeru, dohvatiKljucPrecaca, noviKljucPrecaca } from '@/services/linkovi.js';
+
+const PLATFORME = {
+  instagram: { naziv: 'Instagram', kratko: 'IG' },
+  tiktok: { naziv: 'TikTok', kratko: 'TT' },
+  facebook: { naziv: 'Facebook', kratko: 'FB' },
+  'youtube-video': { naziv: 'YouTube', kratko: 'YT' },
+  x: { naziv: 'X', kratko: 'X' },
+  pinterest: { naziv: 'Pinterest', kratko: 'P' },
+  ostalo: { naziv: 'Web', kratko: 'WWW' }
+};
+const REDOSLIJED_PLATFORMI = ['instagram', 'facebook', 'tiktok', 'youtube-video', 'x', 'pinterest', 'ostalo'];
+const PREDLOZENE_OZNAKE = ['Reel ideja', 'Tranzicija', 'Glazba', 'Kadar', 'Montaža', 'Naslov i tekst'];
+
+const platforma = (l) => (PLATFORME[l.tip] ? l.tip : 'ostalo');
 
 const linkovi = ref([]);
-const brisanje = ref(null);
-const uredba = ref(null);
-const noviNaziv = ref('');
-const pretraga = ref('');
-const debounceTimer = ref(null);
-const ucitava = ref(false);
-const ucitavaLinkove = ref(true);
-const noviLink = ref({
-  url: '',
-  tip: '',
-  naziv: '',
-  slika: null
-});
+const ucitava = ref(true);
+const greskaUcitavanja = ref(false);
+const slikaPala = ref({});
 
-const tipovi = {
-  'youtube-video': 'YouTube Video',
-  'instagram': 'Instagram',
-  'tiktok': 'TikTok',
-  'ostalo': 'Ostalo'
+// ---------- dodavanje ----------
+const unos = ref('');
+const sprema = ref(false);
+const dodatno = ref(false);
+const novaBiljeska = ref('');
+const noveOznake = ref([]);
+const novaOznaka = ref('');
+const poruka = ref({ vrsta: '', tekst: '' });
+let porukaTimer = null;
+
+const postaviPoruku = (vrsta, tekst, nestajeZa = 0) => {
+  clearTimeout(porukaTimer);
+  poruka.value = { vrsta, tekst };
+  if (nestajeZa) porukaTimer = setTimeout(() => { poruka.value = { vrsta: '', tekst: '' }; }, nestajeZa);
 };
 
-const filteredLinkovi = computed(() => {
-  if (!pretraga.value) return linkovi.value;
-  
-  const termin = pretraga.value.toLowerCase();
-  return linkovi.value.filter(link => 
-    link.naziv.toLowerCase().includes(termin) ||
-    link.url.toLowerCase().includes(termin)
-  );
-});
+const ocistiOznaku = (t) => String(t || '').replace(/\s+/g, ' ').trim().replace(/^#+/, '').slice(0, 30);
 
-const trebaNaziv = computed(() => {
-  return noviLink.value.tip === 'instagram';
-});
-
-const mozeSpremi = computed(() => {
-  if (!noviLink.value.url || !noviLink.value.tip) return false;
-  
-  if (noviLink.value.tip === 'instagram') {
-    return noviLink.value.naziv && noviLink.value.naziv.trim().length >= 2;
+// zarez/točka-zarez razdvaja oznake (i kad tipkovnica ne javi tipku, npr. neke Android tipkovnice)
+const dodajOznaku = (lista, tekst) => {
+  let dodano = false;
+  for (const dio of String(tekst || '').split(/[,;]/)) {
+    const o = ocistiOznaku(dio);
+    if (!o || lista.length >= 12 || lista.some((x) => x.toLowerCase() === o.toLowerCase())) continue;
+    lista.push(o);
+    dodano = true;
   }
-  
-  return true;
-});
+  return dodano;
+};
+
+const dodajNovuOznaku = () => {
+  dodajOznaku(noveOznake.value, novaOznaka.value);
+  novaOznaka.value = '';
+};
+
+// Enter ili zarez dodaje oznaku
+const tipkaNoveOznake = (e) => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    dodajNovuOznaku();
+  }
+};
+
+const izvuciUrl = (tekst) => {
+  const m = String(tekst || '').match(/https?:\/\/[^\s<>"']+/i);
+  if (m) return m[0].replace(/[.,;:!?)\]}'"]+$/, '');
+  const t = String(tekst || '').trim();
+  return /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(t) ? `https://${t}` : null;
+};
 
 const prepoznajTip = (url) => {
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    return 'youtube-video';
-  }
-  if (url.includes('instagram.com')) {
-    return 'instagram';
-  }
-  if (url.includes('tiktok.com')) {
-    return 'tiktok';
-  }
+  let host = '';
+  try { host = new URL(url).hostname.toLowerCase(); } catch { return 'ostalo'; }
+  const je = (...d) => d.some((x) => host === x || host.endsWith(`.${x}`));
+  if (je('youtube.com', 'youtu.be')) return 'youtube-video';
+  if (je('instagram.com', 'instagr.am')) return 'instagram';
+  if (je('tiktok.com')) return 'tiktok';
+  if (je('facebook.com', 'fb.com', 'fb.watch')) return 'facebook';
+  if (je('x.com', 'twitter.com', 't.co')) return 'x';
+  if (je('pinterest.com', 'pin.it')) return 'pinterest';
   return 'ostalo';
 };
 
-const izvuciYouTubeId = (url) => {
-  const regex = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const poklapanje = url.match(regex);
-  return (poklapanje && poklapanje[7].length == 11) ? poklapanje[7] : null;
-};
-
-const debounceUcitajPodatke = () => {
-  if (debounceTimer.value) {
-    clearTimeout(debounceTimer.value);
+const spremiUnos = async () => {
+  const tekst = unos.value.trim();
+  if (!tekst || sprema.value) return;
+  if (!izvuciUrl(tekst)) {
+    postaviPoruku('greska', 'U tekstu nema linka. Zalijepi adresu koja počinje s https://');
+    return;
   }
-  
-  debounceTimer.value = setTimeout(() => {
-    ucitajPodatke();
-  }, 1000);
-};
 
-const ucitajPodatke = async () => {
-  if (!noviLink.value.url) return;
-
-  const noviTip = prepoznajTip(noviLink.value.url);
-  
-  if (noviLink.value.tip !== noviTip) {
-    noviLink.value.tip = noviTip;
-    noviLink.value.naziv = '';
-    noviLink.value.slika = null;
-  }
+  sprema.value = true;
+  postaviPoruku('info', 'Sprema se...');
+  const budenje = setTimeout(() => postaviPoruku('info', 'Server se budi, može potrajati do minute...'), 5000);
+  const biljeska = novaBiljeska.value.trim();
+  const oznake = [...noveOznake.value];
 
   try {
-    if (noviLink.value.tip === 'youtube-video') {
-      const videoId = izvuciYouTubeId(noviLink.value.url);
-      if (videoId) {
-        try {
-          const odgovor = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-          if (odgovor.ok) {
-            const podaci = await odgovor.json();
-            noviLink.value.slika = podaci.thumbnail_url;
-            noviLink.value.naziv = podaci.title;
-          } else {
-            noviLink.value.slika = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-            noviLink.value.naziv = 'YouTube Video';
-          }
-        } catch (greska) {
-          noviLink.value.slika = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-          noviLink.value.naziv = 'YouTube Video';
-        }
-      }
-    }
-    else if (noviLink.value.tip === 'instagram') {
+    const odgovor = await spremiLinkNaServeru({ url: tekst, biljeska, oznake });
+    postaviPoruku(odgovor.vec_postoji ? 'info' : 'ok', odgovor.poruka || 'Spremljeno.', 8000);
+    unos.value = '';
+    novaBiljeska.value = '';
+    noveOznake.value = [];
+    novaOznaka.value = '';
+  } catch (greska) {
+    const url = izvuciUrl(tekst);
+    if (greska.mrezna && url) {
+      // server nedostupan: link se ne smije izgubiti - spremi ga izravno, naslov i sličicu možeš dodati kasnije
       try {
-        const odgovor = await fetch(`https://api.instagram.com/oembed?url=${encodeURIComponent(noviLink.value.url)}`);
-        if (odgovor.ok) {
-          const podaci = await odgovor.json();
-          noviLink.value.slika = podaci.thumbnail_url;
-          if (podaci.title && !noviLink.value.naziv) {
-            noviLink.value.naziv = podaci.title;
-          }
-        }
-      } catch (greska) {
-        console.log('Instagram API nedostupan, korisnik će unijeti naziv ručno');
+        let host = url;
+        try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* ostaje cijeli url */ }
+        await addDoc(collection(db, 'linkovi'), {
+          url,
+          naziv: host,
+          tip: prepoznajTip(url),
+          slika: null,
+          autor: '',
+          opis: '',
+          biljeska,
+          oznake,
+          kljuc: null,
+          izvor: 'app-bez-servera',
+          pregled: false,
+          datum: serverTimestamp(),
+          izmijenjeno: serverTimestamp()
+        });
+        postaviPoruku('info', 'Server nije dostupan pa je link spremljen bez naslova i sličice. Naslov možeš dopisati olovkom na kartici.', 12000);
+        unos.value = '';
+        novaBiljeska.value = '';
+        noveOznake.value = [];
+      } catch (e2) {
+        console.error('Greška pri spremanju linka:', e2);
+        postaviPoruku('greska', 'Link nije spremljen. Pokušaj ponovno.');
       }
+    } else {
+      postaviPoruku('greska', greska.message || 'Link nije spremljen. Pokušaj ponovno.');
     }
-    else if (noviLink.value.tip === 'tiktok') {
-      try {
-        const odgovor = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(noviLink.value.url)}`);
-        if (odgovor.ok) {
-          const podaci = await odgovor.json();
-          noviLink.value.slika = podaci.thumbnail_url;
-          noviLink.value.naziv = podaci.title || 'TikTok Video';
-        } else {
-          noviLink.value.naziv = 'TikTok Video';
-        }
-      } catch (greska) {
-        noviLink.value.naziv = 'TikTok Video';
-      }
-    }
-    else {
-      const url = new URL(noviLink.value.url);
-      noviLink.value.naziv = url.hostname;
-    }
-  } catch (greska) {
-    console.error('Greška pri dohvaćanju podataka:', greska);
-    try {
-      const url = new URL(noviLink.value.url);
-      noviLink.value.naziv = url.hostname;
-    } catch {
-      noviLink.value.naziv = 'Link';
-    }
-  }
-};
-
-const sakriSliku = (event) => {
-  event.target.style.display = 'none';
-};
-
-const dohvatiInitijale = (tip) => {
-  switch(tip) {
-    case 'youtube-video': return 'YT';
-    case 'instagram': return 'IG';
-    case 'tiktok': return 'TT';
-    default: return '?';
-  }
-};
-
-const spremi = async () => {
-  if (!noviLink.value.url || !noviLink.value.tip || ucitava.value) {
-    return;
-  }
-
-  ucitava.value = true;
-
-  try {
-    const link = {
-      url: noviLink.value.url,
-      naziv: noviLink.value.naziv || 'Bez naziva',
-      tip: noviLink.value.tip,
-      slika: noviLink.value.slika,
-      datum: serverTimestamp()
-    };
-
-    const docRef = await addDoc(collection(db, 'linkovi'), link);
-    
-    const noviLinkLocal = {
-      id: docRef.id,
-      ...link,
-      datum: new Date()
-    };
-
-    linkovi.value.unshift(noviLinkLocal);
-    
-    noviLink.value = {
-      url: '',
-      tip: '',
-      naziv: '',
-      slika: null
-    };
-  } catch (greska) {
-    console.error('Greška pri spremanju:', greska);
-    obavijesti('Greška pri spremanju linka. Pokušajte ponovno.');
   } finally {
-    ucitava.value = false;
+    clearTimeout(budenje);
+    sprema.value = false;
   }
 };
 
-const otvori = (url) => {
-  window.open(url, '_blank');
-};
-
-const urediNaziv = (link) => {
-  uredba.value = link;
-  noviNaziv.value = link.naziv;
-  
-  setTimeout(() => {
-    const input = document.querySelector('.naziv-input-modal');
-    if (input) input.focus();
-  }, 100);
-};
-
-const spremiNaziv = async () => {
-  if (!uredba.value || !noviNaziv.value.trim() || ucitava.value) {
-    return;
-  }
-
-  ucitava.value = true;
-
+// jedan dodir: pročitaj međuspremnik i odmah spremi (iPhone pritom pita "Zalijepi?")
+const zalijepiISpremi = async () => {
   try {
-    const linkRef = doc(db, 'linkovi', uredba.value.id);
-    await updateDoc(linkRef, {
-      naziv: noviNaziv.value.trim()
-    });
-
-    const index = linkovi.value.findIndex(l => l.id === uredba.value.id);
-    if (index > -1) {
-      linkovi.value[index].naziv = noviNaziv.value.trim();
+    const tekst = await navigator.clipboard.readText();
+    if (!tekst || !tekst.trim()) {
+      postaviPoruku('info', 'Međuspremnik je prazan. Prvo kopiraj link.', 5000);
+      return;
     }
-
-    uredba.value = null;
-    noviNaziv.value = '';
-  } catch (greska) {
-    console.error('Greška pri ažuriranju:', greska);
-    obavijesti('Greška pri ažuriranju naziva. Pokušajte ponovno.');
-  } finally {
-    ucitava.value = false;
+    unos.value = tekst.trim();
+    await spremiUnos();
+  } catch {
+    postaviPoruku('info', 'Zalijepi ručno: dodirni polje i drži prst pa odaberi Zalijepi.', 7000);
   }
 };
 
-const pripremiZaBrisanje = (link) => {
-  brisanje.value = link;
+// ---------- popis ----------
+let odjavaSnimke = null;
+
+const pokreniSlusanje = () => {
+  if (odjavaSnimke) odjavaSnimke();
+  greskaUcitavanja.value = false;
+  odjavaSnimke = onSnapshot(
+    collection(db, 'linkovi'),
+    (snimka) => {
+      const lista = [];
+      snimka.forEach((d) => lista.push({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }));
+      linkovi.value = lista.sort((a, b) => uMs(b.datum) - uMs(a.datum));
+      ucitava.value = false;
+      greskaUcitavanja.value = false;
+    },
+    (greska) => {
+      console.error('Greška pri učitavanju linkova:', greska);
+      ucitava.value = false;
+      greskaUcitavanja.value = true;
+    }
+  );
 };
 
-const obrisi = async () => {
-  if (!brisanje.value || ucitava.value) {
-    return;
-  }
+const uMs = (t) => {
+  if (!t) return 0;
+  const d = t.toDate ? t.toDate() : new Date(t);
+  const ms = d.getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+};
 
-  ucitava.value = true;
+const podnaslov = computed(() => {
+  const n = linkovi.value.length;
+  if (!n) return '';
+  const z2 = n % 100;
+  const z = n % 10;
+  const rijec = z2 >= 11 && z2 <= 14 ? 'linkova' : z === 1 ? 'link' : z >= 2 && z <= 4 ? 'linka' : 'linkova';
+  return `${n} ${rijec}`;
+});
 
-  try {
-    await deleteDoc(doc(db, 'linkovi', brisanje.value.id));
-    linkovi.value = linkovi.value.filter(link => link.id !== brisanje.value.id);
-    brisanje.value = null;
-  } catch (greska) {
-    console.error('Greška pri brisanju:', greska);
-    obavijesti('Greška pri brisanju linka. Pokušajte ponovno.');
-  } finally {
-    ucitava.value = false;
-  }
+const pretraga = ref('');
+const odabranaPlatforma = ref('');
+const odabranaOznaka = ref('');
+
+const normaliziraj = (t) => String(t ?? '').toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+const dostupnePlatforme = computed(() => {
+  const brojevi = {};
+  for (const l of linkovi.value) brojevi[platforma(l)] = (brojevi[platforma(l)] || 0) + 1;
+  return REDOSLIJED_PLATFORMI.filter((k) => brojevi[k]).map((k) => ({ kljuc: k, naziv: PLATFORME[k].naziv, broj: brojevi[k] }));
+});
+
+const sveOznake = computed(() => {
+  const brojevi = new Map();
+  for (const l of linkovi.value) for (const o of l.oznake || []) brojevi.set(o, (brojevi.get(o) || 0) + 1);
+  return [...brojevi.entries()].map(([naziv, broj]) => ({ naziv, broj })).sort((a, b) => b.broj - a.broj || a.naziv.localeCompare(b.naziv, 'hr'));
+});
+
+const prikazani = computed(() => {
+  const rijeci = normaliziraj(pretraga.value).split(/\s+/).filter(Boolean);
+  return linkovi.value.filter((l) => {
+    if (odabranaPlatforma.value && platforma(l) !== odabranaPlatforma.value) return false;
+    if (odabranaOznaka.value && !(l.oznake || []).includes(odabranaOznaka.value)) return false;
+    if (!rijeci.length) return true;
+    const tekst = normaliziraj(`${l.naziv || ''} ${l.autor || ''} ${l.biljeska || ''} ${(l.oznake || []).join(' ')} ${l.opis || ''} ${l.url || ''}`);
+    return rijeci.every((r) => tekst.includes(r));
+  });
+});
+
+const predlozeneNove = computed(() => {
+  const postojece = new Set([...PREDLOZENE_OZNAKE, ...sveOznake.value.map((o) => o.naziv)]);
+  return [...postojece].filter((o) => !noveOznake.value.some((x) => x.toLowerCase() === o.toLowerCase())).slice(0, 10);
+});
+
+const dvije = (n) => String(n).padStart(2, '0');
+const kratkiDatum = (l) => {
+  const ms = uMs(l.datum);
+  if (!ms) return '';
+  const d = new Date(ms);
+  const sada = new Date();
+  const istiDan = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (istiDan(d, sada)) return 'danas';
+  const jucer = new Date(sada.getFullYear(), sada.getMonth(), sada.getDate() - 1);
+  if (istiDan(d, jucer)) return 'jučer';
+  const dm = `${dvije(d.getDate())}.${dvije(d.getMonth() + 1)}.`;
+  return d.getFullYear() === sada.getFullYear() ? dm : `${dm}${d.getFullYear()}.`;
 };
 
 const skratiUrl = (url) => {
-  if (url.length > 60) {
-    return url.substring(0, 60) + '...';
+  const t = String(url || '').replace(/^https?:\/\/(www\.)?/, '');
+  return t.length > 60 ? `${t.slice(0, 60)}…` : t;
+};
+
+const otvori = (link) => {
+  if (link.url) window.open(link.url, '_blank', 'noopener');
+};
+
+// ---------- uređivanje ----------
+const ur = ref(null);
+const urOznaka = ref('');
+const spremaUredbe = ref(false);
+const potvrdaBrisanja = ref(false);
+
+const uredi = (link) => {
+  ur.value = {
+    id: link.id,
+    url: link.url || '',
+    naziv: link.naziv || '',
+    biljeska: link.biljeska || '',
+    oznake: [...(link.oznake || [])]
+  };
+  urOznaka.value = '';
+  potvrdaBrisanja.value = false;
+};
+
+const zatvoriUredivanje = () => {
+  ur.value = null;
+  potvrdaBrisanja.value = false;
+};
+
+const dodajUrOznaku = () => {
+  if (ur.value) dodajOznaku(ur.value.oznake, urOznaka.value);
+  urOznaka.value = '';
+};
+
+const tipkaUrOznake = (e) => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    dodajUrOznaku();
   }
-  return url;
 };
 
-const formatirajDatum = (datum) => {
-  if (!datum) return '';
-  const date = datum.toDate ? datum.toDate() : new Date(datum);
-  return date.toLocaleDateString('hr-HR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
+const predlozeneUr = computed(() => {
+  if (!ur.value) return [];
+  const postojece = new Set([...PREDLOZENE_OZNAKE, ...sveOznake.value.map((o) => o.naziv)]);
+  return [...postojece].filter((o) => !ur.value.oznake.some((x) => x.toLowerCase() === o.toLowerCase())).slice(0, 10);
+});
 
-const ucitajLinkove = async () => {
-  ucitavaLinkove.value = true;
-  
+const spremiUredbe = async () => {
+  if (!ur.value || spremaUredbe.value) return;
+  dodajUrOznaku(); // oznaka upisana, a Enter nije stisnut
+  spremaUredbe.value = true;
   try {
-    const q = query(collection(db, 'linkovi'), orderBy('datum', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    linkovi.value = [];
-    querySnapshot.forEach((doc) => {
-      linkovi.value.push({
-        id: doc.id,
-        ...doc.data()
-      });
+    const stari = linkovi.value.find((l) => l.id === ur.value.id);
+    await updateDoc(doc(db, 'linkovi', ur.value.id), {
+      naziv: ur.value.naziv.trim() || stari?.naziv || 'Bez naslova',
+      biljeska: ur.value.biljeska.trim(),
+      oznake: ur.value.oznake,
+      izmijenjeno: serverTimestamp()
     });
+    zatvoriUredivanje();
   } catch (greska) {
-    console.error('Greška pri učitavanju linkova:', greska);
+    console.error('Greška pri spremanju promjena:', greska);
+    obavijesti('Promjene nisu spremljene. Pokušaj ponovno.');
   } finally {
-    ucitavaLinkove.value = false;
+    spremaUredbe.value = false;
   }
+};
+
+const obrisiLink = async () => {
+  if (!ur.value || spremaUredbe.value) return;
+  spremaUredbe.value = true;
+  try {
+    await deleteDoc(doc(db, 'linkovi', ur.value.id));
+    zatvoriUredivanje();
+  } catch (greska) {
+    console.error('Greška pri brisanju linka:', greska);
+    obavijesti('Link nije obrisan. Pokušaj ponovno.');
+  } finally {
+    spremaUredbe.value = false;
+  }
+};
+
+// ---------- postavljanje prečaca ----------
+const postavljanjeOtvoreno = ref(false);
+const adresa = adresaSpremanja();
+const kljuc = ref('');
+const kljucUcitava = ref(false);
+const kljucGreska = ref('');
+const kljucPrikazan = ref(false);
+const kopirano = ref('');
+const potvrdaNovogKljuca = ref(false);
+let kopiranoTimer = null;
+
+const ucitajKljuc = async (novi = false) => {
+  kljucUcitava.value = true;
+  kljucGreska.value = '';
+  try {
+    kljuc.value = novi ? await noviKljucPrecaca() : await dohvatiKljucPrecaca();
+  } catch (greska) {
+    kljucGreska.value = greska.message || 'Ključ se nije mogao dohvatiti.';
+  } finally {
+    kljucUcitava.value = false;
+  }
+};
+
+const otvoriPostavljanje = () => {
+  postavljanjeOtvoreno.value = true;
+  potvrdaNovogKljuca.value = false;
+  kljucPrikazan.value = false;
+  if (!kljuc.value) ucitajKljuc();
+};
+
+const napraviNoviKljuc = async () => {
+  potvrdaNovogKljuca.value = false;
+  await ucitajKljuc(true);
+  if (kljuc.value) kljucPrikazan.value = true;
+};
+
+const kopiraj = async (naziv, tekst) => {
+  if (!tekst) return;
+  try {
+    await navigator.clipboard.writeText(tekst);
+  } catch {
+    const t = document.createElement('textarea');
+    t.value = tekst;
+    t.style.position = 'fixed';
+    t.style.opacity = '0';
+    document.body.appendChild(t);
+    t.select();
+    try { document.execCommand('copy'); } catch { /* ništa */ }
+    document.body.removeChild(t);
+  }
+  kopirano.value = naziv;
+  clearTimeout(kopiranoTimer);
+  kopiranoTimer = setTimeout(() => { kopirano.value = ''; }, 1800);
+};
+
+// ---------- životni ciklus ----------
+const naTipku = (e) => {
+  if (e.key !== 'Escape') return;
+  if (ur.value) zatvoriUredivanje();
+  else if (postavljanjeOtvoreno.value) postavljanjeOtvoreno.value = false;
 };
 
 onMounted(() => {
-  ucitajLinkove();
+  pokreniSlusanje();
+  window.addEventListener('keydown', naTipku);
 });
 
-// povuci prema dolje za osvježavanje (mobitel)
-const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { await ucitajLinkove(); });
-onBeforeUnmount(odjaviOsvjezavanje);
+// povuci prema dolje (mobitel): ponovno spoji uživo praćenje
+const odjaviOsvjezavanje = postaviOsvjezavanje(async () => { pokreniSlusanje(); });
+
+onBeforeUnmount(() => {
+  odjaviOsvjezavanje();
+  if (odjavaSnimke) odjavaSnimke();
+  clearTimeout(porukaTimer);
+  clearTimeout(kopiranoTimer);
+  window.removeEventListener('keydown', naTipku);
+});
 </script>
 
 <style scoped>
-.stranica {
-  font-family: var(--font-sans);
-  color: var(--text-body);
-}
-
-.sadrzaj {
-  width: 100%;
-}
-
-.zaglavlje p {
+.stanje {
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
   color: var(--text-muted);
-  font-size: 1rem;
-  margin: 0;
 }
 
-.pretraga-sekcija {
-  margin-bottom: 30px;
+.stanje-greska {
+  color: var(--danger);
 }
 
-.pretraga-input {
-  width: 100%;
-  padding: 15px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 16px;
-  font-family: var(--font-sans);
-  background-color: var(--bg-card);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 4px var(--shadow-color);
-}
-
-.pretraga-input:focus {
-  outline: none;
-  border-color: var(--text-heading);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
-}
-
-.dodaj-sekcija {
+/* ---------- dodavanje ---------- */
+.dodaj {
+  margin-bottom: var(--space-5);
+  padding: var(--space-card);
   background-color: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
-  padding: 30px;
-  box-shadow: var(--glass-shadow);
-  margin-bottom: 40px;
-}
-
-.forma {
-  display: grid;
-  grid-template-columns: 3fr 2fr auto;
-  gap: 15px;
-  align-items: end;
-}
-
-.naziv-unos {
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 16px;
-  font-family: var(--font-sans);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: var(--bg-card);
-}
-
-.naziv-unos:focus {
-  outline: none;
-  border-color: var(--text-heading);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
-}
-
-.url-unos {
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 16px;
-  font-family: var(--font-sans);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: var(--bg-card);
-}
-
-.url-unos:focus {
-  outline: none;
-  border-color: var(--text-heading);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
-}
-
-.gumb-spremi {
-  padding: 10px 20px;
-  background-color: var(--text-heading);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-  white-space: nowrap;
-  font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.gumb-spremi:hover:not(:disabled) {
-  background-color: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.gumb-spremi:disabled {
-  background-color: var(--bg-card-muted);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.lista {
-  margin-bottom: 30px;
-}
-
-.ucitavanje {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: 60px 30px;
-  text-align: center;
   box-shadow: var(--glass-shadow);
 }
 
-.prazno {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: 60px 30px;
-  text-align: center;
-  box-shadow: var(--glass-shadow);
-}
-
-.nema-rezultata {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: 60px 30px;
-  text-align: center;
-  box-shadow: var(--glass-shadow);
-}
-
-.poruka p {
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.redovi {
+.dodaj-red {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  gap: var(--space-3);
+  align-items: stretch;
 }
 
-.red {
-  background-color: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: 20px;
-  box-shadow: var(--glass-shadow);
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-  cursor: pointer;
-  border-left: 4px solid var(--border-color);
-  width: 100%;
-}
-
-.red:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px var(--shadow-color);
-}
-
-.red.tip-youtube-video { border-left-color: var(--text-heading); }
-.red.tip-instagram { border-left-color: #e4405f; }
-.red.tip-tiktok { border-left-color: #000000; }
-.red.tip-ostalo { border-left-color: var(--border-color); }
-
-.sadrzaj-reda {
+.polje-link {
+  position: relative;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 20px;
-  width: 100%;
 }
 
-.slika {
+.polje-ikona {
+  position: absolute;
+  left: 12px;
+  z-index: 1;
+  font-size: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.unos-link {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px 10px 42px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
+  background-color: var(--bg-card);
+  color: var(--text-body);
+  font-size: 1rem;
+}
+
+.unos-link:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dodaj-gumbi {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.vise-gumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--space-3);
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.vise-gumb .material-icons {
+  font-size: 18px;
+}
+
+.vise-gumb:hover {
+  color: var(--accent);
+}
+
+.dodatno {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.unos-biljeska,
+.unos {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
+  background-color: var(--bg-card);
+  color: var(--text-body);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.unos-biljeska {
+  resize: vertical;
+}
+
+.unos-biljeska:focus,
+.unos:focus,
+.unos-oznaka:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.poruka {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.poruka .material-icons {
+  font-size: 20px;
   flex-shrink: 0;
-  width: 120px;
-  height: 90px;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: var(--bg-page);
+}
+
+.poruka-ok {
+  color: var(--success);
+  font-weight: 500;
+}
+
+.poruka-greska {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+/* ---------- oznake ---------- */
+.oznaka {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background-color: var(--bg-card-muted);
+  color: var(--text-heading);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.oznaka:hover {
+  border-color: var(--accent);
+}
+
+.oznaka-aktivna {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.oznaka-aktivna button {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.oznaka-aktivna .material-icons {
+  font-size: 14px;
+}
+
+.oznaka-broj {
+  opacity: 0.7;
+  font-size: 0.75rem;
+}
+
+.oznaka-mala {
+  min-height: 0;
+  padding: 1px 8px;
+  font-size: 0.7rem;
+  cursor: default;
+}
+
+.oznake-uredi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.unos-oznaka {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 4px 12px;
+  border: 1px dashed var(--border-color);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-body);
+  font-size: 0.9rem;
+}
+
+.oznake-prijedlozi,
+.oznake-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.oznake-filter {
+  margin-bottom: var(--space-5);
+}
+
+/* ---------- prazno ---------- */
+.prazno {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 48px var(--space-5);
+  text-align: center;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+}
+
+.prazno-ikona {
+  font-size: 56px;
+  color: var(--accent);
+  opacity: 0.55;
+}
+
+.prazno-naslov {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.prazno-opis {
+  margin: 0 0 var(--space-2);
+  max-width: 460px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ---------- filteri ---------- */
+.tab-broj {
+  opacity: 0.7;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.pretraga-polje {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.pretraga-ikona {
+  position: absolute;
+  left: 14px;
+  z-index: 1;
+  font-size: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.pretraga-polje input {
+  width: 100%;
+  padding: 12px 46px 12px 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-body);
+  font-size: 1rem;
+  box-shadow: var(--glass-shadow);
+}
+
+.pretraga-polje input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pretraga-ocisti {
+  position: absolute;
+  right: 4px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
 }
 
-.slika img {
+.pretraga-ocisti .material-icons {
+  font-size: 20px;
+}
+
+/* ---------- kartice videa ---------- */
+.mreza {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.video {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  cursor: pointer;
+  animation: pojaviSe 0.35s ease both;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.video:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+.video-slika {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background-color: var(--bg-card-muted);
+}
+
+.video-slika img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.zamjena {
+.video-zamjena {
   width: 100%;
   height: 100%;
-  background-color: var(--bg-card-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.92);
+  background: var(--accent);
+}
+
+.video-zamjena .material-icons {
+  font-size: 44px;
+  opacity: 0.85;
+}
+
+.video-zamjena strong {
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+
+.tip-instagram .video-zamjena {
+  background: linear-gradient(135deg, #f09433, #dc2743 55%, #bc1888);
+}
+.tip-tiktok .video-zamjena {
+  background: linear-gradient(135deg, #25f4ee, #111 45%, #fe2c55);
+}
+.tip-facebook .video-zamjena {
+  background: linear-gradient(135deg, #1877f2, #0a4bb3);
+}
+.tip-youtube-video .video-zamjena {
+  background: linear-gradient(135deg, #ff3b30, #b3001b);
+}
+.tip-x .video-zamjena {
+  background: linear-gradient(135deg, #2b2b2b, #000);
+}
+.tip-pinterest .video-zamjena {
+  background: linear-gradient(135deg, #e60023, #a3001a);
+}
+
+.video-platforma {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.video-uredi {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-heading);
-  font-weight: bold;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  cursor: pointer;
+}
+
+.video-uredi .material-icons {
   font-size: 18px;
 }
 
-.informacije {
-  flex: 1;
-  min-width: 0;
+.video-uredi:hover {
+  background-color: rgba(0, 0, 0, 0.82);
 }
 
-.vrh {
+.video-tijelo {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  gap: 15px;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3) var(--space-3) var(--space-3);
 }
 
-.oznaka {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  color: white;
-  flex-shrink: 0;
-}
-
-.oznaka-youtube-video { background-color: var(--text-heading); }
-.oznaka-instagram { background-color: #e4405f; }
-.oznaka-tiktok { background-color: #000000; }
-.oznaka-ostalo { background-color: var(--bg-card-muted); color: var(--text-heading); }
-
-.datum {
-  color: var(--text-body);
-  font-size: 12px;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-.naziv {
-  color: var(--text-heading);
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.video-naziv {
+  margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
-  cursor: pointer;
-  transition: color 0.2s ease;
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-heading);
+  overflow-wrap: anywhere;
 }
 
-.naziv:hover {
-  color: var(--accent-hover);
-}
-
-.url {
+.video-autor {
+  margin: 0;
+  font-size: 0.78rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 400;
+}
+
+.video-biljeska {
+  margin: 2px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.video-oznake {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.video-datum {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ---------- prozori ---------- */
+.pozadina {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(3, 3, 3, 0.55);
+}
+
+.prozor {
+  width: 520px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  color: var(--text-body);
+}
+
+.prozor-siroki {
+  width: 640px;
+}
+
+.prozor-zaglavlje {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.prozor-zaglavlje h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-heading);
+}
+
+.ikona-gumb {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ikona-gumb:hover {
+  background-color: rgba(128, 128, 128, 0.18);
+  color: var(--text-heading);
+}
+
+.prozor-tijelo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.oznaka-polja {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.izvor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.izvor .material-icons {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.izvor-tekst {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.akcije {
+.prozor-podnozje {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border-color);
   flex-shrink: 0;
+}
+
+.prozor-radnje {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
-.gumb-uredi {
-  width: 32px;
-  height: 32px;
-  background-color: var(--text-heading);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gumb-uredi:hover {
-  background-color: var(--accent-hover);
-  transform: scale(1.1);
-}
-
-.gumb-brisi {
-  width: 32px;
-  height: 32px;
-  background-color: var(--danger);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: bold;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.gumb-brisi:hover {
-  background-color: var(--danger-hover);
-  transform: scale(1.1);
-}
-
-.pozadina {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(3, 3, 3, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  background-color: var(--bg-card);
-  border: none;
-  border-radius: var(--radius-card);
-  padding: 0;
-  width: 400px;
-  max-width: 90%;
-  box-shadow: var(--glass-shadow);
-  overflow: hidden;
-}
-
-.modal-zaglavlje {
-  background-color: var(--text-heading);
-  color: white;
-  padding: 16px 24px;
-  text-align: center;
-}
-
-.modal-zaglavlje h2 {
-  margin: 0;
-  font-size: 20px;
+.potvrda-tekst {
+  font-size: 0.92rem;
   font-weight: 500;
-}
-
-.modal-sadrzaj {
-  padding: 24px;
-  text-align: center;
-}
-
-.modal-sadrzaj .upozorenje {
-  font-size: 48px;
-  color: var(--danger);
-  margin-bottom: 16px;
-  display: block;
-}
-
-.modal-sadrzaj p {
-  margin: 0 0 24px 0;
-  font-size: 18px;
-  color: var(--text-body);
-}
-
-.naziv-input-modal {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 16px;
-  font-family: var(--font-sans);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  background-color: var(--bg-card);
-}
-
-.naziv-input-modal:focus {
-  outline: none;
-  border-color: var(--text-heading);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
-}
-
-.modal-gumbovi {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  padding: 0 24px 24px;
-}
-
-.gumb-odustani, .gumb-potvrdi {
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: none;
-  font-weight: 500;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.gumb-odustani {
-  background-color: var(--bg-card-muted);
   color: var(--text-heading);
 }
 
-.gumb-odustani:hover {
-  background-color: var(--border-color);
+.gumb-opasnost,
+.gumb-opasnost-tanki {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.gumb-potvrdi {
-  background-color: var(--text-heading);
-  color: white;
+.gumb-opasnost {
+  background-color: var(--danger);
+  color: #fff;
 }
 
-.gumb-potvrdi:hover:not(:disabled) {
-  background-color: var(--accent-hover);
+.gumb-opasnost:hover:not(:disabled) {
+  background-color: var(--danger-hover);
 }
 
-.gumb-potvrdi:disabled {
+.gumb-opasnost-tanki {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.gumb-opasnost-tanki:hover {
+  background-color: var(--danger);
+  color: #fff;
+}
+
+.gumb-opasnost-tanki .material-icons {
+  font-size: 18px;
+}
+
+@media (pointer: coarse) {
+  .gumb-opasnost,
+  .gumb-opasnost-tanki {
+    min-height: var(--touch);
+  }
+}
+
+/* upute za prečac */
+.uvod {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.kopiraj-blok {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kopiraj-red {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kopiraj-vrijednost {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
   background-color: var(--bg-card-muted);
-  cursor: not-allowed;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  color: var(--text-heading);
+  user-select: all;
 }
 
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+.mali {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
 }
-.fade-enter-from, .fade-leave-to {
+
+.mali-greska {
+  color: var(--danger);
+}
+
+.koraci {
+  margin: 0;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  line-height: 1.5;
+  font-size: 0.93rem;
+}
+
+.koraci ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+
+.koraci code,
+.uvod code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background-color: var(--bg-card-muted);
+  font-size: 0.88em;
+}
+
+.novi-kljuc {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
 @media (max-width: 768px) {
-  .forma {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  .dodaj {
+    padding: var(--space-4);
   }
 
-  .dodaj-sekcija {
-    padding: 20px;
-  }
-
-  /* slika lijevo, naziv i link desno, a radnje ispod njih */
-  .sadrzaj-reda {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    column-gap: 12px;
-    align-items: start;
-    text-align: left;
-  }
-
-  .informacije {
-    grid-column: 2;
-  }
-
-  .slika {
-    width: 72px;
-    height: 72px;
-  }
-
-  .vrh {
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-
-  .akcije {
-    align-self: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .dodaj-sekcija {
-    padding: 20px;
-  }
-
-  .red {
-    padding: 15px;
-  }
-
-  .naziv {
-    font-size: 1rem;
-  }
-
-  .slika {
-    width: 72px;
-    height: 72px;
-  }
-
-  .modal {
-    width: 95%;
-  }
-
-  .modal-gumbovi {
+  .dodaj-red {
     flex-direction: column;
+  }
+
+  .dodaj-gumbi > * {
+    flex: 1;
+  }
+
+  .mreza {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
 
-  .gumb-odustani, .gumb-potvrdi {
+  .video-tijelo {
+    padding: 10px;
+  }
+
+  .video-naziv {
+    font-size: 0.88rem;
+  }
+
+  .pozadina {
+    align-items: flex-start;
+  }
+
+  .prozor,
+  .prozor-siroki {
     width: 100%;
   }
-} </style>
+
+  .prozor-tijelo,
+  .prozor-podnozje {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .prozor-zaglavlje {
+    padding-left: var(--space-4);
+  }
+
+  .prozor-podnozje {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .prozor-radnje {
+    justify-content: stretch;
+  }
+
+  .prozor-radnje > * {
+    flex: 1;
+  }
+
+  .prozor-podnozje > .gumb-opasnost-tanki {
+    order: 2;
+  }
+
+  .kopiraj-red {
+    flex-wrap: wrap;
+  }
+
+  .kopiraj-vrijednost {
+    flex-basis: 100%;
+  }
+}
+</style>

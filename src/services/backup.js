@@ -2,7 +2,7 @@
 //
 // Lozinke (kolekcija "sifre") ostaju enkriptirane PIN-om, točno kako su spremljene u bazi -
 // bez PIN-a se iz kopije ne mogu pročitati.
-// Namjerno izostavljeno: "security", "youtube-tajne" i "youtube-status" (tajni ključevi i tokeni).
+// Namjerno izostavljeno: "security", "youtube-tajne", "youtube-status" i "linkovi-tajne" (tajni ključevi i tokeni).
 
 import { db, auth } from '@/services/firebase.js';
 import { collection, getDocs } from 'firebase/firestore';
@@ -17,7 +17,7 @@ export const KOLEKCIJE_ZA_KOPIJU = [
   'youtube-videa', 'youtube-kanal', 'youtube-dnevno'
 ];
 
-const IZOSTAVLJENO = ['security', 'youtube-tajne', 'youtube-status'];
+const IZOSTAVLJENO = ['security', 'youtube-tajne', 'youtube-status', 'linkovi-tajne'];
 
 // Firestore tipovi (Timestamp, GeoPoint, reference, bytes) -> obični JSON koji se može i vratiti
 const uJson = (v) => {
