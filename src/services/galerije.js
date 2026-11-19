@@ -47,6 +47,8 @@ export const popisFotki = (gid) => poziv(`/galerije/${gid}/fotke`);
 export const obrisiFotke = (gid, ids) => post(`/galerije/${gid}/fotke/obrisi`, { ids });
 export const postaviNaslovnu = (gid, id) => post(`/galerije/${gid}/naslovna`, { id });
 export const obrisiGaleriju = (gid) => post(`/galerije/${gid}/obrisi`);
+// zbroj veličina svih datoteka u R2 bucketu (backend ga pamti 10 minuta)
+export const zauzecePohrane = (osvjezi = false) => poziv(`/galerije/pohrana${osvjezi ? '?osvjezi=true' : ''}`);
 
 // ---------- upload u R2 (XHR zbog napretka); Content-Type mora biti točno onaj za koji je link potpisan
 

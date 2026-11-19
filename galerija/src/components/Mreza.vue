@@ -13,9 +13,15 @@
         role="button"
         tabindex="0"
         :aria-label="`Fotografija ${x.s.n}`"
-        @click="klik(x.s.i)"
-        @keydown.enter.prevent="klik(x.s.i)"
-        @keydown.space.prevent="klik(x.s.i)"
+        @click="klik(x.s.i, $event)"
+        @keydown.enter.prevent="klik(x.s.i, $event)"
+        @keydown.space.prevent="klik(x.s.i, $event)"
+        @pointerdown="dolje($event, x.s.i)"
+        @pointermove="pomak"
+        @pointerup="gore"
+        @pointercancel="gore"
+        @pointerleave="gore"
+        @contextmenu="izbornikDodira"
       >
         <img
           v-if="urlovi[x.s.i] && urlovi[x.s.i].t"
@@ -39,9 +45,18 @@
           <Ikona :ime="omiljene.has(x.s.i) ? 'srce-puno' : 'srce'" />
         </button>
 
-        <span v-if="nacinOdabira" class="kvacica" aria-hidden="true">
+        <button
+          type="button"
+          class="krug"
+          :class="{ aktivan: odabrane.has(x.s.i), vidljiv: nacinOdabira }"
+          :aria-label="odabrane.has(x.s.i) ? 'Ukloni iz odabira' : 'Odaberi fotografiju'"
+          :aria-pressed="odabrane.has(x.s.i)"
+          @click.stop="$emit('odaberi', x.s.i, $event.shiftKey)"
+          @keydown.enter.stop
+          @keydown.space.stop
+        >
           <Ikona :ime="odabrane.has(x.s.i) ? 'kvacica-krug' : 'krug'" />
-        </span>
+        </button>
       </div>
     </div>
   </div>
@@ -58,7 +73,7 @@ const props = defineProps({
   omiljene: { type: Object, required: true },
   nacinOdabira: { type: Boolean, default: false }
 });
-const emit = defineEmits(['otvori', 'prebaci', 'srce', 'vidljivo', 'greska-slike']);
+const emit = defineEmits(['otvori', 'odaberi', 'srce', 'vidljivo', 'greska-slike']);
 
 const kontejner = ref(null);
 const sirina = ref(0);
@@ -94,9 +109,45 @@ const redovi = computed(() => {
   return izlaz;
 });
 
-const klik = (id) => {
-  if (props.nacinOdabira) emit('prebaci', id);
-  else emit('otvori', id);
+// Klik: otvara fotku, a čim je išta odabrano, odabire/odznačuje. Ctrl/Cmd+klik odabire, Shift+klik odabire raspon.
+let potisniKlik = false;
+const klik = (id, e) => {
+  if (potisniKlik) { potisniKlik = false; return; } // klik koji slijedi nakon dugog dodira
+  if (e && (e.ctrlKey || e.metaKey)) { emit('odaberi', id, false); return; }
+  if (props.nacinOdabira) { emit('odaberi', id, !!(e && e.shiftKey)); return; }
+  emit('otvori', id);
+};
+
+// Dugi dodir (mobitel/tablet): počinje odabir, kao u Fotografijama
+let tajmerDodira = null;
+let pocetakX = 0;
+let pocetakY = 0;
+const dolje = (e, id) => {
+  if (e.pointerType === 'mouse' || e.target.closest('.srce, .krug')) return;
+  pocetakX = e.clientX;
+  pocetakY = e.clientY;
+  clearTimeout(tajmerDodira);
+  tajmerDodira = setTimeout(() => {
+    tajmerDodira = null;
+    potisniKlik = true;
+    if (navigator.vibrate) navigator.vibrate(12);
+    emit('odaberi', id, false);
+  }, 420);
+};
+const pomak = (e) => {
+  if (tajmerDodira && Math.hypot(e.clientX - pocetakX, e.clientY - pocetakY) > 10) {
+    clearTimeout(tajmerDodira);
+    tajmerDodira = null;
+  }
+};
+const gore = () => {
+  clearTimeout(tajmerDodira);
+  tajmerDodira = null;
+  if (potisniKlik) setTimeout(() => { potisniKlik = false; }, 350); // ako klika nakon podizanja prsta nema
+};
+// na dodirnim uređajima dugi dodir ne smije otvoriti izbornik preglednika ("Spremi sliku" i sl.)
+const izbornikDodira = (e) => {
+  try { if (window.matchMedia('(hover: none)').matches) e.preventDefault(); } catch { /* ništa */ }
 };
 
 // slike se traže tek kad se plocica približi ekranu
@@ -168,6 +219,10 @@ onBeforeUnmount(() => {
   cursor: zoom-in;
   border-radius: 2px;
   outline-offset: -2px;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .plocica img {
@@ -244,22 +299,60 @@ onBeforeUnmount(() => {
   color: #ff7a85;
 }
 
-.kvacica {
+/* krug za odabir: miš ga pokazuje na hover, a na dodiru je vidljiv tek kad je odabir započeo */
+.krug {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 6px;
+  left: 6px;
+  width: 36px;
+  height: 36px;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: #fff;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+  transition: opacity 0.15s, transform 0.2s var(--ease);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.65));
 }
 
-.kvacica svg {
+.krug svg {
   width: 26px;
   height: 26px;
 }
 
-.plocica.odabrana .kvacica {
+.plocica:hover .krug,
+.plocica:focus-visible .krug,
+.krug:focus-visible,
+.krug.vidljiv {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.krug:hover {
+  transform: scale(1.12);
+}
+
+.krug.aktivan {
   color: var(--akcent);
+}
+
+@media (hover: none) {
+  .plocica:hover .krug {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .plocica:hover .krug.vidljiv {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .plocica.odabrana img {

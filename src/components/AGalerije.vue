@@ -11,6 +11,35 @@
       Adresa klijentske galerije nije postavljena (VITE_GALERIJA_URL). Galerije možeš pripremati, ali linkovi za klijente neće biti prikazani.
     </p>
 
+    <section v-if="BACKEND_URL" class="pohrana" aria-label="Zauzeće pohrane">
+      <div class="pohrana-vrh">
+        <span class="pohrana-naslov"><span class="material-icons" aria-hidden="true">cloud</span>Cloudflare R2 pohrana</span>
+        <button type="button" class="pohrana-osvjezi" :disabled="pohranaUcitava" aria-label="Osvježi zauzeće" @click="ucitajPohranu(true)">
+          <span class="material-icons" :class="{ vrti: pohranaUcitava }" aria-hidden="true">refresh</span>
+        </button>
+      </div>
+      <p v-if="pohranaGreska" class="pohrana-greska">{{ pohranaGreska }}</p>
+      <template v-else-if="pohrana">
+        <div class="pohrana-brojke">
+          <strong>{{ formatGB(pohrana.gb) }}</strong>
+          <span>od {{ BESPLATNO_GB }} GB besplatno</span>
+          <span class="pohrana-cijena" :class="{ placa: pohrana.trosak > 0 }">
+            {{ pohrana.trosak > 0 ? `≈ ${formatCijena(pohrana.trosak)} $ / mj` : '0 $ ovaj mjesec' }}
+          </span>
+        </div>
+        <div class="pohrana-traka" role="progressbar" :aria-valuenow="Math.round(pohrana.postotak)" aria-valuemin="0" aria-valuemax="100">
+          <div class="pohrana-ispuna" :class="{ puno: pohrana.gb > BESPLATNO_GB }" :style="{ width: `${Math.max(1.5, Math.min(100, pohrana.postotak))}%` }"></div>
+        </div>
+        <p class="pohrana-sitno">
+          {{ pohrana.gb > BESPLATNO_GB ? `${formatGB(pohrana.gb - BESPLATNO_GB)} iznad besplatnih 10 GB × ${CIJENA_GB} $/GB.` : `Još ${formatGB(BESPLATNO_GB - pohrana.gb)} besplatno.` }}
+          Fotke {{ formatGB(pohrana.fotkeGB) }}<template v-if="pohrana.privremenoGB > 0.005"> · privremeni ZIP-ovi {{ formatGB(pohrana.privremenoGB) }} (brišu se sami)</template><template v-if="pohrana.ostaloGB > 0.005"> · ostalo {{ formatGB(pohrana.ostaloGB) }}</template>.
+          Skidanje klijentima je besplatno. Procjena prema cijeni R2.
+          <template v-if="!pohrana.potpuno"> Bucket je jako velik: prikaz je donja granica.</template>
+        </p>
+      </template>
+      <p v-else class="pohrana-sitno">Računam zauzeće...</p>
+    </section>
+
     <p v-if="ucitava" class="stanje">Učitavaju se galerije...</p>
 
     <div v-else-if="!galerije.length" class="prazno">
@@ -79,9 +108,43 @@ import { useRouter } from 'vue-router';
 import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { db } from '@/services/firebase.js';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { novaGalerija, BACKEND_URL, GALERIJA_URL } from '@/services/galerije.js';
+import { novaGalerija, zauzecePohrane, BACKEND_URL, GALERIJA_URL } from '@/services/galerije.js';
+
+// Cloudflare R2: prvih 10 GB mjesečno je besplatno, dalje oko 0,015 $ po GB (skidanje je besplatno).
+// Mijenjaš li plan ili cijene, promijeni samo ove dvije brojke.
+const BESPLATNO_GB = 10;
+const CIJENA_GB = 0.015;
 
 const router = useRouter();
+const pohrana = ref(null);
+const pohranaUcitava = ref(false);
+const pohranaGreska = ref('');
+
+const formatGB = (gb) => `${gb < 0.1 ? gb.toFixed(3) : gb < 10 ? gb.toFixed(2) : gb.toFixed(1)} GB`.replace('.', ',');
+const formatCijena = (c) => c.toFixed(2).replace('.', ',');
+
+const ucitajPohranu = async (osvjezi = false) => {
+  if (pohranaUcitava.value) return;
+  pohranaUcitava.value = true;
+  pohranaGreska.value = '';
+  try {
+    const o = await zauzecePohrane(osvjezi);
+    const gb = o.bajtova / 1e9; // R2 računa decimalne GB
+    pohrana.value = {
+      gb,
+      postotak: (gb / BESPLATNO_GB) * 100,
+      trosak: Math.max(0, gb - BESPLATNO_GB) * CIJENA_GB,
+      fotkeGB: (o.poMapama?.g || 0) / 1e9,
+      privremenoGB: (o.poMapama?.z || 0) / 1e9,
+      ostaloGB: Object.entries(o.poMapama || {}).filter(([k]) => k !== 'g' && k !== 'z').reduce((a, [, v]) => a + v, 0) / 1e9,
+      potpuno: o.potpuno !== false
+    };
+  } catch (e) {
+    pohranaGreska.value = `Zauzeće se ne može izračunati: ${e.message}`;
+  } finally {
+    pohranaUcitava.value = false;
+  }
+};
 const galerije = ref([]);
 const ucitava = ref(true);
 const nova = ref(null);
@@ -127,6 +190,7 @@ const napravi = async () => {
 };
 
 onMounted(() => {
+  if (BACKEND_URL) ucitajPohranu();
   odjava = onSnapshot(
     query(collection(db, 'galerije'), orderBy('stvoreno', 'desc')),
     (snimka) => {
@@ -146,6 +210,131 @@ onBeforeUnmount(() => { if (odjava) odjava(); });
 </script>
 
 <style scoped>
+.pohrana {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+}
+
+.pohrana-vrh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.pohrana-naslov {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.pohrana-naslov .material-icons {
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.pohrana-osvjezi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pohrana-osvjezi:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.pohrana-osvjezi .material-icons {
+  font-size: 20px;
+}
+
+.vrti {
+  animation: pohrana-vrti 0.9s linear infinite;
+}
+
+@keyframes pohrana-vrti {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pohrana-brojke {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: var(--space-2);
+}
+
+.pohrana-brojke strong {
+  font-size: 1.5rem;
+  color: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.pohrana-brojke span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.pohrana-brojke .pohrana-cijena {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pohrana-brojke .pohrana-cijena.placa {
+  color: var(--danger);
+}
+
+.pohrana-traka {
+  height: 8px;
+  margin: var(--space-3) 0 var(--space-2);
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.2);
+}
+
+.pohrana-ispuna {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+
+.pohrana-ispuna.puno {
+  background: var(--danger);
+}
+
+.pohrana-sitno,
+.pohrana-greska {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.pohrana-greska {
+  margin-top: var(--space-2);
+  color: var(--danger);
+}
+
 .upozorenje {
   margin: 0 0 var(--space-4);
   padding: var(--space-3) var(--space-4);

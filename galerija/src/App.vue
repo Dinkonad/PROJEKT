@@ -46,9 +46,8 @@
             </button>
           </div>
           <span class="razmak"></span>
-          <button type="button" class="filtar" :class="{ aktivan: nacinOdabira }" :aria-pressed="nacinOdabira" @click="prebaciNacinOdabira">
-            <Ikona ime="kvacica-krug" class="mala-ikona" />{{ nacinOdabira ? 'Završi odabir' : 'Odaberi' }}
-          </button>
+          <span class="savjet-odabira savjet-dodir">Drži fotografiju za odabir</span>
+          <span class="savjet-odabira savjet-mis">Kvačica u kutu fotografije za odabir</span>
         </div>
       </div>
 
@@ -59,7 +58,7 @@
         :omiljene="omiljene"
         :nacin-odabira="nacinOdabira"
         @otvori="otvoriSvjetlosnik"
-        @prebaci="prebaciOdabranu"
+        @odaberi="prebaciOdabranu"
         @srce="prebaciSrce"
         @vidljivo="zatraziThumbove"
         @greska-slike="(id) => osvjeziUrl(id, 't')"
@@ -76,9 +75,10 @@
 
     <!-- traka odabira -->
     <Transition name="traka">
-      <div v-if="nacinOdabira && odabrane.size" class="odabir-traka" role="region" aria-label="Odabrane fotografije">
+      <div v-if="nacinOdabira" class="odabir-traka" role="region" aria-label="Odabrane fotografije">
+        <button type="button" class="odabir-x" aria-label="Poništi odabir" @click="ocistiOdabir"><Ikona ime="zatvori" /></button>
         <span class="odabir-broj">{{ odabrane.size }} odabrano</span>
-        <button type="button" class="gumb odabir-gumb" @click="ocistiOdabir">Očisti</button>
+        <button type="button" class="gumb odabir-gumb" @click="odaberiSve">Sve</button>
         <button type="button" class="gumb gumb-glavni odabir-gumb" @click="preuzmiOdabrane">
           <Ikona :ime="zakljucano ? 'lokot' : 'preuzmi'" />Preuzmi<span class="samo-sirok">&nbsp;odabrane</span>
         </button>
@@ -141,8 +141,8 @@ const pinGreska = ref('');
 const pinZauzet = ref(false);
 
 const samoOmiljene = ref(false);
-const nacinOdabira = ref(false);
 const odabrane = ref(new Set());
+const nacinOdabira = computed(() => odabrane.value.size > 0); // odabir traje dok je išta označeno
 const omiljene = ref(new Set());
 const otvoreniIndex = ref(null);
 const zip = ref(null);
@@ -278,13 +278,32 @@ const prebaciSrce = (id) => {
 };
 
 // ---------- odabir
-const prebaciNacinOdabira = () => { nacinOdabira.value = !nacinOdabira.value; if (!nacinOdabira.value) odabrane.value = new Set(); };
-const prebaciOdabranu = (id) => {
+let sidroOdabira = null; // zadnja označena fotka: od nje počinje Shift+klik raspon
+const prebaciOdabranu = (id, raspon = false) => {
   const novi = new Set(odabrane.value);
-  if (!novi.delete(id)) novi.add(id);
+  const lista = prikazane.value;
+  if (raspon && sidroOdabira && sidroOdabira !== id) {
+    const a = lista.findIndex((f) => f.i === sidroOdabira);
+    const b = lista.findIndex((f) => f.i === id);
+    if (a >= 0 && b >= 0) {
+      for (let k = Math.min(a, b); k <= Math.max(a, b); k++) novi.add(lista[k].i);
+      odabrane.value = novi;
+      sidroOdabira = id;
+      return;
+    }
+  }
+  if (novi.delete(id)) { if (!novi.size) sidroOdabira = null; } else { novi.add(id); sidroOdabira = id; }
   odabrane.value = novi;
 };
-const ocistiOdabir = () => { odabrane.value = new Set(); };
+const ocistiOdabir = () => { odabrane.value = new Set(); sidroOdabira = null; };
+const odaberiSve = () => { odabrane.value = new Set(prikazane.value.map((f) => f.i)); };
+
+// Esc poništava odabir, Ctrl/Cmd+A označava sve (samo dok je odabir započet i ništa drugo nije otvoreno)
+const tipkaOdabira = (e) => {
+  if (!nacinOdabira.value || otvoreniIndex.value !== null || zip.value || mapa.value || spremanje.value) return;
+  if (e.key === 'Escape') { ocistiOdabir(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); odaberiSve(); }
+};
 
 // ---------- svjetlosnik
 const otvoriSvjetlosnik = (id) => {
@@ -434,11 +453,20 @@ const postaviPromatraca = () => {
 };
 
 onMounted(async () => {
+  window.addEventListener('keydown', tipkaOdabira);
   await pokreni();
   setTimeout(postaviPromatraca, 50);
+  // jednom na dodirnom uređaju: kratka uputa kako se odabire više fotografija
+  try {
+    if (stanje.value === 'spremno' && jeDodirni() && !localStorage.getItem('g-savjet-odabir')) {
+      localStorage.setItem('g-savjet-odabir', '1');
+      setTimeout(() => javi('Drži prst na fotografiji za odabir više fotografija.'), 2500);
+    }
+  } catch { /* ništa */ }
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', tipkaOdabira);
   promatracAlatne?.disconnect();
   clearTimeout(porukaTimer);
   clearTimeout(odgoda);
@@ -624,7 +652,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 8px 8px 20px;
+  padding: 8px 8px 8px 8px;
   border: 1px solid var(--linija);
   border-radius: 999px;
   background: rgba(24, 24, 28, 0.9);
@@ -635,6 +663,24 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.odabir-x {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--tekst);
+}
+
+.odabir-x svg {
+  width: 20px;
+  height: 20px;
+}
+
 .odabir-broj {
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
@@ -643,6 +689,33 @@ onBeforeUnmount(() => {
 .odabir-gumb {
   min-height: 42px;
   padding: 0 18px;
+}
+
+.savjet-odabira {
+  color: var(--tekst-3);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* miš: kvačica u kutu; dodir: dugi pritisak */
+.savjet-dodir {
+  display: none;
+}
+
+@media (hover: none) {
+  .savjet-mis {
+    display: none;
+  }
+
+  .savjet-dodir {
+    display: inline;
+  }
+}
+
+@media (max-width: 520px) {
+  .savjet-odabira {
+    display: none !important;
+  }
 }
 
 .poruka {
@@ -702,7 +775,7 @@ onBeforeUnmount(() => {
     max-width: 420px;
     justify-content: space-between;
     gap: 6px;
-    padding: 6px 6px 6px 14px;
+    padding: 6px;
   }
 
   .odabir-broj {
