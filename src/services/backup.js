@@ -17,7 +17,7 @@ export const KOLEKCIJE_ZA_KOPIJU = [
   'youtube-videa', 'youtube-kanal', 'youtube-dnevno'
 ];
 
-const IZOSTAVLJENO = ['security', 'youtube-tajne', 'youtube-status', 'linkovi-tajne'];
+const IZOSTAVLJENO = ['security', 'youtube-tajne', 'youtube-status', 'linkovi-tajne', 'galerije-tajne', 'galerije'];
 
 // Firestore tipovi (Timestamp, GeoPoint, reference, bytes) -> obični JSON koji se može i vratiti
 const uJson = (v) => {

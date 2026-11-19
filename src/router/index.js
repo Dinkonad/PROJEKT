@@ -14,6 +14,8 @@ import AZdravlje from '../components/AZdravlje.vue';
 import aKarte from '../components/aKarte.vue';
 import aKorisnilinkovi from '../components/aKorisnilinkovi.vue';
 import ABiljeske from '../components/ABiljeske.vue';
+import AGalerije from '../components/AGalerije.vue';
+import AGalerija from '../components/AGalerija.vue';
 import AKalendar from '../components/AKalendar.vue';
 import AMreze from '../components/AMreze.vue';
 
@@ -90,6 +92,18 @@ const routes = [
         path: 'biljeske',
         name: 'Biljeske',
         component: ABiljeske,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'galerije',
+        name: 'Galerije',
+        component: AGalerije,
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'galerije/:id',
+        name: 'Galerija',
+        component: AGalerija,
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
