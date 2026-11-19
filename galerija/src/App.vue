@@ -80,7 +80,7 @@
         <span class="odabir-broj">{{ odabrane.size }} odabrano</span>
         <button type="button" class="gumb odabir-gumb" @click="ocistiOdabir">Očisti</button>
         <button type="button" class="gumb gumb-glavni odabir-gumb" @click="preuzmiOdabrane">
-          <Ikona :ime="zakljucano ? 'lokot' : 'preuzmi'" />Preuzmi odabrane
+          <Ikona :ime="zakljucano ? 'lokot' : 'preuzmi'" />Preuzmi<span class="samo-sirok">&nbsp;odabrane</span>
         </button>
       </div>
     </Transition>
@@ -616,9 +616,31 @@ onBeforeUnmount(() => {
   }
 
   .odabir-traka {
+    box-sizing: border-box;
     width: calc(100vw - 24px);
+    max-width: 420px;
     justify-content: space-between;
-    padding-left: 16px;
+    gap: 6px;
+    padding: 6px 6px 6px 14px;
+  }
+
+  .odabir-broj {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85rem;
+  }
+
+  .odabir-gumb {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 0.88rem;
+  }
+
+  .samo-sirok {
+    display: none;
   }
 }
 </style>

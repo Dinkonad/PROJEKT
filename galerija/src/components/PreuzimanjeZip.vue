@@ -76,7 +76,7 @@ const pokreni = async () => {
       poruka.value = e.message || 'Nepoznata greška.';
       return;
     }
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 3000));
     if (++pokusaji > 900) { stanje.value = 'greska'; poruka.value = 'Priprema traje predugo. Odaberi manje fotografija.'; return; }
   }
 };
