@@ -338,6 +338,8 @@ const preuzmiSve = () => {
 
 const preuzmiOdabrane = () => {
   if (!provjeriDozvoluPreuzimanja()) return;
+  // jedna fotka ne treba ZIP: skida se izravno u originalnoj kvaliteti
+  if (odabrane.value.size === 1) { preuzmiJednu([...odabrane.value][0]); return; }
   zip.value = { ids: [...odabrane.value], broj: odabrane.value.size };
 };
 
