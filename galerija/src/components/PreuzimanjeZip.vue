@@ -32,12 +32,15 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import Ikona from './Ikona.vue';
-import { zatraziZip } from '../api.js';
+import { zatraziZip, dohvatiPreuzimanje } from '../api.js';
+import { crcDodaj, sloziZip, jedinstvenoIme } from '../zip.js';
 
 const props = defineProps({
   token: { type: String, required: true },
   ids: { type: Array, default: null },      // null = sve fotke
-  broj: { type: Number, default: 0 }
+  broj: { type: Number, default: 0 },
+  fotke: { type: Array, default: null },    // ako je zadano: ZIP se slaže u pregledniku (mali odabiri)
+  naziv: { type: String, default: 'galerija' }
 });
 const emit = defineEmits(['zatvori', 'gotovo']);
 
@@ -48,11 +51,67 @@ const url = ref('');
 let zaustavljeno = false;
 let pokusaji = 0;
 
+const spremiBlob = (blob) => {
+  url.value = URL.createObjectURL(blob);
+  const ime = String(props.naziv || 'galerija').replace(/[^\p{L}\p{N}._ -]/gu, '_').trim() || 'galerija';
+  const a = document.createElement('a');
+  a.href = url.value;
+  a.download = `${ime}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
+
+// Mali odabiri: fotke se skidaju izravno s R2 i ZIP se slaže u pregledniku, bez čekanja na server.
+// Vraća true ako je završeno, false ako treba posegnuti za serverom (npr. CORS/mreža), 'prekinuto' ako je korisnik zatvorio.
+const lokalniZip = async () => {
+  const zapisi = [];
+  const koristena = new Set();
+  const ukupno = props.fotke.reduce((a, f) => a + (f.s || 0), 0) || 1;
+  let skinuto = 0;
+  for (const f of props.fotke) {
+    if (zaustavljeno) return 'prekinuto';
+    const o = await dohvatiPreuzimanje(props.token, f.i);
+    const odgovor = await fetch(o.url, { referrerPolicy: 'no-referrer', credentials: 'omit' });
+    if (!odgovor.ok || !odgovor.body) throw new Error('dohvat nije uspio');
+    const citac = odgovor.body.getReader();
+    const dijelovi = [];
+    let crc = 0;
+    let velicina = 0;
+    for (;;) {
+      const { done, value } = await citac.read();
+      if (done) break;
+      dijelovi.push(value);
+      crc = crcDodaj(crc, value);
+      velicina += value.length;
+      skinuto += value.length;
+      napredak.value = Math.min(0.97, skinuto / ukupno);
+      if (zaustavljeno) { citac.cancel(); return 'prekinuto'; }
+    }
+    zapisi.push({ ime: jedinstvenoIme(f.n || `${f.i}.jpg`, koristena), dijelovi, velicina, crc });
+  }
+  napredak.value = 1;
+  spremiBlob(sloziZip(zapisi));
+  return true;
+};
+
 const pokreni = async () => {
   stanje.value = 'gradi';
   poruka.value = '';
   pokusaji = 0;
   zaustavljeno = false;
+  if (props.fotke && props.fotke.length) {
+    try {
+      const rez = await lokalniZip();
+      if (rez === 'prekinuto') return;
+      stanje.value = 'spremno';
+      emit('gotovo');
+      return;
+    } catch (e) {
+      if (e && e.status === 403) { stanje.value = 'greska'; poruka.value = e.message || 'Preuzimanje nije dopušteno.'; return; }
+      napredak.value = 0; // preglednik ne može složiti ZIP: server ga slaže umjesto njega
+    }
+  }
   while (!zaustavljeno) {
     try {
       const o = await zatraziZip(props.token, props.ids);
@@ -85,6 +144,7 @@ const zatvori = () => { zaustavljeno = true; emit('zatvori'); };
 
 onMounted(pokreni);
 onBeforeUnmount(() => { zaustavljeno = true; });
+onBeforeUnmount(() => { if (url.value.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(url.value), 60000); });
 </script>
 
 <style scoped>
