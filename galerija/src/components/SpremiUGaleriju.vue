@@ -7,7 +7,7 @@
         <h2 class="naslov">Spremanje nije uspjelo</h2>
         <p class="tekst">{{ poruka }}</p>
         <button type="button" class="gumb gumb-glavni" @click="ponovno">Pokušaj ponovno</button>
-        <button v-if="ponudiZip" type="button" class="gumb" @click="$emit('kao-zip')">Preuzmi kao ZIP</button>
+        <button v-if="ponudiZip" type="button" class="gumb" @click="$emit('kao-zip')">Preuzmi kao datoteke</button>
       </template>
 
       <template v-else-if="faza === 'spremi'">
@@ -123,7 +123,7 @@ const spremi = async () => {
   } catch (e) {
     if (e && e.name === 'AbortError') { savjet.value = 'Spremanje je prekinuto. Dodirni gumb kad si spreman.'; return; }
     faza.value = 'greska';
-    poruka.value = 'Izbornik za spremanje nije se otvorio. Pokušaj ponovno ili preuzmi kao ZIP.';
+    poruka.value = 'Izbornik za spremanje nije se otvorio. Pokušaj ponovno ili preuzmi kao datoteke.';
     ponudiZip.value = true;
     return;
   }

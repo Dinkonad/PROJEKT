@@ -101,9 +101,8 @@
       @greska-slike="(id, v) => osvjeziUrl(id, v)"
     />
 
-    <PreuzimanjeZip v-if="zip" :token="token" :ids="zip.ids" :broj="zip.broj" :fotke="zip.fotke" :naziv="meta.naziv" @zatvori="zip = null" />
     <SpremiUMapu v-if="mapa" :token="token" :fotke="mapa.fotke" :dir="mapa.dir" :naziv="meta.naziv" @zatvori="mapa = null" />
-    <SpremiUGaleriju v-if="spremanje" :token="token" :fotke="spremanje.fotke" @zatvori="spremanje = null" @kao-zip="prebaciNaZip" />
+    <SpremiUGaleriju v-if="spremanje" :token="token" :fotke="spremanje.fotke" @zatvori="spremanje = null" @kao-zip="prebaciNaPojedinacno" />
 
     <Transition name="poruka">
       <div v-if="poruka" class="poruka" role="status">{{ poruka }}</div>
@@ -119,7 +118,6 @@ import PinZaslon from './components/PinZaslon.vue';
 import Hero from './components/Hero.vue';
 import Mreza from './components/Mreza.vue';
 import Svjetlosnik from './components/Svjetlosnik.vue';
-import PreuzimanjeZip from './components/PreuzimanjeZip.vue';
 import SpremiUGaleriju from './components/SpremiUGaleriju.vue';
 import SpremiUMapu from './components/SpremiUMapu.vue';
 import { jeSlikaZaGaleriju, mozeSpremitiUGaleriju } from './mobilno.js';
@@ -145,7 +143,6 @@ const odabrane = ref(new Set());
 const nacinOdabira = computed(() => odabrane.value.size > 0); // odabir traje dok je išta označeno
 const omiljene = ref(new Set());
 const otvoreniIndex = ref(null);
-const zip = ref(null);
 const spremanje = ref(null);
 const poruka = ref('');
 const zalijepljena = ref(false);
@@ -300,7 +297,7 @@ const odaberiSve = () => { odabrane.value = new Set(prikazane.value.map((f) => f
 
 // Esc poništava odabir, Ctrl/Cmd+A označava sve (samo dok je odabir započet i ništa drugo nije otvoreno)
 const tipkaOdabira = (e) => {
-  if (!nacinOdabira.value || otvoreniIndex.value !== null || zip.value || mapa.value || spremanje.value) return;
+  if (!nacinOdabira.value || otvoreniIndex.value !== null || mapa.value || spremanje.value) return;
   if (e.key === 'Escape') { ocistiOdabir(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); odaberiSve(); }
 };
@@ -356,27 +353,21 @@ const spremiUFotografije = async (id) => {
   }
 };
 
-// do 25 fotki i 400 MB ZIP se slaže u pregledniku (odmah, bez čekanja na server); veće slaže server
-const MALI_ODABIR_FOTKI = 25;
-const MALI_ODABIR_BAJTOVA = 400 * 1024 * 1024;
-const zaLokalniZip = (fotke) => (
-  fotke.length > 0 && fotke.length <= MALI_ODABIR_FOTKI &&
-  fotke.reduce((a, f) => a + (f.s || 0), 0) <= MALI_ODABIR_BAJTOVA ? fotke : null
-);
-
 // Mobitel: obične slike (do 60 odjednom) idu izravno u galeriju preko izbornika za dijeljenje
 const MAX_U_GALERIJU = 300;
 const zaGaleriju = (fotke) => (
   fotke.length > 0 && fotke.length <= MAX_U_GALERIJU && fotke.every(jeSlikaZaGaleriju) && mozeSpremitiUGaleriju()
 );
 
-const prebaciNaZip = () => {
+// Nigdje se više ne slaže ZIP: ni na serveru ni u pregledniku. Fotke idu u galeriju mobitela, u odabranu mapu
+// (Chrome/Edge) ili kao obične datoteke jedna po jedna.
+const prebaciNaPojedinacno = () => {
   const fotke = spremanje.value ? spremanje.value.fotke : [];
   spremanje.value = null;
-  zip.value = { ids: fotke.map((f) => f.i), broj: fotke.length, fotke: zaLokalniZip(fotke) };
+  preuzmiNekoliko(fotke);
 };
 
-// Računalo: ZIP se izbjegava. "Preuzmi sve" pita za mapu i upisuje fotke izravno u nju (Chrome/Edge),
+// Računalo: "Preuzmi sve" pita za mapu i upisuje fotke izravno u nju (Chrome/Edge),
 // a manji odabir (do 30 fotki) se samo preuzme kao obične datoteke.
 const jeDodirni = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
 const mozeUMapu = () => !jeDodirni() && typeof window.showDirectoryPicker === 'function';
@@ -429,9 +420,9 @@ const preuzmiSve = () => {
   if (!provjeriDozvoluPreuzimanja()) return;
   if (zaGaleriju(meta.value.fotke)) { spremanje.value = { fotke: meta.value.fotke }; return; }
   if (mozeUMapu()) { spremiUMapu(meta.value.fotke); return; }
-  // preglednici bez odabira mape (Firefox, Safari): fotke se skidaju jedna po jedna, bez ZIP-a na serveru
-  if (!jeDodirni() && meta.value.fotke.length <= MAX_POJEDINACNO_SVE) { preuzmiNekoliko(meta.value.fotke); return; }
-  zip.value = { ids: null, broj: meta.value.brojFotki, fotke: zaLokalniZip(meta.value.fotke) };
+  // preglednici bez odabira mape (Firefox, Safari) i RAW na mobitelu: fotke se skidaju jedna po jedna
+  if (meta.value.fotke.length <= MAX_POJEDINACNO_SVE) { preuzmiNekoliko(meta.value.fotke); return; }
+  javi(`Odjednom se može preuzeti najviše ${MAX_POJEDINACNO_SVE} fotografija. Odaberi manje fotografija.`);
 };
 
 const preuzmiOdabrane = () => {
@@ -442,8 +433,8 @@ const preuzmiOdabrane = () => {
   if (fotke.length === 1) { preuzmiJednu(fotke[0].i); return; }
   if (!jeDodirni() && fotke.length <= MAX_POJEDINACNO) { preuzmiNekoliko(fotke); return; }
   if (mozeUMapu()) { spremiUMapu(fotke); return; }
-  if (!jeDodirni() && fotke.length <= MAX_POJEDINACNO_SVE) { preuzmiNekoliko(fotke); return; }
-  zip.value = { ids: fotke.map((f) => f.i), broj: fotke.length, fotke: zaLokalniZip(fotke) };
+  if (fotke.length <= MAX_POJEDINACNO_SVE) { preuzmiNekoliko(fotke); return; }
+  javi(`Odjednom se može preuzeti najviše ${MAX_POJEDINACNO_SVE} fotografija. Odaberi manje fotografija.`);
 };
 
 // ---------- ljepljiva alatna traka
