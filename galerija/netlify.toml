@@ -20,7 +20,7 @@
   for = "/*"
   [headers.values]
     # preglednik smije učitavati samo: ovu stranicu, backend (podatke), R2 (fotke) i Google Fonts
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.r2.cloudflarestorage.com; media-src https://*.r2.cloudflarestorage.com; connect-src 'self' https://garmin-health-sync-xlyl.onrender.com https://*.r2.cloudflarestorage.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.r2.cloudflarestorage.com; media-src https://*.r2.cloudflarestorage.com; connect-src 'self' https://*.onrender.com https://*.r2.cloudflarestorage.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     # adresa s tokenom nikad ne napušta stranicu (npr. klik na Instagram)

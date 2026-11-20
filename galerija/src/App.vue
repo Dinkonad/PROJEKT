@@ -365,7 +365,7 @@ const zaLokalniZip = (fotke) => (
 );
 
 // Mobitel: obične slike (do 60 odjednom) idu izravno u galeriju preko izbornika za dijeljenje
-const MAX_U_GALERIJU = 60;
+const MAX_U_GALERIJU = 300;
 const zaGaleriju = (fotke) => (
   fotke.length > 0 && fotke.length <= MAX_U_GALERIJU && fotke.every(jeSlikaZaGaleriju) && mozeSpremitiUGaleriju()
 );
@@ -380,7 +380,8 @@ const prebaciNaZip = () => {
 // a manji odabir (do 30 fotki) se samo preuzme kao obične datoteke.
 const jeDodirni = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
 const mozeUMapu = () => !jeDodirni() && typeof window.showDirectoryPicker === 'function';
-const MAX_POJEDINACNO = 30;
+const MAX_POJEDINACNO = 30;       // do toliko odabranih fotki preuzima se pojedinačno (bez pitanja za mapu)
+const MAX_POJEDINACNO_SVE = 300;  // preglednici bez odabira mape: do toliko fotki jednu po jednu
 
 const mapa = ref(null);
 
@@ -428,7 +429,8 @@ const preuzmiSve = () => {
   if (!provjeriDozvoluPreuzimanja()) return;
   if (zaGaleriju(meta.value.fotke)) { spremanje.value = { fotke: meta.value.fotke }; return; }
   if (mozeUMapu()) { spremiUMapu(meta.value.fotke); return; }
-  // preglednici bez odabira mape (Firefox, Safari): ZIP kao rezerva
+  // preglednici bez odabira mape (Firefox, Safari): fotke se skidaju jedna po jedna, bez ZIP-a na serveru
+  if (!jeDodirni() && meta.value.fotke.length <= MAX_POJEDINACNO_SVE) { preuzmiNekoliko(meta.value.fotke); return; }
   zip.value = { ids: null, broj: meta.value.brojFotki, fotke: zaLokalniZip(meta.value.fotke) };
 };
 
@@ -440,6 +442,7 @@ const preuzmiOdabrane = () => {
   if (fotke.length === 1) { preuzmiJednu(fotke[0].i); return; }
   if (!jeDodirni() && fotke.length <= MAX_POJEDINACNO) { preuzmiNekoliko(fotke); return; }
   if (mozeUMapu()) { spremiUMapu(fotke); return; }
+  if (!jeDodirni() && fotke.length <= MAX_POJEDINACNO_SVE) { preuzmiNekoliko(fotke); return; }
   zip.value = { ids: fotke.map((f) => f.i), broj: fotke.length, fotke: zaLokalniZip(fotke) };
 };
 
