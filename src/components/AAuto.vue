@@ -411,6 +411,10 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { db } from '@/services/firebase.js';
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { jeNovoOcitanje, poredajOcitanja, izracunPotrosnje } from '@/utils/gorivo.js';
+import { useBrzaRadnja } from '@/utils/brzaRadnja.js';
+
+// ?novo=1 (brza radnja s dashboarda ili pretrage) odmah otvara prozor za unos
+useBrzaRadnja(() => { otvoriModalUnos(); });
 
 const ucitava = ref(true);
 const unosi = ref([]);
@@ -798,12 +802,14 @@ onBeforeUnmount(odjaviOsvjezavanje);
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
-  box-shadow: 0 6px 18px rgba(18, 52, 88, 0.35);
+  box-shadow: var(--glass-shadow);
   padding: 12px 22px;
   margin-bottom: 16px;
-  color: var(--on-accent);
+  color: var(--text-heading);
 }
 
 .kartica-ukupno .ikona {
@@ -813,8 +819,8 @@ onBeforeUnmount(odjaviOsvjezavanje);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.22);
-  color: var(--on-accent);
+  background-color: var(--accent-tint);
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -825,17 +831,16 @@ onBeforeUnmount(odjaviOsvjezavanje);
 .kartica-ukupno .podaci h3 {
   margin: 0 0 2px;
   font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-muted);
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 .kartica-ukupno .podaci .iznos {
   margin: 0;
   font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--on-accent);
+  font-weight: 700;
+  color: var(--text-heading);
 }
 
 @keyframes pojaviSe {
@@ -869,6 +874,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .sekcija-km {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1149,8 +1155,9 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .zaglavlje-modala {
-  background: var(--accent);
-  color: var(--on-accent);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-heading);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -1211,7 +1218,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .pregled-izracuna.pregled-greska {
-  background: rgba(229, 57, 53, 0.12);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
 }
 
@@ -1296,7 +1303,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .gumb-potvrditi {
   background: var(--danger);
-  color: white;
+  color: var(--on-danger);
 }
 
 @media (max-width: 900px) {

@@ -48,17 +48,19 @@ import { obavijestiStanje, ukloniObavijest } from '@/services/obavijest.js';
   font-size: 0.9rem;
   line-height: 1.4;
   color: var(--text-heading);
-  background-color: var(--bg-card);
+  background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border: 1px solid var(--glass-border);
-  border-left: 4px solid var(--success);
-  border-radius: var(--radius-small);
-  box-shadow: var(--glass-shadow);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow), 0 0 0 1px color-mix(in srgb, var(--success) 18%, transparent);
   cursor: pointer;
   pointer-events: auto;
 }
 
 .obavijest-greska {
-  border-left-color: var(--danger);
+  box-shadow: var(--glass-shadow), 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .obavijest-ikona {

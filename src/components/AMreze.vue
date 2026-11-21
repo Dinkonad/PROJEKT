@@ -240,19 +240,22 @@ h2 {
   display: flex;
   align-items: center;
   gap: 18px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-card);
-  box-shadow: 0 6px 18px rgba(18, 52, 88, 0.35);
+  box-shadow: var(--glass-shadow);
   padding: 22px 24px;
   margin-bottom: 18px;
-  color: var(--on-accent);
+  color: var(--text-heading);
 }
 
 .hero-ikona {
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.22);
+  background-color: var(--accent-tint);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -273,9 +276,8 @@ h2 {
 .hero-oznaka {
   font-size: 0.78rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-muted);
 }
 
 .hero-broj {
@@ -286,12 +288,13 @@ h2 {
 
 .hero-podnaslov {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
 }
 
 /* ==================== KARTICE / SEKCIJE ==================== */
 .sekcija {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -344,6 +347,7 @@ h2 {
   font-family: inherit;
   cursor: pointer;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -419,7 +423,6 @@ h2 {
 .platforma-brojke span {
   color: var(--text-muted);
   font-size: 0.72rem;
-  text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 

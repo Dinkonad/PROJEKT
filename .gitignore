@@ -31,3 +31,7 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# lokalni pregled dizajna (ne ide u produkciju)
+lab/
+vite.lab.config.js

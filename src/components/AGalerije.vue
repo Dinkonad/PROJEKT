@@ -109,6 +109,10 @@ import AZaglavljeStranice from './AZaglavljeStranice.vue';
 import { db } from '@/services/firebase.js';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { novaGalerija, zauzecePohrane, BACKEND_URL, GALERIJA_URL } from '@/services/galerije.js';
+import { useBrzaRadnja } from '@/utils/brzaRadnja.js';
+
+// ?novo=1 (brza radnja s dashboarda ili pretrage) odmah otvara prozor za unos
+useBrzaRadnja(() => { otvoriNovu(); });
 
 // Cloudflare R2: prvih 10 GB mjesečno je besplatno, dalje oko 0,015 $ po GB (skidanje je besplatno).
 // Mijenjaš li plan ili cijene, promijeni samo ove dvije brojke.
@@ -214,6 +218,7 @@ onBeforeUnmount(() => { if (odjava) odjava(); });
   margin: 0 0 var(--space-4);
   padding: var(--space-4);
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -358,6 +363,7 @@ onBeforeUnmount(() => { if (odjava) odjava(); });
   padding: 56px var(--space-5);
   text-align: center;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -397,6 +403,7 @@ onBeforeUnmount(() => { if (odjava) odjava(); });
   gap: var(--space-2);
   padding: var(--space-card);
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -478,7 +485,7 @@ onBeforeUnmount(() => { if (odjava) odjava(); });
 
 .znacka-ok {
   background-color: var(--success);
-  color: #fff;
+  color: var(--on-success);
 }
 
 .znacka-skica {
@@ -551,7 +558,6 @@ onBeforeUnmount(() => { if (odjava) odjava(); });
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 

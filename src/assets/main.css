@@ -1,44 +1,70 @@
-
- *{
+  *{
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
 
-  :root {
-    --bg-page: #F1EFEC;
-    --bg-card: #ffffff;
-    --bg-card-muted: #F1EFEC;
-    --text-heading: #123458;
-    --text-body: #030303;
-    --text-body-alt: #333333;
-    --text-muted: #3F6A8A;
-    --border-color: #D4C9BE;
-    --accent: #123458;
-    --accent-hover: #1c4c80;
-    --accent-soft: #4B7896;
-    --accent-soft-hover: #3E6682;
-    --success: #2E7D32;
-    --danger: #E53935;
-    --danger-hover: #C62828;
-    --gray-muted: #6c757d;
-    --shadow-color: rgba(0, 0, 0, 0.08);
+  /* =====================================================================================
+     DIZAJN "CRNA TINTA" - pravilo 60 / 30 / 10
+       60 %  crna podloga        --bg-page          (stranica, ono što se najviše vidi)
+       30 %  ledena tinta        --glass-*          (staklene kartice, ploče, izbornici)
+       10 %  ledeni cijan        --accent*          (gumbi, aktivna stavka, brojke, fokus)
+     Sve stranice čitaju ISTE tokene: promjena boje ovdje mijenja cijelu aplikaciju.
+     ===================================================================================== */
 
-    /* ==================== JEDINSTVEN "GLASS" DIZAJN-SUSTAV ==================== */
-    /* Svi okviri (kartice, sekcije, modali, redovi) u cijeloj app koriste ISTE
-       vrijednosti ispod - tako da je sve konzistentno, ne svaka stranica po svom. */
-    --radius-card: 18px;
-    --radius-small: 10px;
+  /* ---- TAMNA tema (zadana): crna + dimljeno staklo + šampanjac zlato, kao klijentska galerija ---- */
+  :root {
+    --bg-page: #0A0A0C;
+    --bg-card: #141416;
+    --bg-card-muted: #1D1D21;
+    --text-heading: #F5F1EA;
+    --text-body: #DDD7CC;
+    --text-body-alt: #BDB6A9;
+    --text-muted: #A09A8E;
+    --border-color: #2C2B2F;
+    --accent: #D6B67F;
+    --accent-hover: #E8CE9B;
+    --accent-soft: #BFA06B;
+    --accent-soft-hover: #D1B481;
+    --success: #7FD6A4;
+    --danger: #FF8D84;
+    --danger-hover: #FFA8A1;
+    --warm: #E7C27D;            /* topli naglasak (npr. "dano bratu", upozorenja) */
+    --gray-muted: #A09A8E;
+    --shadow-color: rgba(0, 0, 0, 0.55);
+    --on-accent: #1A1408;
+    --on-success: #06160D;      /* tekst na punoj zelenoj / crvenoj podlozi */
+    --on-danger: #2B0A07;
+
+    /* ==================== SJAJNO "STAKLO" ==================== */
+    /* Svi okviri (kartice, sekcije, modali, redovi) koriste ISTE vrijednosti: dimljeno staklo,
+       svijetli rub na vrhu (odsjaj) i dubok sjenčani rub. */
+    --radius-card: 20px;
+    --radius-small: 12px;
     --glass-blur: 22px;
-    --glass-bg: rgba(255, 255, 255, 0.62);
-    --glass-bg-muted: rgba(241, 239, 236, 0.55);
-    --glass-border: rgba(255, 255, 255, 0.55);
-    --glass-shadow: 0 8px 32px rgba(18, 52, 88, 0.1);
+    --glass-bg: rgba(27, 26, 25, 0.64);
+    --glass-bg-muted: rgba(27, 26, 25, 0.42);
+    --glass-border: rgba(255, 238, 210, 0.1);
+    --glass-shadow:
+      inset 0 1px 0 rgba(255, 244, 225, 0.15),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+      0 16px 44px rgba(0, 0, 0, 0.55);
+    /* odsjaj preko stakla: svjetlost sa gornjeg lijevog kuta + tračak zlata dolje desno */
+    --glass-sheen:
+      radial-gradient(120% 90% at 100% 100%, rgba(214, 182, 127, 0.06), transparent 62%),
+      linear-gradient(155deg, rgba(255, 246, 230, 0.11) 0%, rgba(255, 246, 230, 0.03) 30%, rgba(255, 246, 230, 0) 58%);
+    /* zlatni metalik: svijetli vrh, sredina boje zlata, tamniji dno */
+    --accent-gradient: linear-gradient(180deg, #F2E0B8 0%, #D6B67F 48%, #B69355 100%);
+    --accent-glow: 0 6px 20px rgba(214, 182, 127, 0.2);
+    --accent-tint: rgba(214, 182, 127, 0.12);   /* blaga zlatna podloga (aktivna stavka, značke) */
+    --pozadina-sjaj:
+      radial-gradient(55% 40% at 8% 0%, rgba(214, 182, 127, 0.1), transparent 70%),
+      radial-gradient(50% 40% at 100% 100%, rgba(86, 66, 38, 0.22), transparent 70%);
 
     /* ==================== TIPOGRAFIJA, FOKUS, DODIR ==================== */
-    --font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
     --focus-ring: var(--accent);
-    --on-accent: #ffffff; /* tekst na --accent pozadini */
     --touch: 44px; /* najmanja površina za prst na mobitelu */
 
     /* razmaci - jedna ljestvica za cijelu aplikaciju */
@@ -51,76 +77,97 @@
     --space-7: 32px;
     --space-card: 18px;       /* unutarnji razmak kartice */
     --space-section: 24px;    /* razmak između blokova na stranici */
-    --stranica-sirina: 1120px;
-
-    color-scheme: light;
-  }
-
-  [data-theme="dark"] {
-    --bg-page: #0c131a;
-    --bg-card: #1b2731;
-    --bg-card-muted: #28384a;
-    --text-heading: #E3DCD4;
-    --text-body: #E8E6E3;
-    --text-body-alt: #cfd3d6;
-    --text-muted: #9FC0D9;
-    --border-color: #3c5068;
-    --accent: #6C9CC2;
-    --accent-hover: #89B2D4;
-    --accent-soft: #9FC0D9;
-    --accent-soft-hover: #B8D2E6;
-    --success: #5CC060;
-    --danger: #F2685F;
-    --danger-hover: #F58882;
-    --gray-muted: #9aa5ad;
-    --shadow-color: rgba(0, 0, 0, 0.55);
-
-    --glass-bg: rgba(27, 39, 49, 0.6);
-    --glass-bg-muted: rgba(40, 56, 74, 0.5);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-
-    --on-accent: #0c131a;
+    --stranica-sirina: 1600px;
 
     color-scheme: dark;
+  }
+
+  /* ---- SVIJETLA tema (druga opcija): topli papir, bijele kartice, tamno zlato za naglaske ---- */
+  [data-theme="light"] {
+    --bg-page: #F3F0EA;
+    --bg-card: #FFFFFF;
+    --bg-card-muted: #EAE6DE;
+    --text-heading: #1B1710;
+    --text-body: #2A251C;
+    --text-body-alt: #453E31;
+    --text-muted: #6B6354;
+    --border-color: #DAD3C6;
+    --accent: #826326;
+    --accent-hover: #684E1B;
+    --accent-soft: #A6823E;
+    --accent-soft-hover: #8A6A2B;
+    --success: #1F7A4D;
+    --danger: #C73E36;
+    --danger-hover: #A8312B;
+    --warm: #8A5A12;
+    --gray-muted: #7A7265;
+    --shadow-color: rgba(60, 45, 20, 0.12);
+    --on-accent: #FFFFFF;
+    --on-success: #FFFFFF;
+    --on-danger: #FFFFFF;
+
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-bg-muted: rgba(255, 255, 255, 0.55);
+    --glass-border: rgba(60, 45, 20, 0.1);
+    --glass-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 0 rgba(60, 45, 20, 0.05),
+      0 10px 30px rgba(60, 45, 20, 0.09);
+    --glass-sheen: linear-gradient(155deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.2) 34%, rgba(255, 255, 255, 0) 62%);
+    --accent-gradient: linear-gradient(180deg, #8C6C2D 0%, #735720 100%);
+    --accent-glow: 0 6px 16px rgba(130, 99, 38, 0.25);
+    --accent-tint: rgba(130, 99, 38, 0.1);
+    --pozadina-sjaj: radial-gradient(55% 40% at 8% 0%, rgba(214, 182, 127, 0.18), transparent 70%);
+
+    color-scheme: light;
   }
 
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    -webkit-tap-highlight-color: rgba(18, 52, 88, 0.12);
+    -webkit-tap-highlight-color: rgba(214, 182, 127, 0.18);
+    background-color: var(--bg-page); /* iPhone: boja iza "gumanja" pri skrolanju i iza sigurnih područja */
   }
 
   body {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     background-color: var(--bg-page);
-    background-image:
-      radial-gradient(circle at 10% 8%, rgba(18, 52, 88, 0.08), transparent 42%),
-      radial-gradient(circle at 90% 15%, rgba(93, 138, 168, 0.10), transparent 40%),
-      radial-gradient(circle at 25% 90%, rgba(156, 122, 84, 0.07), transparent 45%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
     color: var(--text-body);
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
-  [data-theme="dark"] body {
-    background-image:
-      radial-gradient(circle at 10% 8%, rgba(108, 156, 194, 0.14), transparent 42%),
-      radial-gradient(circle at 90% 15%, rgba(93, 138, 168, 0.12), transparent 40%),
-      radial-gradient(circle at 25% 90%, rgba(156, 122, 84, 0.08), transparent 45%);
+  /* podloga sa sjajem je zaseban fiksni sloj (background-attachment: fixed na iPhoneu ne radi pouzdano) */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--pozadina-sjaj);
+    background-repeat: no-repeat;
   }
 
-  /* Zajednička "staklena" kartica/okvir - koristi se posvuda (.kartica, .sekcija,
-     .modal, .redak-unosa, .pin-kartica...) preko dolje navedenih klasa, da je
-     izgled identičan na svakoj stranici. */
+  /* Zajednička "staklena" kartica/okvir. Klase iz popisa ispod dobivaju i odsjaj (sheen)
+     preko stakla, pa je izgled sjajan i jednak na svakoj stranici. */
   .glass {
     background-color: var(--glass-bg);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-card);
     box-shadow: var(--glass-shadow);
+  }
+
+  :where(
+    .glass, .kartica, .pregled-kartica, .sekcija, .sekcija-km, .pohrana, .galerija, .mapa-okvir, .tablica-okvir,
+    .osoba-kartica, .mjesecna-kartica, .pin-kartica, .platforma, .satnica-traka, .godina-birac, .iphone-eventi,
+    .navigacija-mjeseca, .dani-odabranog-dana, .videa-povijest, .povezi-okvir, .dodaj, .video,
+    .vise-sheet, .donja-traka, .modal, .modal-detalji, .modal-forma, .modal-potvrda, .modal-siroki, .prozor
+  ) {
+    background-image: var(--glass-sheen);
   }
 
   /* ==================== ZAJEDNIČKA PRAVILA ZA CIJELU APLIKACIJU ==================== */
@@ -128,6 +175,28 @@
   /* polja i gumbi na iPhoneu inače koriste sistemski font umjesto fonta aplikacije */
   button, input, select, textarea {
     font-family: inherit;
+  }
+
+  /* tamna tema: kursor, odabir teksta, padajući izbornici i klizači u boji aplikacije */
+  input, textarea {
+    caret-color: var(--accent);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    color: var(--text-heading);
+  }
+
+  select option, select optgroup {
+    background-color: var(--bg-card);
+    color: var(--text-body);
+  }
+
+  @media (pointer: fine) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--text-muted) 45%, transparent) transparent;
+    }
   }
 
   /* vidljiv fokus za tipkovnicu - samo kad ga treba (ne pri kliku mišem) */
@@ -154,8 +223,23 @@
 
   /* naslovi stranica - isti raspon veličine svugdje */
   .naslov {
-    font-size: clamp(1.5rem, 1.2rem + 1vw, 1.9rem);
+    font-size: clamp(2rem, 1.5rem + 1.6vw, 2.6rem);
     letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  /* naslovi i velike brojke: serifni display font (isti kao u klijentskoj galeriji) */
+  .naslov, h1, h2 {
+    font-family: var(--font-display);
+  }
+
+  h1, h2, .naslov {
+    color: var(--text-heading);
+    font-weight: 600;
+  }
+
+  .iznos, .uvid-broj, .pregled-glavno, .hero-broj {
+    font-variant-numeric: lining-nums tabular-nums;
   }
 
   h1, h2, h3 {
@@ -253,7 +337,7 @@
 
   .kartica:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px var(--shadow-color);
+    box-shadow: var(--glass-shadow), 0 0 0 1px var(--accent-tint);
   }
 
   .kartica .ikona {
@@ -264,7 +348,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background-color: var(--bg-card-muted);
+    background-color: var(--accent-tint);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px var(--accent-tint);
     color: var(--accent);
   }
 
@@ -281,8 +366,10 @@
 
   .kartica .podaci .iznos {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
     color: var(--text-heading);
   }
 
@@ -313,7 +400,7 @@
 
 
     .kartica .podaci .iznos {
-      font-size: 0.95rem;
+      font-size: 1.05rem;
     }
 
     /* kartica koja ostane sama u zadnjem redu ide preko cijele širine */
@@ -344,23 +431,32 @@
     white-space: nowrap;
   }
 
+  /* primarni gumb: svijetleći cijan s odsjajem na vrhu i mekim sjajem ispod */
   .gumb-dodaj,
   .gumb-primarni {
     background-color: var(--accent);
+    background-image: var(--accent-gradient);
     color: var(--on-accent);
-    box-shadow: 0 2px 6px var(--shadow-color);
+    font-weight: 600;
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.18), var(--accent-glow);
   }
 
   .gumb-dodaj:hover:not(:disabled),
   .gumb-primarni:hover:not(:disabled) {
-    background-color: var(--accent-hover);
+    filter: brightness(1.08);
     transform: translateY(-1px);
   }
 
+  /* sekundarni gumb: staklo s tankim odsjajem */
   .gumb-sekundarni {
-    background-color: var(--bg-card-muted);
+    background-color: var(--glass-bg);
+    background-image: var(--glass-sheen);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     color: var(--text-heading);
-    border-color: var(--border-color);
+    border-color: var(--glass-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   .gumb-sekundarni:hover:not(:disabled) {
@@ -396,8 +492,8 @@
     display: flex;
     gap: var(--space-2);
     overflow-x: auto;
-    padding-bottom: 6px;
-    margin-bottom: var(--space-5);
+    padding: 4px 6px 12px;
+    margin: -4px -6px calc(var(--space-5) - 6px);
     scrollbar-width: none;
   }
 
@@ -424,18 +520,37 @@
     cursor: pointer;
   }
 
+  .tab {
+    background-image: var(--glass-sheen);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
   .tab:hover:not(.aktivan) {
     border-color: var(--accent);
   }
 
   .tab.aktivan {
     background-color: var(--accent);
-    border-color: var(--accent);
+    background-image: var(--accent-gradient);
+    border-color: rgba(255, 255, 255, 0.28);
     color: var(--on-accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), var(--accent-glow);
   }
 
   .tab .material-icons {
     font-size: 18px;
+  }
+
+  /* Lokalni glavni gumbi stranica dobivaju isti sjajni cijan izgled kao .gumb-primarni */
+  :where(.gumb-spremiti, .gumb-spremi, .gumb-potvrdi, .gumb-plati, .gumb-video-dodaj, .gumb-glavni, .gumb-pin, .prikazuj-sve-gumb, .oznaka-aktivna, .raspon-gumb.aktivan, .prekidac-poretka button.aktivan) {
+    background-image: var(--accent-gradient);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.16), var(--accent-glow);
+    border-color: rgba(255, 255, 255, 0.25);
+    font-weight: 600;
+  }
+
+  :where(.gumb-spremiti, .gumb-spremi, .gumb-potvrdi, .gumb-plati, .gumb-video-dodaj, .gumb-glavni, .gumb-pin):hover:not(:disabled) {
+    filter: brightness(1.08);
   }
 
   /* ==================== MOBITEL / DODIR ==================== */

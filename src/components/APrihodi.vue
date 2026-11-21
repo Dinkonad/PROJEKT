@@ -706,6 +706,10 @@ import {
   query,
   orderBy
 } from 'firebase/firestore';
+import { useBrzaRadnja } from '@/utils/brzaRadnja.js';
+
+// ?novo=1 (brza radnja s dashboarda ili pretrage) odmah otvara prozor za unos
+useBrzaRadnja(() => { prikaziFormu.value = true; });
 
 const prihodi = ref([]);
 const detalji = ref(null);
@@ -1686,7 +1690,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 .fin-red .placeno-tekst { color: var(--success); }
 .fin-red .neplaceno-tekst { color: var(--danger); }
 .fin-red .trosak-tekst { color: var(--text-muted); }
-.fin-red .bratu-tekst { color: #9C7A54; }
+.fin-red .bratu-tekst { color: var(--warm); }
 
 .osoba-eventi {
   display: flex;
@@ -1762,7 +1766,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 .pretraga-polje input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .pretraga-ocisti {
@@ -1800,7 +1804,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 .filter-grupa select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .gumb-reset {
@@ -1841,6 +1845,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .mjesecna-kartica {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border-radius: var(--radius-card);
@@ -1923,7 +1928,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .podatak-red .vrijednost.bratu {
-  color: #9C7A54;
+  color: var(--warm);
 }
 
 .podatak-red.neto .vrijednost {
@@ -1944,7 +1949,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background-color: rgba(18, 52, 88, 0.05);
+  background-color: color-mix(in srgb, var(--accent) 5%, transparent);
   border-left: 4px solid var(--accent);
   margin-bottom: 15px;
   border-radius: 0 6px 6px 0;
@@ -1972,6 +1977,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
   border-radius: var(--radius-card);
   box-shadow: var(--glass-shadow);
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1983,8 +1989,8 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .tablica th {
-  background-color: var(--accent);
-  color: var(--on-accent);
+  background-color: var(--accent-tint);
+  color: var(--accent);
   padding: 16px;
   text-align: left;
   font-weight: 500;
@@ -2000,7 +2006,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .red:hover {
-  background-color: rgba(212, 201, 190, 0.1);
+  background-color: color-mix(in srgb, var(--text-muted) 8%, transparent);
   cursor: pointer;
 }
 
@@ -2158,9 +2164,9 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .gumb-uredi {
-  background-color: var(--accent-soft);
-  color: white;
-  border: none;
+  background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
   padding: 8px;
   border-radius: 50%;
   cursor: pointer;
@@ -2172,13 +2178,13 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .gumb-uredi:hover {
-  background-color: var(--accent-soft-hover);
+  background-color: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .gumb-brisi {
-  background-color: var(--danger);
-  color: white;
-  border: none;
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, transparent);
   padding: 8px;
   border-radius: 50%;
   cursor: pointer;
@@ -2189,7 +2195,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .gumb-brisi:hover {
-  background-color: var(--danger-hover);
+  background-color: color-mix(in srgb, var(--danger) 28%, transparent);
 }
 
 /* ==================== DODAJ GUMB ==================== */
@@ -2219,8 +2225,9 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .modal-zaglavlje {
-  background-color: var(--accent);
-  color: var(--on-accent);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-heading);
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -2235,7 +2242,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .gumb-zatvori {
   background: transparent;
-  color: #F1EFEC;
+  color: var(--text-muted);
   border: none;
   cursor: pointer;
   display: flex;
@@ -2315,14 +2322,14 @@ form {
 
 .adresa-input:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent) !important;
 }
 
 .forma-grupa input:focus,
 .forma-grupa textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(18, 52, 88, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .forma-grupa textarea {
@@ -2358,7 +2365,7 @@ form {
 
 .dropdown-item:hover,
 .dropdown-item.selected {
-  background-color: rgba(18, 52, 88, 0.05);
+  background-color: color-mix(in srgb, var(--accent) 5%, transparent);
   border-left: 3px solid var(--accent);
 }
 
@@ -2463,7 +2470,7 @@ input:checked + .klizac:before {
 }
 
 .gumb-odustani:hover {
-  background-color: #c5b7a9;
+  background-color: var(--border-color);
 }
 
 .gumb-spremi, .gumb-potvrdi {
@@ -2642,7 +2649,6 @@ input:checked + .klizac:before {
     display: block;
     font-size: 0.7rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.02em;
     color: var(--text-muted);
     margin-bottom: 3px;

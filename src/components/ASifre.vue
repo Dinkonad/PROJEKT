@@ -616,8 +616,9 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .zaglavlje-modala {
-  background: var(--accent);
-  color: var(--on-accent);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-heading);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -722,7 +723,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .gumb-potvrditi {
   background: var(--danger);
-  color: white;
+  color: var(--on-danger);
 }
 
 @media (max-width: 768px) {

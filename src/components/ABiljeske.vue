@@ -191,6 +191,10 @@ import { obavijesti } from '@/services/obavijest.js';
 import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { db } from '@/services/firebase.js';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { useBrzaRadnja } from '@/utils/brzaRadnja.js';
+
+// ?novo=1 (brza radnja s dashboarda ili pretrage) odmah otvara prozor za unos
+useBrzaRadnja(() => { novaBiljeska(); });
 
 const KOLEKCIJA = 'ideje';
 
@@ -541,6 +545,7 @@ onBeforeUnmount(() => {
   padding: 56px var(--space-5);
   text-align: center;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -591,6 +596,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--glass-border);
   border-radius: 999px;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   color: var(--text-body);
@@ -640,7 +646,6 @@ onBeforeUnmount(() => {
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -839,7 +844,6 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -879,7 +883,7 @@ onBeforeUnmount(() => {
 
 .ikona-gumb.opasnost:hover {
   background-color: var(--danger);
-  color: #fff;
+  color: var(--on-danger);
 }
 
 .editor-tijelo {
@@ -1027,7 +1031,7 @@ onBeforeUnmount(() => {
   border: 1px solid transparent;
   border-radius: var(--radius-small);
   background-color: var(--danger);
-  color: #fff;
+  color: var(--on-danger);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;

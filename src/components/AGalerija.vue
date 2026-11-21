@@ -590,6 +590,7 @@ onBeforeUnmount(() => {
   margin-bottom: var(--space-section);
   padding: var(--space-card);
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -739,7 +740,7 @@ onBeforeUnmount(() => {
 
 .gumb-opasnost {
   background-color: var(--danger);
-  color: #fff;
+  color: var(--on-danger);
 }
 
 .gumb-opasnost:disabled {
@@ -973,7 +974,6 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 

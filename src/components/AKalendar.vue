@@ -97,7 +97,7 @@ const zadnjaSinkronizacijaTekst = computed(() => {
   return `Zadnje osvježeno: ${datum.toLocaleString('hr-HR')}`;
 });
 
-const BOJE_KALENDARA = ['#123458', '#5D8AA8', '#2E7D32', '#9C7A54', '#7C6EF2', '#B8860B'];
+const BOJE_KALENDARA = ['#D6B67F', '#5D8AA8', '#2E7D32', '#9C7A54', '#7C6EF2', '#B8860B'];
 const bojaZaKalendar = (naziv) => {
   let hash = 0;
   for (let i = 0; i < naziv.length; i++) hash = naziv.charCodeAt(i) + ((hash << 5) - hash);
@@ -179,8 +179,8 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .poruka-greska {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -201,6 +201,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .sekcija {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border-radius: var(--radius-card);

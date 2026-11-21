@@ -377,6 +377,10 @@ import { postaviOsvjezavanje } from '@/store/osvjezavanje.js';
 import { db } from '@/services/firebase.js';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { adresaSpremanja, spremiLinkNaServeru, dohvatiKljucPrecaca, noviKljucPrecaca } from '@/services/linkovi.js';
+import { useBrzaRadnja } from '@/utils/brzaRadnja.js';
+
+// ?novo=1 (brza radnja s dashboarda ili pretrage) odmah otvara prozor za unos
+useBrzaRadnja(() => { document.querySelector('.unos-link')?.focus(); });
 
 const PLATFORME = {
   instagram: { naziv: 'Instagram', kratko: 'IG' },
@@ -835,6 +839,7 @@ onBeforeUnmount(() => {
   margin-bottom: var(--space-5);
   padding: var(--space-card);
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1055,6 +1060,7 @@ onBeforeUnmount(() => {
   padding: 48px var(--space-5);
   text-align: center;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1111,6 +1117,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--glass-border);
   border-radius: 999px;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   color: var(--text-body);
@@ -1157,6 +1164,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   overflow: hidden;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1396,7 +1404,6 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -1462,7 +1469,7 @@ onBeforeUnmount(() => {
 
 .gumb-opasnost {
   background-color: var(--danger);
-  color: #fff;
+  color: var(--on-danger);
 }
 
 .gumb-opasnost:hover:not(:disabled) {
@@ -1477,7 +1484,7 @@ onBeforeUnmount(() => {
 
 .gumb-opasnost-tanki:hover {
   background-color: var(--danger);
-  color: #fff;
+  color: var(--on-danger);
 }
 
 .gumb-opasnost-tanki .material-icons {

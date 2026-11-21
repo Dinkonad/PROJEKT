@@ -4,6 +4,7 @@ import router from './router'
 import './assets/main.css'
 import { ukljuciPristupacnostDijaloga } from './utils/pristupacnostDijaloga.js'
 import svajp from './directives/svajp.js'
+import { ukljuciBrojacAnimaciju } from './utils/brojacAnimacija.js'
 
 const app = createApp(App)
 app.use(router)
@@ -11,3 +12,4 @@ app.directive('svajp', svajp)
 app.mount('#app')
 
 ukljuciPristupacnostDijaloga()
+ukljuciBrojacAnimaciju()

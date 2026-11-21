@@ -243,24 +243,25 @@ const ukloniFaceIdZapis = async (zapis) => {
     align-items: center;
     justify-content: space-around;
     position: fixed;
-    left: 14px;
-    right: 14px;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0));
-    height: 58px;
+    left: max(14px, env(safe-area-inset-left, 0px));
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    height: 64px;
     padding: 0 6px;
     background-color: var(--glass-bg);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  background-image: var(--glass-sheen);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
     border: 1px solid var(--glass-border);
     border-radius: 999px;
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--glass-shadow), 0 0 0 0.5px rgba(0, 0, 0, 0.5);
     z-index: 950;
   }
 
   .donja-stavka {
     flex: 1;
     min-width: 0;
-    height: 42px;
+    height: 50px;
     margin: 0 2px;
     display: flex;
     align-items: center;
@@ -272,16 +273,18 @@ const ukloniFaceIdZapis = async (zapis) => {
     color: var(--text-muted);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: color 0.2s ease, background-color 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .donja-stavka .material-icons {
-    font-size: 24px;
+    font-size: 25px;
   }
 
+  /* aktivna stavka: svijetleće cijan "staklo" unutar trake */
   .donja-stavka.aktivna {
     color: var(--accent);
-    background-color: var(--glass-bg-muted);
+    background-color: var(--accent-tint);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 18px var(--accent-tint);
   }
 
   .donja-profil {
@@ -312,7 +315,9 @@ const ukloniFaceIdZapis = async (zapis) => {
     display: block;
     position: fixed;
     inset: 0;
-    background-color: rgba(3, 3, 3, 0.5);
+    background-color: rgba(2, 4, 10, 0.62);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
     z-index: 1100;
   }
 
@@ -325,13 +330,14 @@ const ukloniFaceIdZapis = async (zapis) => {
     max-height: 75dvh;
     overflow-y: auto;
     background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     border: 1px solid var(--glass-border);
     border-bottom: none;
-    border-radius: var(--radius-card) var(--radius-card) 0 0;
-    padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0));
-    box-shadow: 0 -8px 24px var(--shadow-color);
+    border-radius: 28px 28px 0 0;
+    padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    box-shadow: var(--glass-shadow), 0 -12px 40px rgba(0, 0, 0, 0.5);
   }
 
   .vise-rucka {
@@ -356,6 +362,8 @@ const ukloniFaceIdZapis = async (zapis) => {
     height: 40px;
     border-radius: 50%;
     background-color: var(--accent);
+    background-image: var(--accent-gradient);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), var(--accent-glow);
     color: var(--on-accent);
     display: flex;
     align-items: center;

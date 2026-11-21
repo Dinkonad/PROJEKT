@@ -397,6 +397,10 @@ import {
   collection, doc, addDoc, updateDoc, deleteDoc, setDoc, getDoc,
   onSnapshot, serverTimestamp, query, where, orderBy, limit
 } from 'firebase/firestore';
+import { useBrzaRadnja } from '@/utils/brzaRadnja.js';
+
+// ?novo=1 (brza radnja s dashboarda ili pretrage) odmah otvara prozor za unos
+useBrzaRadnja(() => { otvoriModalUnos(); });
 
 const ucitava = ref(true);
 const unosi = ref([]);
@@ -968,6 +972,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
   gap: 14px;
   flex-wrap: wrap;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1120,13 +1125,13 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .zaglavlje-dana {
-  background: var(--accent);
-  color: var(--on-accent);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-heading);
   padding: 10px 4px;
   text-align: center;
   font-weight: 600;
   font-size: 12px;
-  text-transform: uppercase;
 }
 
 .dan-kalendara {
@@ -1318,6 +1323,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
   margin-top: 25px;
   padding: 20px;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -1699,8 +1705,9 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .zaglavlje-modala {
-  background: var(--accent);
-  color: var(--on-accent);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-heading);
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -1833,7 +1840,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
 
 .gumb-potvrditi {
   background: var(--danger);
-  color: white;
+  color: var(--on-danger);
 }
 
 .poruka-rezultat {
@@ -1848,13 +1855,13 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .poruka-rezultat.uspjeh {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
 }
 
 .poruka-rezultat.greska {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
 }
 
 @media (max-width: 768px) {

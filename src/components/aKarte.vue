@@ -17,7 +17,7 @@
           
           <div class="legenda">
             <div class="legenda-stavka">
-              <div class="legenda-oznaka" style="background-color: var(--text-heading);">📍</div>
+              <div class="legenda-oznaka" style="background-color: #B69355;">📍</div>
               <span>Event lokacije ({{ prihodi.length }})</span>
             </div>
           </div>
@@ -210,7 +210,7 @@ const dodajGrupiraniMarker = (lokacijaNaziv, eventi, koordinate) => {
   if (!mapa.value || !koordinate) return;
 
   const brojEventova = eventi.length;
-  const markerColor = brojEventova > 1 ? '#d9534f' : '#123458';
+  const markerColor = brojEventova > 1 ? '#E5484D' : '#B69355';
 
   const markerIcon = L.divIcon({
     className: 'custom-event-marker',
@@ -303,6 +303,7 @@ onUnmounted(() => {
 
 .mapa-okvir {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -357,10 +358,10 @@ onUnmounted(() => {
 
 .prikazuj-sve-gumb {
   padding: 8px 12px;
-  background-color: var(--text-heading);
-  color: white;
-  border: none;
-  border-radius: 6px;
+  background-color: var(--accent);
+  color: var(--on-accent);
+  border: 1px solid transparent;
+  border-radius: 10px;
   font-size: 0.8rem;
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
@@ -469,6 +470,7 @@ onUnmounted(() => {
   position: absolute;
   bottom: 10px;
   left: 10px;
+  color: #16243C;
   background-color: white;
   padding: 8px 10px;
   border-radius: 6px;
@@ -634,8 +636,8 @@ onUnmounted(() => {
 }
 
 :global(.event-brojac) {
-  background-color: var(--text-heading);
-  color: white;
+  background-color: var(--accent);
+  color: var(--on-accent);
   padding: 2px 6px;
   border-radius: 10px;
   font-size: 0.6rem;
@@ -677,8 +679,19 @@ onUnmounted(() => {
 }
 
 :global(.custom-popup .leaflet-popup-content-wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  background-color: var(--bg-card);
+  color: var(--text-body);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+:global(.custom-popup .leaflet-popup-tip) {
+  background-color: var(--bg-card);
+}
+
+:global(.custom-popup .leaflet-popup-close-button) {
+  color: var(--text-muted);
 }
 
 /* kontrole zumiranja karte (Leaflet) su na mobitelu premale za prst */

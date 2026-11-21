@@ -1089,8 +1089,8 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .poruka-greska {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -1178,23 +1178,24 @@ onBeforeUnmount(odjaviOsvjezavanje);
 }
 
 .znacka-dobro, .mini-znacka.znacka-dobro {
-  background-color: rgba(46, 125, 50, 0.15);
+  background-color: color-mix(in srgb, var(--success) 15%, transparent);
   color: var(--success);
 }
 
 .znacka-osrednje, .mini-znacka.znacka-osrednje {
-  background-color: rgba(230, 160, 20, 0.18);
-  color: #B8860B;
+  background-color: color-mix(in srgb, var(--warm) 18%, transparent);
+  color: var(--warm);
 }
 
 .znacka-lose, .mini-znacka.znacka-lose {
-  background-color: rgba(229, 57, 53, 0.15);
+  background-color: color-mix(in srgb, var(--danger) 15%, transparent);
   color: var(--danger);
 }
 
 /* ==================== SEKCIJE ==================== */
 .sekcija {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border-radius: var(--radius-card);
@@ -1320,6 +1321,7 @@ onBeforeUnmount(odjaviOsvjezavanje);
   gap: 10px;
   text-align: center;
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);

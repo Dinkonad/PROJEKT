@@ -220,6 +220,7 @@ const poredanaVidea = computed(() => {
 .povezi-okvir,
 .sekcija {
   background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--glass-border);
@@ -310,7 +311,7 @@ h2 {
 }
 
 .greska-okvir {
-  background-color: rgba(229, 57, 53, 0.12);
+  background-color: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
 }
 
