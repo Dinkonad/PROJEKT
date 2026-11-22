@@ -76,7 +76,24 @@
             <span v-if="b.prikvacena" class="material-icons biljeska-pin" aria-label="Prikvačeno">push_pin</span>
             <h3 v-if="b.naslov" class="biljeska-naslov">{{ b.naslov }}</h3>
             <p v-if="b.sadrzaj" class="biljeska-tekst">{{ skrati(b.sadrzaj, 500) }}</p>
-            <span class="biljeska-datum">{{ kratkiDatum(b) }}</span>
+            <ul v-if="b.stavke && b.stavke.length" class="kartica-popis">
+              <li v-for="st in b.stavke.slice(0, 8)" :key="st.k" :class="{ gotovo: st.g }">
+                <button
+                  type="button"
+                  class="kvacica"
+                  role="checkbox"
+                  :aria-checked="!!st.g"
+                  :aria-label="st.t || 'Stavka'"
+                  @click.stop="kvacniNaKartici(b, st)"
+                  @keydown.stop
+                >
+                  <span class="material-icons" aria-hidden="true">{{ st.g ? 'check_box' : 'check_box_outline_blank' }}</span>
+                </button>
+                <span class="kartica-stavka-tekst">{{ st.t }}</span>
+              </li>
+              <li v-if="b.stavke.length > 8" class="kartica-vise">+{{ b.stavke.length - 8 }} još</li>
+            </ul>
+            <span class="biljeska-datum">{{ kratkiDatum(b) }}<template v-if="b.stavke && b.stavke.length"> · {{ b.stavke.filter((x) => x.g).length }}/{{ b.stavke.length }}</template></span>
           </div>
         </div>
       </section>
@@ -110,6 +127,17 @@
               >
                 <span class="material-icons" aria-hidden="true">task_alt</span>
               </button>
+              <button
+                type="button"
+                class="ikona-gumb"
+                :class="{ aktivno: ur.stavke.length }"
+                :aria-pressed="ur.stavke.length > 0"
+                :title="ur.stavke.length ? 'Vrati na običan tekst' : 'Popis s kvačicama'"
+                :aria-label="ur.stavke.length ? 'Vrati na običan tekst' : 'Popis s kvačicama'"
+                @click="ukljuciPopis"
+              >
+                <span class="material-icons" aria-hidden="true">checklist</span>
+              </button>
               <button type="button" class="ikona-gumb" title="Spremi kao TXT" aria-label="Spremi kao TXT" @click="izvezi">
                 <span class="material-icons" aria-hidden="true">download</span>
               </button>
@@ -139,11 +167,53 @@
               ref="tekstPolje"
               v-model="ur.sadrzaj"
               class="editor-tekst"
-              placeholder="Zapiši bilješku..."
+              :class="{ 'editor-tekst-kratko': ur.stavke.length }"
+              :placeholder="ur.stavke.length ? 'Tekst (nije obavezan)' : 'Zapiši bilješku...'"
               aria-label="Tekst bilješke"
-              rows="6"
+              :rows="ur.stavke.length ? 1 : 6"
               @input="naTekst"
             ></textarea>
+
+            <div v-if="ur.stavke.length" class="popis">
+              <div class="popis-zaglavlje">
+                <span class="popis-brojac">{{ ur.stavke.filter((x) => x.g).length }} / {{ ur.stavke.length }} označeno</span>
+                <button v-if="ur.stavke.some((x) => x.g)" type="button" class="gumb-tekst popis-odznaci" @click="odznaciSve">
+                  <span class="material-icons" aria-hidden="true">restart_alt</span>Odznači sve
+                </button>
+              </div>
+              <div v-for="(st, i) in ur.stavke" :key="st.k" class="stavka" :class="{ gotovo: st.g }">
+                <button
+                  type="button"
+                  class="kvacica"
+                  role="checkbox"
+                  :aria-checked="st.g"
+                  :aria-label="st.t || 'Stavka'"
+                  @click="prebaciStavku(st)"
+                >
+                  <span class="material-icons" aria-hidden="true">{{ st.g ? 'check_box' : 'check_box_outline_blank' }}</span>
+                </button>
+                <input
+                  v-model="st.t"
+                  :data-stavka="st.k"
+                  type="text"
+                  class="stavka-tekst"
+                  placeholder="Stavka"
+                  aria-label="Tekst stavke"
+                  autocomplete="off"
+                  maxlength="300"
+                  enterkeyhint="next"
+                  @input="promijenjeno()"
+                  @keydown.enter.prevent="dodajStavku(i + 1)"
+                  @keydown.backspace="naBackspace($event, i)"
+                />
+                <button type="button" class="stavka-makni" aria-label="Makni stavku" title="Makni stavku" @click="makniStavku(i)">
+                  <span class="material-icons" aria-hidden="true">close</span>
+                </button>
+              </div>
+              <button type="button" class="dodaj-stavku" @click="dodajStavku(ur.stavke.length)">
+                <span class="material-icons" aria-hidden="true">add</span>Dodaj stavku
+              </button>
+            </div>
           </div>
 
           <div v-if="!potvrdaBrisanja" class="editor-podnozje">
@@ -241,7 +311,7 @@ const vidljive = computed(() => {
   let lista = [...biljeske.value];
   if (rijeci.length) {
     lista = lista.filter((b) => {
-      const tekst = normaliziraj(`${b.naslov || ''} ${b.sadrzaj || ''}`);
+      const tekst = normaliziraj(`${b.naslov || ''} ${b.sadrzaj || ''} ${(b.stavke || []).map((x) => x.t).join(' ')}`);
       return rijeci.every((r) => tekst.includes(r));
     });
   }
@@ -288,7 +358,7 @@ const kratkiDatum = (b) => {
 };
 
 // ---------- uređivač ----------
-const nova = () => ({ id: null, naslov: '', sadrzaj: '', boja: '', prikvacena: false, realizovana: false, zapisanoRealizovana: false });
+const nova = () => ({ id: null, naslov: '', sadrzaj: '', stavke: [], boja: '', prikvacena: false, realizovana: false, zapisanoRealizovana: false });
 
 let prljavo = false;
 let timer = null;
@@ -322,6 +392,7 @@ const otvori = (b) => {
     id: b.id,
     naslov: b.naslov || '',
     sadrzaj: b.sadrzaj || '',
+    stavke: (b.stavke || []).map((x) => ({ k: x.k || novaKljuc(), t: x.t || '', g: !!x.g })),
     boja: b.boja || '',
     prikvacena: !!b.prikvacena,
     realizovana: !!b.realizovana,
@@ -348,12 +419,14 @@ const zapisi = async () => {
   const podaci = {
     naslov: d.naslov.trim(),
     sadrzaj: d.sadrzaj.trim(),
+    // prazne stavke se ne spremaju (postoje samo dok pišeš)
+    stavke: d.stavke.filter((x) => x.t.trim()).map((x) => ({ k: x.k, t: x.t.trim(), g: !!x.g })),
     boja: d.boja,
     prikvacena: d.prikvacena,
     realizovana: d.realizovana
   };
 
-  if (!d.id && !podaci.naslov && !podaci.sadrzaj) {
+  if (!d.id && !podaci.naslov && !podaci.sadrzaj && !podaci.stavke.length) {
     status.value = '';
     return;
   }
@@ -417,7 +490,7 @@ const zatvori = async () => {
     // bez čekanja u nedogled ako nema interneta: Firestore dovrši zapis čim se veza vrati
     await Promise.race([spremiSada(), pauza(3000)]);
     // sve je obrisano iz postojeće bilješke -> nema smisla čuvati praznu karticu
-    if (d.id && !d.naslov.trim() && !d.sadrzaj.trim()) {
+    if (d.id && !d.naslov.trim() && !d.sadrzaj.trim() && !d.stavke.some((x) => x.t.trim())) {
       deleteDoc(doc(db, KOLEKCIJA, d.id)).catch((e) => console.error('Greška pri brisanju prazne bilješke:', e));
     }
   } finally {
@@ -447,7 +520,9 @@ const obrisi = async () => {
 const izvezi = () => {
   const d = ur.value;
   if (!d) return;
-  const sadrzaj = d.naslov.trim() ? `${d.naslov.trim()}\n\n${d.sadrzaj}` : d.sadrzaj;
+  const popis = d.stavke.filter((x) => x.t.trim()).map((x) => `[${x.g ? 'x' : ' '}] ${x.t.trim()}`).join('\n');
+  const tijelo = [d.sadrzaj, popis].filter((x) => x.trim()).join('\n\n');
+  const sadrzaj = d.naslov.trim() ? `${d.naslov.trim()}\n\n${tijelo}` : tijelo;
   const blob = new Blob([sadrzaj], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -455,6 +530,94 @@ const izvezi = () => {
   a.download = `${(d.naslov.trim() || 'biljeska').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
   a.click();
   URL.revokeObjectURL(url);
+};
+
+// ---------- popis s kvačicama ----------
+const novaKljuc = () => Math.random().toString(36).slice(2, 10);
+
+const fokusirajStavku = (k) => nextTick(() => {
+  const el = tijeloPolje.value?.querySelector(`[data-stavka="${k}"]`);
+  if (el) {
+    el.focus();
+    el.scrollIntoView({ block: 'nearest' });
+  }
+});
+
+// Ponovni klik vraća na normalno: svaka stavka postane redak običnog teksta (kvačice se gube).
+const iskljuciPopis = () => {
+  const d = ur.value;
+  const retci = d.stavke.map((x) => x.t.trim()).filter(Boolean);
+  d.sadrzaj = [d.sadrzaj.trimEnd(), retci.join('\n')].filter(Boolean).join('\n');
+  d.stavke = [];
+  nextTick(() => {
+    prilagodiVisinu();
+    tekstPolje.value?.focus();
+  });
+  promijenjeno(true);
+};
+
+// Uključi popis (ili ga isključi ako već postoji). Svaki redak postojećeg teksta odmah postane stavka.
+const ukljuciPopis = () => {
+  const d = ur.value;
+  if (d.stavke.length) {
+    iskljuciPopis();
+    return;
+  }
+  const retci = d.sadrzaj.split('\n').map((r) => r.replace(/^\s*([-*•]|\d+[.)]|\[[ xX]?\])\s*/, '').trim()).filter(Boolean);
+  if (retci.length) {
+    d.stavke = retci.map((t) => ({ k: novaKljuc(), t, g: false }));
+    d.sadrzaj = '';
+    nextTick(prilagodiVisinu);
+    promijenjeno(true);
+    return;
+  }
+  dodajStavku(0);
+};
+
+const dodajStavku = (indeks) => {
+  const st = { k: novaKljuc(), t: '', g: false };
+  ur.value.stavke.splice(indeks, 0, st);
+  nextTick(prilagodiVisinu);
+  fokusirajStavku(st.k);
+};
+
+const makniStavku = (indeks) => {
+  ur.value.stavke.splice(indeks, 1);
+  nextTick(prilagodiVisinu);
+  promijenjeno(true);
+};
+
+// Backspace na praznoj stavci je briše i vraća kursor na prethodnu
+const naBackspace = (e, indeks) => {
+  if (ur.value.stavke[indeks].t !== '') return;
+  e.preventDefault();
+  const prethodna = ur.value.stavke[indeks - 1];
+  makniStavku(indeks);
+  if (prethodna) fokusirajStavku(prethodna.k);
+  else tekstPolje.value?.focus();
+};
+
+const prebaciStavku = (st) => {
+  st.g = !st.g;
+  promijenjeno(true);
+};
+
+// npr. popis za pakiranje: nakon puta sve odznačiš i popis je spreman za idući put
+const odznaciSve = () => {
+  ur.value.stavke.forEach((x) => { x.g = false; });
+  promijenjeno(true);
+};
+
+// kvačica izravno na kartici, bez otvaranja bilješke (ne mijenja redoslijed bilješki)
+const kvacniNaKartici = async (b, st) => {
+  const stavke = (b.stavke || []).map((x) => (x.k === st.k ? { ...x, g: !x.g } : x));
+  b.stavke = stavke;
+  try {
+    await updateDoc(doc(db, KOLEKCIJA, b.id), { stavke });
+  } catch (greska) {
+    console.error('Greška pri označavanju stavke:', greska);
+    obavijesti('Kvačica nije spremljena. Provjeri internet.');
+  }
 };
 
 // ---------- uvoz iz TXT-a ----------
@@ -798,6 +961,181 @@ onBeforeUnmount(() => {
   margin-top: var(--space-3);
   font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+/* ---------- popis s kvačicama ---------- */
+.kvacica {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.gotovo > .kvacica {
+  color: var(--accent);
+}
+
+.kartica-popis {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kartica-popis li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.kartica-popis .kvacica {
+  width: 30px;
+  height: 30px;
+  margin: -4px 0 -4px -6px;
+}
+
+.kartica-popis .kvacica .material-icons {
+  font-size: 20px;
+}
+
+.kartica-stavka-tekst {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kartica-popis li.gotovo .kartica-stavka-tekst {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.kartica-vise {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding-left: 24px;
+}
+
+.popis {
+  margin-top: var(--space-2);
+  cursor: default;
+}
+
+.popis-zaglavlje {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 32px;
+  margin-bottom: var(--space-1);
+}
+
+.popis-brojac {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.popis-odznaci {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.popis-odznaci .material-icons {
+  font-size: 18px;
+}
+
+.stavka {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid transparent;
+}
+
+.stavka:focus-within {
+  border-bottom-color: var(--border-color);
+}
+
+.stavka .kvacica {
+  width: 40px;
+  height: 40px;
+}
+
+.stavka .kvacica .material-icons {
+  font-size: 24px;
+}
+
+.stavka-tekst {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 1.02rem;
+}
+
+.stavka-tekst:focus {
+  outline: none;
+}
+
+.stavka.gotovo .stavka-tekst {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.stavka-makni {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.stavka-makni:hover,
+.stavka:focus-within .stavka-makni {
+  opacity: 1;
+}
+
+.dodaj-stavku {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 8px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.dodaj-stavku:hover {
+  color: var(--accent);
+}
+
+.editor-tekst.editor-tekst-kratko {
+  min-height: 0;
 }
 
 /* ---------- uređivač ---------- */
