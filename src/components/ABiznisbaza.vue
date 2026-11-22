@@ -13,9 +13,26 @@
           <span class="material-icons">arrow_forward</span>
           {{ prebacivanjeUTijeku ? 'Prebacujem...' : 'Prebaci u Prihodi' }}
         </button>
-        <span v-else-if="mjesecPrebacen" class="oznaka-prebaceno">
-          <span class="material-icons">check_circle</span> Ovaj mjesec je prebačen u Prihode
+        <span v-else-if="mjesecPrebacen" class="oznaka-prebaceno" :class="{ neplaceno: prihodMjeseca && !prihodMjeseca.placeno }">
+          <span class="material-icons">{{ prihodMjeseca && !prihodMjeseca.placeno ? 'pending' : 'check_circle' }}</span>
+          U Prihodima<template v-if="prihodMjeseca"> · {{ prihodMjeseca.placeno ? 'Plaćeno' : 'Neplaćeno' }}</template>
         </span>
+      <button
+          v-if="mjesecPrebacen && prihodMjeseca && !prihodMjeseca.placeno"
+          class="gumb-uspjeh"
+          :disabled="oznacavanjePlacenog"
+          @click="oznaciMjesecPlacenim"
+        >
+          <span class="material-icons">payments</span> Označi kao plaćeno
+        </button>
+      <button
+          v-if="unosiZaMjesec.length > 0"
+          class="gumb-sekundarni"
+          :disabled="izvozUTijeku"
+          @click="izveziMjesec"
+        >
+          <span class="material-icons">picture_as_pdf</span> {{ izvozUTijeku ? 'Izvozim...' : 'Izvezi mjesec' }}
+        </button>
       <button class="gumb-dodaj" @click="otvoriModalUnos()">
           <span class="material-icons">add</span> Dodaj dan
         </button>
@@ -406,6 +423,7 @@ const ucitava = ref(true);
 const unosi = ref([]);
 const trenutnaSatnica = ref(0);
 const prebacivanja = ref({});
+const prebacivanjaInfo = ref({});
 const prikazaniMjesec = ref(new Date());
 const odabraniDanDatum = ref(null);
 
@@ -433,6 +451,12 @@ let unsubPrebacivanja = null;
 let unsubPredlosci = null;
 let unsubIphoneEventi = null;
 let unsubVidea = null;
+let unsubPrihodiBiznis = null;
+
+// prihodi nastali prebacivanjem iz BiznisBaze (za status plaćeno/neplaćeno)
+const prihodiBiznis = ref([]);
+const oznacavanjePlacenog = ref(false);
+const izvozUTijeku = ref(false);
 
 const videa = ref([]);
 
@@ -494,6 +518,17 @@ const danasCekaDo = computed(() => {
 });
 
 const mjesecPrebacen = computed(() => !!prebacivanja.value[mjesecKljuc.value]);
+
+// prihod koji pripada prikazanom mjesecu: po spremljenom ID-u, a za stara prebacivanja po nazivu
+const prihodMjeseca = computed(() => {
+  const info = prebacivanjaInfo.value[mjesecKljuc.value];
+  if (info?.prihodId) {
+    const poId = prihodiBiznis.value.find(p => p.id === info.prihodId);
+    if (poId) return poId;
+  }
+  const naziv = `Biznis-baza za ${nazivMjesecaGodina.value}`;
+  return prihodiBiznis.value.find(p => p.nazivEventa === naziv) || null;
+});
 const mozePrebaciti = computed(() => unosiZaMjesec.value.length > 0 && !mjesecPrebacen.value);
 
 const daniKalendara = computed(() => {
@@ -594,8 +629,15 @@ const postaviRealtimeListenere = () => {
   });
   unsubPrebacivanja = onSnapshot(collection(db, 'biznisbaza-prebacivanja'), (snapshot) => {
     const mapa = {};
-    snapshot.docs.forEach(d => { mapa[d.id] = d.data().prebaceno === true; });
+    const info = {};
+    snapshot.docs.forEach(d => { mapa[d.id] = d.data().prebaceno === true; info[d.id] = d.data(); });
     prebacivanja.value = mapa;
+    prebacivanjaInfo.value = info;
+  });
+  unsubPrihodiBiznis = onSnapshot(query(collection(db, 'prihodi'), where('izBiznisbaze', '==', true)), (snapshot) => {
+    prihodiBiznis.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  }, (error) => {
+    console.error('Greška pri čitanju prihoda iz BiznisBaze:', error);
   });
   unsubPredlosci = onSnapshot(collection(db, 'biznisbaza-predlosci'), (snapshot) => {
     predlosci.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -641,6 +683,7 @@ onBeforeUnmount(() => {
   if (unsubPredlosci) unsubPredlosci();
   if (unsubIphoneEventi) unsubIphoneEventi();
   if (unsubVidea) unsubVidea();
+  if (unsubPrihodiBiznis) unsubPrihodiBiznis();
 });
 
 // ==================== VIDEA ====================
@@ -809,7 +852,7 @@ const prebaciUPrihode = async () => {
     const prviDan = new Date(godina, mjesecIndeks, 1);
     const zadnjiDan = new Date(godina, mjesecIndeks + 1, 0);
 
-    await addDoc(collection(db, 'prihodi'), {
+    const prihodRef = await addDoc(collection(db, 'prihodi'), {
       nazivEventa: `Biznis-baza za ${nazviMjeseci[mjesecIndeks]} ${godina}`,
       cijena: Math.round(ukupnoZaradaMjesec.value * 100) / 100,
       datumSnimanja: uISO(prviDan),
@@ -824,6 +867,7 @@ const prebaciUPrihode = async () => {
 
     await setDoc(doc(db, 'biznisbaza-prebacivanja', mjesecKljuc.value), {
       prebaceno: true,
+      prihodId: prihodRef.id,
       datumPrebacivanja: serverTimestamp(),
       iznos: ukupnoZaradaMjesec.value
     });
@@ -834,6 +878,106 @@ const prebaciUPrihode = async () => {
     prikaziPoruku(false, 'Greška pri prebacivanju u Prihodi.');
   } finally {
     prebacivanjeUTijeku.value = false;
+  }
+};
+
+const oznaciMjesecPlacenim = async () => {
+  if (!prihodMjeseca.value || oznacavanjePlacenog.value) return;
+  oznacavanjePlacenog.value = true;
+  try {
+    await updateDoc(doc(db, 'prihodi', prihodMjeseca.value.id), { placeno: true });
+    prikaziPoruku(true, `${nazivMjesecaGodina.value} označen kao plaćen.`);
+  } catch (error) {
+    console.error('Greška pri označavanju plaćenog:', error);
+    prikaziPoruku(false, 'Greška pri označavanju kao plaćeno.');
+  } finally {
+    oznacavanjePlacenog.value = false;
+  }
+};
+
+// ==================== MJESEČNI ISPIS (PDF) ====================
+// standardni jsPDF fontovi nemaju č,ć,đ,š,ž - zato ih pretvaramo u obična slova
+const bezDijakritika = (tekst) => String(tekst ?? '')
+  .replace(/[čć]/g, 'c').replace(/[ČĆ]/g, 'C')
+  .replace(/đ/g, 'dj').replace(/Đ/g, 'Dj')
+  .replace(/š/g, 's').replace(/Š/g, 'S')
+  .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+
+// u PDF-u uvijek pravi iznosi (bez skrivanja novca)
+const eur = (v) => `${(parseFloat(v) || 0).toFixed(2)} EUR`;
+const sat = (v) => `${(parseFloat(v) || 0).toFixed(2)} h`;
+
+const izveziMjesec = async () => {
+  if (!unosiZaMjesec.value.length || izvozUTijeku.value) return;
+  izvozUTijeku.value = true;
+  try {
+    const { default: jsPDF } = await import('jspdf');
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const redovi = [...unosiZaMjesec.value]
+      .sort((a, b) => a.datum.localeCompare(b.datum) || a.pocetnoVrijeme.localeCompare(b.pocetnoVrijeme));
+
+    const kolone = [
+      { naziv: 'Datum', x: 14 },
+      { naziv: 'Vrijeme', x: 46 },
+      { naziv: 'Opis', x: 72 },
+      { naziv: 'Sati', x: 140, desno: true },
+      { naziv: 'Satnica', x: 165, desno: true },
+      { naziv: 'Iznos', x: 196, desno: true }
+    ];
+    const donjaGranica = 275;
+    const zaglavljeTablice = (y) => {
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'bold');
+      kolone.forEach(k => pdf.text(k.naziv, k.x, y, k.desno ? { align: 'right' } : undefined));
+      pdf.setFont(undefined, 'normal');
+      pdf.line(14, y + 2, 196, y + 2);
+      return y + 8;
+    };
+
+    pdf.setFontSize(16);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(bezDijakritika(`Obracun rada - ${nazivMjesecaGodina.value}`), 14, 18);
+    pdf.setFont(undefined, 'normal');
+    pdf.setFontSize(9);
+    pdf.text(`Generirano: ${new Date().toLocaleDateString('hr-HR')}`, 14, 24);
+
+    let y = zaglavljeTablice(34);
+    redovi.forEach(u => {
+      if (y > donjaGranica) { pdf.addPage(); y = zaglavljeTablice(20); }
+      const opis = bezDijakritika((u.opis || 'Rad') + (u.terenSat ? ` (teren ${u.terenSat})` : ''));
+      const d = new Date(u.datum);
+      pdf.setFontSize(9);
+      pdf.text(`${bezDijakritika(kraticeDanaTjedna[d.getDay()])} ${d.toLocaleDateString('hr-HR')}`, kolone[0].x, y);
+      pdf.text(`${u.pocetnoVrijeme}-${u.zavrsnoVrijeme}`, kolone[1].x, y);
+      pdf.text(pdf.splitTextToSize(opis, 52)[0], kolone[2].x, y);
+      pdf.text(sat(u.satiRada), kolone[3].x, y, { align: 'right' });
+      pdf.text(eur(u.placaPoSatu ?? (u.satiRada ? u.zarada / u.satiRada : 0)), kolone[4].x, y, { align: 'right' });
+      pdf.text(eur(u.zarada), kolone[5].x, y, { align: 'right' });
+      y += 7;
+    });
+
+    if (y > donjaGranica - 30) { pdf.addPage(); y = 20; }
+    pdf.line(14, y - 3, 196, y - 3);
+    y += 6;
+    pdf.setFontSize(11);
+    pdf.text(`Radnih dana: ${new Set(redovi.map(u => u.datum)).size}`, 14, y); y += 7;
+    pdf.text(`Ukupno sati: ${sat(ukupnoSatiMjesec.value)}`, 14, y); y += 9;
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(bezDijakritika(`Za isplatu: ${eur(ukupnoZaradaMjesec.value)}`), 14, y);
+    pdf.setFont(undefined, 'normal');
+    if (prihodMjeseca.value) {
+      y += 8;
+      pdf.setFontSize(10);
+      pdf.text(`Status: ${prihodMjeseca.value.placeno ? 'Placeno' : 'Nije placeno'}`, 14, y);
+    }
+
+    pdf.save(`obracun-${mjesecKljuc.value}.pdf`);
+  } catch (error) {
+    console.error('Greška pri izvozu mjeseca:', error);
+    prikaziPoruku(false, 'Greška pri izradi PDF-a.');
+  } finally {
+    izvozUTijeku.value = false;
   }
 };
 
@@ -1109,6 +1253,10 @@ onBeforeUnmount(odjaviOsvjezavanje);
   color: var(--success);
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.oznaka-prebaceno.neplaceno {
+  color: var(--danger);
 }
 
 /* ==================== KALENDARSKA MREŽA ==================== */
