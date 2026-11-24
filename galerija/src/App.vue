@@ -1,5 +1,5 @@
 <template>
-  <Zaslon v-if="stanje === 'ucitava'" naslov="Pripremam galeriju" :tekst="sporo ? 'Server se budi, još samo trenutak...' : ''" ucitava />
+  <Skeleton v-if="stanje === 'ucitava'" />
 
   <Zaslon v-else-if="stanje === 'nema'" naslov="Galerija nije dostupna" tekst="Provjeri je li link potpun ili se javi fotografu." />
 
@@ -114,6 +114,7 @@
 // Klijentska galerija: otvara se preko osobnog linka /g/<token>. Ništa drugo na ovoj stranici ne postoji.
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import Zaslon from './components/Zaslon.vue';
+import Skeleton from './components/Skeleton.vue';
 import PinZaslon from './components/PinZaslon.vue';
 import Hero from './components/Hero.vue';
 import Mreza from './components/Mreza.vue';
@@ -131,7 +132,6 @@ const token = (location.pathname.match(/^\/g\/([A-Za-z0-9_-]{16,64})\/?$/) || []
 const oznakaLinka = new URLSearchParams(location.search).get('k') || '';
 
 const stanje = ref(token ? 'ucitava' : 'nema'); // ucitava | nema | greska | pin | spremno
-const sporo = ref(false);
 const greskaTekst = ref('');
 const meta = ref(null);
 const urlovi = reactive({});
@@ -159,18 +159,14 @@ const javi = (tekst) => {
 const pokreni = async () => {
   if (!token) { stanje.value = 'nema'; return; }
   stanje.value = 'ucitava';
-  sporo.value = false;
-  const odbrojavanje = setTimeout(() => { sporo.value = true; }, 6000);
   try {
-    const o = await ucitajGaleriju(token, oznakaLinka, () => { sporo.value = true; });
+    const o = await ucitajGaleriju(token, oznakaLinka);
     meta.value = o;
     if (o.trebaPin) { stanje.value = 'pin'; return; }
     prihvati(o);
   } catch (e) {
     if (e.status === 404) stanje.value = 'nema';
     else { stanje.value = 'greska'; greskaTekst.value = e.status === 0 ? 'Nema veze sa serverom. Provjeri internet i pokušaj ponovno.' : e.message; }
-  } finally {
-    clearTimeout(odbrojavanje);
   }
 };
 

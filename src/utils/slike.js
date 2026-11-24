@@ -1,4 +1,5 @@
-// Obrada fotki u pregledniku prije uploada: iz originala se rade srednja (prikaz) i mala (mreža) WebP verzija.
+// Obrada fotki u pregledniku prije uploada: iz originala se rade srednja (prikaz) i mala (mreža) WebP verzija
+// (na iPhoneu JPEG, jer Safari ne zna spremiti WebP).
 // ORIGINAL SE NIKAD NE DIRA: šalje se bajt po bajt kakav je (JPG, PNG, RAW...).
 import exifr from 'exifr';
 
@@ -120,8 +121,12 @@ async function smanji(bitmap, najduza, kvaliteta) {
   g.imageSmoothingQuality = 'high';
   g.drawImage(izvor, 0, 0, ciljS, ciljV);
   const blob = await uBlob(izlaz, 'image/webp', kvaliteta);
-  if (blob.type !== 'image/webp') throw new Error('Ovaj preglednik ne zna spremiti WebP. Koristi noviji Chrome, Edge ili Safari.');
-  return blob;
+  if (blob.type === 'image/webp') return blob;
+  // iPhone/iPad (Safari i svi preglednici na iOS-u) ne znaju spremiti WebP, pa pregled ide kao JPEG.
+  // Sprema se na isto mjesto (.webp) - preglednici sliku prepoznaju po sadržaju, ne po nastavku.
+  const jpeg = await uBlob(izlaz, 'image/jpeg', kvaliteta);
+  if (jpeg.type !== 'image/jpeg') throw new Error('Ovaj preglednik ne može napraviti pregled fotke.');
+  return jpeg;
 }
 
 function prosjecnaBoja(bitmap) {
